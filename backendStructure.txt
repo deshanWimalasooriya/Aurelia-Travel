@@ -1,0 +1,27 @@
+backend/
+├── controllers/
+│   ├── authController.js
+│   ├── hotelController.js
+│   ├── bookingController.js
+│   ├── reviewController.js
+│   └── wishlistController.js
+├── models/
+│   ├── user.js
+│   ├── hotel.js
+│   ├── room.js
+│   ├── booking.js
+│   ├── review.js
+│   └── wishlist.js
+├── routes/
+│   ├── authRoutes.js
+│   ├── hotelRoutes.js
+│   ├── bookingRoutes.js
+│   ├── reviewRoutes.js
+│   └── wishlistRoutes.js
+├── middleware/
+│   ├── auth.js
+│   └── upload.js
+├── config/
+│   └── db.js
+├── .env
+└── server.js

@@ -1,0 +1,19 @@
+/* src/styles/themes.css */
+:root {
+  --primary-color: #3b82f6; /* Standard Blue */
+  --bg-color: #ffffff;
+  --accent-color: #f1f3f4;
+}
+
+[data-theme='december'] {
+  --primary-color: #d42426; /* Christmas Red */
+  --bg-color: #f8f9fa;
+  --accent-color: #165b33; /* Christmas Green */
+  --hero-bg: url('/images/christmas-hero.jpg');
+}
+
+[data-theme='january'] {
+  --primary-color: #00b4d8; /* Winter Blue */
+  --bg-color: #f0f8ff;
+  --accent-color: #caf0f8;
+}

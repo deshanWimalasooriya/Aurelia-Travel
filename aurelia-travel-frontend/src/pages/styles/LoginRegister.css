@@ -1,0 +1,141 @@
+/* Container for the entire page to center the form */
+.auth-page {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background-color: #f8f9fa;
+}
+
+/* The white card containing the form */
+.auth-container {
+  width: 100%;
+  max-width: 450px;
+  background: #ffffff;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+/* Tab navigation (Login | Register) */
+.auth-tabs {
+  display: flex;
+  border-bottom: 2px solid #f1f3f5;
+  margin-bottom: 30px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 12px;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #adb5bd;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.auth-tab.active {
+  color: #3b82f6;
+  border-bottom: 2px solid #3b82f6;
+  margin-bottom: -2px; /* Pull up to overlay the border */
+}
+
+/* Form Layout */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #495057;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background-color: #fff;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Primary Action Button */
+.auth-btn {
+  width: 100%;
+  padding: 14px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  margin-top: 10px;
+}
+
+.auth-btn:hover {
+  background-color: #2563eb;
+}
+
+.auth-btn:active {
+  transform: scale(0.98);
+}
+
+/* Switch Text (at the bottom) */
+.auth-switch {
+  margin-top: 25px;
+  text-align: center;
+}
+
+.auth-switch-text {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.auth-switch-link {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 5px;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.auth-switch-link:hover {
+  color: #1d4ed8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .auth-container {
+    padding: 25px;
+  }
+  
+  .hero-text h1 {
+    font-size: 2rem;
+  }
+}

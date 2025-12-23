@@ -1,0 +1,27 @@
+frontend/
+├── public/
+├── src/
+│   ├── components/
+│   │   ├── Header.jsx
+│   │   ├── Footer.jsx
+│   │   ├── HeroSlider.jsx
+│   │   ├── HotelCard.jsx
+│   │   ├── SearchForm.jsx
+│   │   ├── HotelDetails.jsx
+│   │   ├── BookingForm.jsx
+│   │   └── Wishlist.jsx
+│   ├── pages/
+│   │   ├── Home.jsx
+│   │   ├── SearchResults.jsx
+│   │   ├── HotelDetails.jsx
+│   │   ├── BookingPage.jsx
+│   │   ├── LoginRegister.jsx
+│   │   └── Profile.jsx
+│   ├── context/
+│   │   └── AuthContext.jsx
+│   ├── services/
+│   │   └── api.js
+│   ├── App.jsx
+│   └── main.jsx
+├── tailwind.config.js
+└── package.json
