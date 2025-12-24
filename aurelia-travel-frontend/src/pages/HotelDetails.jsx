@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { mockHotels } from '../data/mockHotels'
+import axios from 'axios'
 import './styles/hotelDetails.css'
 
 const HotelDetails = () => {
   const { id } = useParams()
   const [hotel, setHotel] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [selectedImage, setSelectedImage] = useState(0)
   const [bookingData, setBookingData] = useState({
     checkIn: '',
@@ -16,18 +18,60 @@ const HotelDetails = () => {
   })
 
   useEffect(() => {
-    const foundHotel = mockHotels.find(h => h.id === parseInt(id))
-    setHotel(foundHotel)
+    const fetchHotel = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        console.log('🔍 Fetching hotel ID:', id)
+        
+        const response = await axios.get(`http://localhost:5000/api/hotels/${id}`)
+        console.log('✅ Hotel Response:', response.data)
+        
+        // Handle backend response structure
+        const hotelData = Array.isArray(response.data) ? response.data[0] : response.data
+        setHotel(hotelData)
+        
+      } catch (err) {
+        console.error('❌ Error fetching hotel:', err.response?.data || err.message)
+        setError(err.response?.data?.message || 'Hotel not found')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (id) {
+      fetchHotel()
+    }
   }, [id])
 
-  if (!hotel) {
-    return <div className="hotel-details-page hotel-details-not-found">Hotel not found</div>
+  if (loading) {
+    return (
+      <div className="hotel-details-page min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-lg">Loading hotel details...</div>
+      </div>
+    )
   }
 
-  const amenities = [
-    'Free WiFi', 'Swimming Pool', 'Parking', 'Air Conditioning', 'Restaurant',
-    'Bar', 'Spa', 'Fitness Center', 'Room Service', 'Laundry'
-  ]
+  if (error || !hotel) {
+    return (
+      <div className="hotel-details-page hotel-details-not-found min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl text-red-500 mb-4">Hotel Not Found</h2>
+          <button 
+            onClick={() => window.history.back()} 
+            className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
+          >
+            ← Back to Hotels
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Parse amenities from backend comma-separated string
+  const amenities = hotel.amenities 
+    ? hotel.amenities.split(',').map(a => a.trim())
+    : ['Free WiFi', 'Swimming Pool', 'Parking', 'Air Conditioning', 'Restaurant']
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -35,7 +79,8 @@ const HotelDetails = () => {
   }
 
   const handleBookNow = () => {
-    console.log('Booking submitted:', bookingData)
+    console.log('Booking submitted:', { hotelId: hotel.id, ...bookingData })
+    // TODO: Send to backend booking API
   }
 
   return (
@@ -46,7 +91,7 @@ const HotelDetails = () => {
           <div className="hotel-gallery">
             <div className="hotel-main-image">
               <img
-                src={hotel.image_url}
+                src={hotel.image_url || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800'}
                 alt={hotel.name}
                 className="hotel-image"
               />
@@ -60,7 +105,7 @@ const HotelDetails = () => {
                   onClick={() => setSelectedImage(i)}
                 >
                   <img
-                    src={`https://images.unsplash.com/photo-${i}?w=200`}
+                    src={`https://images.unsplash.com/photo-${i*100}?w=200`}
                     alt={`Gallery ${i}`}
                     className="thumbnail-image"
                   />
@@ -75,11 +120,11 @@ const HotelDetails = () => {
             <p className="booking-location">{hotel.location}</p>
             
             <div className="booking-price">
-              <span className="price-amount">${hotel.price}</span>
+              <span className="price-amount">${parseFloat(hotel.price).toFixed(2)}</span>
               <span className="price-label">per night</span>
             </div>
 
-            <form onSubmit={handleBookNow} className="booking-form">
+            <form onSubmit={(e) => { e.preventDefault(); handleBookNow(); }} className="booking-form">
               <div className="form-group">
                 <label className="form-label">Check-in</label>
                 <input
@@ -175,11 +220,11 @@ const HotelDetails = () => {
               {[1, 2, 3].map(i => (
                 <div key={i} className="review-item">
                   <div className="review-header">
-                    <span className="review-user">User {i}</span>
-                    <span className="review-rating">⭐ 4.{i}</span>
+                    <span className="review-user">Guest {i}</span>
+                    <span className="review-rating">⭐ {hotel.rating || 4}.{i}</span>
                   </div>
                   <p className="review-comment">
-                    Great experience at {hotel.name}. The staff was very helpful and the room was clean and comfortable.
+                    Great stay at {hotel.name}! Clean rooms and excellent service.
                   </p>
                 </div>
               ))}

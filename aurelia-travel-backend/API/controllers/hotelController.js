@@ -1,5 +1,5 @@
 // controllers/hotelController.js
-const hotelModel = require("../models/hotel");
+const hotelModel = require("../models/hotelModel");
 
 // Create a hotel (FIXED)
 exports.create = async (req, res) => {
@@ -14,14 +14,7 @@ exports.create = async (req, res) => {
 // Get all Hotels (with filters)
 exports.getAllHotels = async (req, res) => {
   try {
-    const filters = {
-      location: req.query.location,
-      minPrice: req.query.minPrice,
-      maxPrice: req.query.maxPrice,
-      amenities: req.query.amenities,
-      rating: req.query.rating
-    };
-    const hotels = await hotelModel.getAll(filters);
+    const hotels = await hotelModel.getAll();
     res.json(hotels);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -66,3 +59,24 @@ exports.delete = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// GET /api/hotels/top-rated (Top 4 rated hotels)
+exports.getTopRated = async (req, res) => {
+  try {
+    const trHotels = await hotelModel.TopRated();
+    res.json(trHotels);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET /api/hotels/newest (Newest 4 hotels)
+exports.getNewest = async (req, res) => {
+  try {
+    const nHotels = await hotelModel.getNewest(4);
+    res.json(nHotels);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
