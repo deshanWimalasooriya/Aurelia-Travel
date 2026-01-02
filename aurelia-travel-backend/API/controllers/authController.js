@@ -148,3 +148,30 @@ exports.logout = async (req, res) => {
     });
   }
 };
+
+exports.getCurrentUser = async (req, res) => {
+  try {
+    // 🔍 DEBUG: Print the decoded token to the console
+    console.log("Decoded User from Token:", req.user);
+
+    // Handle both 'id' (new standard) and 'userId' (old standard) to be safe
+    const userId = req.user.id || req.user.userId;
+
+    if (!userId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Token is missing ID. Please logout and login again." 
+      });
+    }
+
+    const user = await userModel.findById(userId);
+    
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const { password, ...others } = user;
+    res.status(200).json({ success: true, data: others });
+  } catch (err) {
+    console.error("GetCurrentUser Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};

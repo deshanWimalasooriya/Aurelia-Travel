@@ -12,4 +12,5 @@ router.get('/', verifyToken, checkRole('admin'), userController.getAllUsers);
 // Get Specific User
 router.get('/:id', verifyToken, userController.getUserById);
 
+
 module.exports = router;
