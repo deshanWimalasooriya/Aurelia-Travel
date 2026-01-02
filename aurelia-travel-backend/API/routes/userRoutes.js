@@ -1,13 +1,15 @@
-const express = require('express')
+const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const { verifyToken, checkRole, checkOwnership } = require('../middleware/authMiddleware');
+const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 
-// GET /api/users - Get all users (admin only)
-router.get('/', checkRole('admin'), userController.getAllUsers);
-router.get('/:id', userController.getUserById);
-router.post('/', userController.createUser);
-router.put('/:id', checkOwnership, userController.updateUser);
-router.delete('/:id', checkRole('admin'), userController.deleteUser);
+// Get My Profile (Protected)
+router.get('/me', verifyToken, userController.getCurrentUser);
+
+// Get All Users (Admin Only)
+router.get('/', verifyToken, checkRole('admin'), userController.getAllUsers);
+
+// Get Specific User
+router.get('/:id', verifyToken, userController.getUserById);
 
 module.exports = router;
