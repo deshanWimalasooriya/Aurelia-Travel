@@ -97,3 +97,136 @@
 .btn-primary:hover {
   background-color: #2563eb;
 }
+
+
+
+/* ============ NEW PROFILE DROPDOWN STYLES ============ */
+
+.header-profile-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Round Profile Button */
+.header-profile-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s;
+}
+
+.header-profile-btn:hover {
+  border-color: #3b82f6;
+}
+
+/* Profile Image */
+.header-profile-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Placeholder Gray Circle */
+.header-profile-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-profile-icon-default {
+  width: 20px;
+  height: 20px;
+  color: #6b7280;
+}
+
+/* Dropdown Menu Box */
+.header-dropdown {
+  position: absolute;
+  top: 120%; /* Pushes menu just below the header */
+  right: 0;
+  width: 200px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid #f3f4f6;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  animation: slideDown 0.2s ease-out;
+}
+
+/* Dropdown Content */
+.dropdown-user-details {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdown-username {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 0.9rem;
+}
+
+.dropdown-email {
+  font-size: 0.75rem;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: #f3f4f6;
+  margin: 6px 0;
+}
+
+/* Menu Items */
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  color: #4b5563;
+  text-decoration: none;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+  background-color: #f3f4f6;
+  color: #3b82f6;
+}
+
+.dropdown-logout {
+  color: #ef4444;
+}
+
+.dropdown-logout:hover {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
