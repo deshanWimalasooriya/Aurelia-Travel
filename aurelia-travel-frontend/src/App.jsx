@@ -13,6 +13,7 @@ import Profile from './pages/Profile'
 import TravelPage from './pages/TravelPage'
 import AboutPage from './pages/About'
 import ContactPage from './pages/Contact'
+import HotelPage from './pages/HotelPage'
 
 import './index.css'
 
@@ -31,6 +32,7 @@ function App() {
           <Route path="/travel-plan" element={user ? <TravelPage /> : <Navigate to="/auth" />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/hotels" element={<HotelPage />} />
         </Routes>
       </Layout>
     </AuthProvider>
