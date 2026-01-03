@@ -7,8 +7,14 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // --- DERIVED STATE: Check if user is admin ---
+  // This automatically updates whenever 'user' changes.
+  // We check for both common patterns: 'role' string or 'isAdmin' boolean.
+  const isAdmin = user?.role === 'admin' || user?.isAdmin === true;
+
   const fetchUser = async () => {
     try {
+      // Ensure this endpoint returns the 'role' field!
       const response = await axios.get('http://localhost:5000/api/auth/me', {
         withCredentials: true
       });
@@ -17,13 +23,9 @@ export const UserProvider = ({ children }) => {
         setUser(response.data.data);
       }
     } catch (err) {
-      // ✅ FIX: Check specifically for 401 (Not Logged In)
       if (err.response && err.response.status === 401) {
-        // This is normal! We just set user to null silently.
-        // No console.error() here, so your console stays clean.
         setUser(null);
       } else {
-        // Only log REAL errors (like server crashes)
         console.log('Session check error:', err.message);
         setUser(null);
       }
@@ -45,7 +47,8 @@ export const UserProvider = ({ children }) => {
   }, []);
 
   return (
-    <UserContext.Provider value={{ user, loading, refreshUser, clearUser }}>
+    // Pass 'isAdmin' down in the value object
+    <UserContext.Provider value={{ user, isAdmin, loading, refreshUser, clearUser }}>
       {children}
     </UserContext.Provider>
   );

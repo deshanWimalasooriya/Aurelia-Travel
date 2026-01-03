@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Search, Heart, User, LogOut, Settings } from 'lucide-react'
+import { Search, Heart, User, LogOut, Settings, LayoutDashboard } from 'lucide-react' // Added LayoutDashboard icon
 import { useUser } from '../../context/UserContext'
 import axios from 'axios'
 import './styles/header.css'
@@ -83,12 +83,10 @@ const Header = () => {
           
           {user ? (
             <>
-              {/* --- UPDATED: Greeting Stacked --- */}
               <div className="header-greeting-wrapper">
                 <span className="greeting-time">{getGreeting()}</span>
                 <span className="greeting-name">{getFirstName()}</span>
               </div>
-              {/* --------------------------------- */}
 
               <div className="header-profile-container" ref={dropdownRef}>
                 <button 
@@ -117,6 +115,19 @@ const Header = () => {
                     
                     <div className="dropdown-divider"></div>
                     
+                    {/* --- ADMIN DASHBOARD LINK (Only for Admins) --- */}
+                    {(user.role === 'admin' || user.isAdmin) && (
+                      <Link 
+                        to="/admin" 
+                        className="dropdown-item"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <LayoutDashboard size={16} />
+                        Admin Dashboard
+                      </Link>
+                    )}
+                    {/* --------------------------------------------- */}
+
                     <Link 
                       to="/profile" 
                       className="dropdown-item"
