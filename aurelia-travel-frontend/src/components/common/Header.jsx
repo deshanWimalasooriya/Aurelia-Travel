@@ -65,6 +65,12 @@ const Header = () => {
         <Link to="/" className="header-logo">Aurelia Travel</Link>
         <nav className="header-nav">
           <Link to="/" className={`header-nav-link ${location.pathname === '/' ? 'active' : ''}`}>Home</Link>
+          <Link 
+            to="/travel-plan" 
+            className={`header-nav-link ${location.pathname === '/travel-plan' ? 'active' : ''}`}
+          >
+            Travel Plan
+          </Link>
           <Link to="/hotels" className="header-nav-link">Hotels</Link>
           <Link to="/vehicles" className="header-nav-link">Vehicles</Link>
           <Link to="/about" className="header-nav-link">About</Link>
