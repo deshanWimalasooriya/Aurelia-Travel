@@ -1,5 +1,5 @@
 # Hotel-Booking-System-Aurelia-Travel-
-![image url](**https://github.com/deshanWimalasooriya/Hotel-Booking-System-Aurelia-Travel-/blob/5e15fa56fd1a81f8cefb240b24e3ebb5ad844922/Gemini_Generated_Image_wpbiimwpbiimwpbi.png**)
+![image url](https://github.com/deshanWimalasooriya/Hotel-Booking-System-Aurelia-Travel-/blob/5e15fa56fd1a81f8cefb240b24e3ebb5ad844922/Gemini_Generated_Image_wpbiimwpbiimwpbi.png)
 This is a fantastic concept. It addresses a very real problem: "Analysis Paralysis." When people have short windows of free time, they often waste it trying to decide where to go, or they don't go at all because planning is too stressful.
 
 Below is a structured **Project Proposal** for "Aurelia Travel." I have organized it into standard academic/professional sections and included specific technical recommendations to enhance your original idea.
