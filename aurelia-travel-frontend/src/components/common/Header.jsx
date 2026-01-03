@@ -80,9 +80,6 @@ const Header = () => {
           <button className="header-action">
             <Heart className="header-icon" />
           </button>
-          <button className="header-action">
-            <Search className="header-icon" />
-          </button>
           
           {user ? (
             <>
