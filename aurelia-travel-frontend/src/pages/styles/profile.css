@@ -1,240 +1,414 @@
-/* src/pages/styles/profile.css - Professional Corporate Design */
-* {
-  box-sizing: border-box;
-}
-
-.profile-page {
-  background-color: #f8f9fa;
-  min-height: 100vh;
-  padding: 2rem 1rem;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Roboto', sans-serif;
+/* ==============================
+   1. GLOBAL & LAYOUT
+   ============================== */
+:root {
+  --primary: #3b82f6; /* Blue */
+  --primary-hover: #2563eb;
+  --danger: #ef4444; /* Red */
+  --text-dark: #1f2937;
+  --text-gray: #6b7280;
+  --bg-light: #f3f4f6;
+  --white: #ffffff;
+  --border: #e5e7eb;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --radius: 12px;
 }
 
 .profile-container {
-  max-width: 1000px;
-  margin: 0 auto;
+  display: flex;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 3rem auto;
+  padding: 0 1.5rem;
+  align-items: flex-start;
+  min-height: 80vh;
 }
 
-/* Profile Header - Clean & Professional */
-.profile-header {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 2.5rem;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-  border: 1px solid #e9ecef;
-  margin-bottom: 2rem;
+.profile-not-logged-in {
+  text-align: center;
+  margin-top: 5rem;
+  font-size: 1.25rem;
+  color: var(--text-gray);
+}
+
+/* Responsive: Stack sidebar on mobile */
+@media (max-width: 768px) {
+  .profile-container {
+    flex-direction: column;
+  }
+  .profile-sidebar {
+    width: 100%;
+  }
+}
+
+/* ==============================
+   2. SIDEBAR SECTION
+   ============================== */
+.profile-sidebar {
+  flex: 0 0 320px;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 2rem;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 2rem;
 }
 
+/* Avatar */
 .profile-avatar-section {
-  position: relative;
-  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
-.profile-avatar {
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  border-radius: 12px;
+.profile-avatar-img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--bg-light);
+  margin-bottom: 1rem;
+}
+
+.profile-avatar-placeholder-pic {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  color: var(--white);
+  font-size: 3rem;
+  font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  margin-bottom: 1rem;
 }
 
-.profile-info {
-  flex: 1;
-}
-
-.profile-name {
-  font-size: 1.875rem;
+.profile-user-name {
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 0.25rem 0;
-  line-height: 1.3;
+  color: var(--text-dark);
 }
 
-.profile-meta {
+.profile-user-email {
+  color: var(--text-gray);
+  font-size: 0.9rem;
+}
+
+/* Sidebar Payment List */
+.payment-methods-section {
+  border-top: 1px solid var(--border);
+  padding-top: 1.5rem;
+}
+
+.payment-methods-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-dark);
+}
+
+.payment-methods-empty {
+  font-style: italic;
+  color: var(--text-gray);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.payment-method-item {
+  background: var(--bg-light);
+  padding: 1rem;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.payment-method-brand {
+  font-weight: 700;
+  color: var(--text-dark);
+  font-size: 0.9rem;
+}
+
+.payment-method-details {
+  font-family: monospace;
+  color: var(--text-gray);
+}
+
+.payment-method-exp {
+  font-size: 0.8rem;
+  color: var(--text-gray);
+  margin-top: 2px;
+}
+
+.add-card-btn-wrapper {
+  text-align: center;
+}
+
+/* ==============================
+   3. MAIN CONTENT SECTION
+   ============================== */
+.profile-main {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: 2rem;
+  width: 100%;
 }
 
-.profile-email {
+.profile-info-card,
+.orders-card {
+  background: var(--white);
+  padding: 2rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* Headers */
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem;
+}
+
+.profile-section-title,
+.orders-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+/* Messages */
+.error-message {
+  background-color: #fee2e2;
+  color: var(--danger);
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.success-message {
+  background-color: #d1fae5;
+  color: #059669;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+/* Profile Data Grid (View Mode) */
+.profile-view-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.profile-field-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-gray);
+  margin-bottom: 0.25rem;
+}
+
+.profile-field-value {
   font-size: 1rem;
-  color: #4b5563;
+  color: var(--text-dark);
   font-weight: 500;
 }
 
-.profile-phone {
-  font-size: 0.95rem;
-  color: #6b7280;
-}
-
-.profile-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  min-width: 160px;
-}
-
-/* Professional Button System */
-.btn {
-  padding: 0.75rem 1.5rem;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-  min-height: 44px;
-}
-
-.btn-edit {
-  background-color: #f8fafc;
-  color: #2563eb;
-  border-color: #e2e8f0;
-}
-
-.btn-edit:hover {
-  background-color: #f1f5f9;
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
-}
-
-.btn-password {
-  background-color: #fef3c7;
-  color: #92400e;
-  border-color: #fde68a;
-}
-
-.btn-password:hover {
-  background-color: #fdf4d4;
-}
-
-.btn-save {
-  background-color: #10b981;
-  color: #ffffff;
-  border-color: #059669;
-}
-
-.btn-save:hover {
-  background-color: #059669;
-  transform: translateY(-1px);
-}
-
-.btn-cancel {
-  background-color: transparent;
-  color: #6b7280;
-  border-color: #d1d5db;
-}
-
-.btn-cancel:hover {
-  background-color: #f9fafb;
-}
-
-.btn-logout {
-  background-color: #ef4444;
-  color: #ffffff;
-  border-color: #dc2626;
-}
-
-.btn-logout:hover {
-  background-color: #dc2626;
-}
-
-.btn-refresh {
-  background: none;
-  border: none;
-  color: #6b7280;
-  padding: 0.5rem;
-  border-radius: 6px;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-.btn-refresh:hover {
-  background-color: #f3f4f6;
-  color: #374151;
-}
-
-/* Edit Form Section */
-.profile-edit-section {
-  margin-bottom: 2rem;
-}
-
-.edit-card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-  border: 1px solid #e9ecef;
-}
-
-.section-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #f3f4f6;
-}
-
-.edit-form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.form-row {
+/* Profile Form Grid (Edit Mode) */
+.profile-edit-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-}
-
-.full-width {
-  grid-column: 1 / -1;
+  gap: 1.25rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
 }
 
-.form-group label {
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
+/* Make full width for odd items if needed, or adjust specifically */
+.form-group:nth-child(3), /* Password */
+.form-group:nth-child(4) { /* File input */
+  grid-column: span 2;
+}
+
+@media (max-width: 600px) {
+  .profile-edit-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-group:nth-child(n) {
+    grid-column: span 1;
+  }
+}
+
+.form-label {
   font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-dark);
 }
 
-.form-input {
-  padding: 0.875rem 1rem;
-  border: 1px solid #d1d5db;
+.form-input, .form-file-input {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 0.95rem;
-  background-color: #ffffff;
-  transition: all 0.2s ease;
-  color: #374151;
+  transition: border 0.2s;
+  width: 100%;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* Modal - Professional */
+/* ==============================
+   4. ORDERS SECTION
+   ============================== */
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.orders-empty {
+  color: var(--text-gray);
+  text-align: center;
+  padding: 2rem;
+}
+
+.order-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  transition: background 0.2s;
+}
+
+.order-item:hover {
+  background: var(--bg-light);
+}
+
+.order-header {
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 0.25rem;
+}
+
+.order-date {
+  font-weight: 400;
+  color: var(--text-gray);
+  font-size: 0.85rem;
+  margin-left: 0.5rem;
+}
+
+.order-total {
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.order-items {
+  font-size: 0.9rem;
+  color: var(--text-gray);
+}
+
+.order-status {
+  background: var(--bg-light);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: var(--text-dark);
+}
+
+/* ==============================
+   5. BUTTONS & UI ELEMENTS
+   ============================== */
+.btn-primary {
+  background: var(--primary);
+  color: var(--white);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-primary:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-gray);
+  border: 1px solid var(--border);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-light);
+  color: var(--text-dark);
+}
+
+.pill {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pill:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.pill-danger {
+  color: var(--danger);
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.pill-danger:hover {
+  background: #fee2e2;
+  border-color: var(--danger);
+}
+
+.add-card-btn {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+/* ==============================
+   6. PAYMENT MODAL & CREDIT CARD
+   ============================== */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -242,238 +416,142 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 1rem;
 }
 
-.modal {
-  background: #ffffff;
+.modal-content {
+  background: var(--white);
   border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
   padding: 2rem;
-  max-width: 450px;
-  width: 90%;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e9ecef;
+  position: relative;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.3s ease-out;
 }
 
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.modal-header h3 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
   background: none;
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #9ca3af;
-  padding: 0.25rem;
-  border-radius: 4px;
-  width: 36px;
-  height: 36px;
+  color: var(--text-gray);
+}
+
+.modal-title {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: var(--text-dark);
+}
+
+/* VISUAL CREDIT CARD */
+.card-preview-container {
   display: flex;
-  align-items: center;
   justify-content: center;
-}
-
-.modal-close:hover {
-  background-color: #f9fafb;
-  color: #6b7280;
-}
-
-.modal-body .btn.full-width {
-  margin-top: 1.5rem;
-  width: 100%;
-}
-
-/* Bookings Section */
-.profile-bookings-section {
   margin-bottom: 2rem;
+  perspective: 1000px;
 }
 
-.bookings-card {
-  background: #ffffff;
+.card-preview {
+  width: 340px;
+  height: 200px;
   border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-  border: 1px solid #e9ecef;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: white;
+  padding: 25px;
+  position: relative;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.bookings-header {
+/* Card variants based on type */
+.card-preview.visa { background: linear-gradient(135deg, #2563eb, #1e40af); }
+.card-preview.mastercard { background: linear-gradient(135deg, #ea580c, #b45309); }
+.card-preview.discover { background: linear-gradient(135deg, #059669, #047857); }
+
+.card-chip {
+  width: 50px;
+  height: 35px;
+  background: linear-gradient(135deg, #fef3c7 0%, #d97706 100%);
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.card-number {
+  font-size: 1.6rem;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.card-footer {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #f3f4f6;
+  align-items: flex-end;
 }
 
-.error-alert {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
+.card-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 4px;
+}
+
+.card-name, .card-exp-value {
+  font-family: 'Courier New', monospace;
   font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-.loading-state {
-  text-align: center;
-  padding: 3rem 1rem;
-  color: #6b7280;
-  font-size: 1rem;
+.card-brand-logo {
+  position: absolute;
+  top: 20px;
+  right: 25px;
+  font-weight: bold;
+  font-style: italic;
+  font-size: 1.2rem;
+  opacity: 0.9;
 }
 
-.empty-state {
-  text-align: center;
-  padding: 4rem 2rem;
-  color: #6b7280;
-}
-
-.empty-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
-}
-
-.empty-state h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
-}
-
-/* Bookings Grid */
-.bookings-grid {
-  display: grid;
+/* Modal Form */
+.payment-modal-form {
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
 }
 
-.booking-card {
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 1.5rem;
+.form-row {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-left: 4px solid #2563eb;
-  transition: all 0.2s ease;
-  border: 1px solid #e2e8f0;
+  gap: 1rem;
 }
 
-.booking-card:hover {
-  background: #ffffff;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+.form-row .form-group {
+  flex: 1;
 }
 
-.booking-content h4 {
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 0.25rem 0;
-  font-size: 1.1rem;
-}
-
-.booking-content p {
-  color: #6b7280;
-  margin: 0 0 0.5rem 0;
-  font-size: 0.9rem;
-}
-
-.booking-price {
-  font-weight: 700;
-  color: #059669;
-  font-size: 1.125rem;
-  margin: 0;
-}
-
-/* Status Badges */
-.status-badge {
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-}
-
-.status-confirmed {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.status-pending {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.status-cancelled {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-/* Empty State */
-.profile-empty-state {
-  min-height: 100vh;
+.modal-actions {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #f8f9fa;
-  text-align: center;
-  padding: 2rem;
-  color: #6b7280;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .profile-header {
-    flex-direction: column;
-    text-align: center;
-    gap: 1.5rem;
-    padding: 2rem 1.5rem;
-  }
-  
-  .profile-actions {
-    flex-direction: row;
-    justify-content: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-  
-  .edit-form-grid, .form-row {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .booking-card {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 1.25rem;
-  }
-  
-  .bookings-header {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-}
-
-@media (max-width: 480px) {
-  .profile-page {
-    padding: 1.5rem 0.5rem;
-  }
+.modal-actions button {
+  flex: 1;
 }

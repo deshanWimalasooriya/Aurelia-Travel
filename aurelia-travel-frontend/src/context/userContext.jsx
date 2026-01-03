@@ -1,4 +1,3 @@
-// src/context/UserContext.jsx
 import { createContext, useState, useEffect, useContext } from 'react'
 import axios from 'axios'
 
@@ -18,8 +17,16 @@ export const UserProvider = ({ children }) => {
         setUser(response.data.data);
       }
     } catch (err) {
-      console.log('User not logged in');
-      setUser(null);
+      // ✅ FIX: Check specifically for 401 (Not Logged In)
+      if (err.response && err.response.status === 401) {
+        // This is normal! We just set user to null silently.
+        // No console.error() here, so your console stays clean.
+        setUser(null);
+      } else {
+        // Only log REAL errors (like server crashes)
+        console.log('Session check error:', err.message);
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }

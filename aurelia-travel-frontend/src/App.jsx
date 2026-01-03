@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import Layout from './components/layout/Layout'
-import { useUser } from './context/userContext'
+import { useUser } from './context/UserContext'
 
 
 //import Pages

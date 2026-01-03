@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useUser } from '../context/UserContext'
 import axios from 'axios';
-import './styles/Profile.css'
+import './styles/profile.css'
 
 export default function Profile(){
   const { user, refreshUser } = useUser()
