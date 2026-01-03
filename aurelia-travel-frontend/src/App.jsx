@@ -40,13 +40,7 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/hotels" element={<HotelPage />} />
-          
-          {/* PROTECTED ADMIN ROUTE */}
-          {/* If isAdmin is true, show Dashboard. Otherwise, redirect to Home */}
-          <Route 
-            path="/adminDashboard" 
-            element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />} 
-          />
+          <Route path="/adminDashboard" element={<AdminDashboard/>} />
         </Routes>
       </Layout>
     </AuthProvider>

@@ -118,7 +118,7 @@ const Header = () => {
                     {/* --- ADMIN DASHBOARD LINK (Only for Admins) --- */}
                     {(user.role === 'admin' || user.isAdmin) && (
                       <Link 
-                        to="/adminDashboard" 
+                        to="/admin" 
                         className="dropdown-item"
                         onClick={() => setDropdownOpen(false)}
                       >
