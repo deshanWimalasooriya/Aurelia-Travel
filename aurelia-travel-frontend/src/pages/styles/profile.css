@@ -1,233 +1,181 @@
-/* ================= GLOBAL ================= */
+/* --- AURELIA PROFILE DESIGN SYSTEM --- */
+
 :root {
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --bg-color: #f8fafc;
-  --surface: #ffffff;
-  --text-main: #1e293b;
-  --text-light: #64748b;
-  --border: #e2e8f0;
-  --danger: #ef4444;
-  --success: #10b981;
-  --radius: 16px;
-  --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  --primary-blue: #3b82f6;
+  --primary-hover: #2563eb;
+  --bg-light: #f8f9fa;
+  --text-dark: #1f2937;
+  --text-gray: #6b7280;
+  --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  --card-hover-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Wrapper to hold the background animation */
+.profile-page-wrapper {
+  position: relative;
+  min-height: 100vh;
+  background-color: var(--bg-light);
+  overflow-x: hidden;
+  padding-bottom: 50px;
 }
 
 .profile-container {
-  display: flex;
-  gap: 2rem;
-  max-width: 1100px;
-  margin: 3rem auto;
-  padding: 0 1.5rem;
-  font-family: 'Inter', sans-serif;
+  position: relative;
+  z-index: 1; /* Sits above the circles */
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 30px;
+  max-width: 1200px;
+  margin: 100px auto 0;
+  padding: 0 20px;
 }
 
-@media (max-width: 768px) {
-  .profile-container { flex-direction: column; }
-  .profile-sidebar { width: 100%; }
+/* --- REUSABLE CARD STYLE --- */
+.card {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  border: 1px solid #eee;
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
-/* ================= SIDEBAR ================= */
+.card:hover {
+  box-shadow: var(--card-hover-shadow);
+}
+
+/* --- SIDEBAR STYLES --- */
 .profile-sidebar {
-  width: 300px;
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 20px;
 }
 
 .profile-avatar-section {
-  background: var(--surface);
-  padding: 2rem;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  padding: 40px 20px;
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
 .avatar-wrapper {
   position: relative;
-  width: 100px;
-  height: 100px;
-  margin-bottom: 1rem;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 15px;
 }
 
-.profile-avatar-img, .profile-avatar-placeholder-pic {
+.profile-avatar-img, 
+.profile-avatar-placeholder-pic {
   width: 100%;
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  border: 4px solid var(--bg-color);
-}
-
-.profile-avatar-placeholder-pic {
-  background: var(--primary);
+  border: 4px solid #f8f9fa;
+  background-color: var(--primary-blue);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.5rem;
+  font-size: 3rem;
   font-weight: bold;
 }
 
-.profile-user-name { font-size: 1.25rem; color: var(--text-main); font-weight: 700; margin: 0; }
-.profile-user-email { color: var(--text-light); font-size: 0.9rem; margin-top: 0.25rem; }
-
-/* Payment Section in Sidebar */
-.payment-methods-section {
-  background: var(--surface);
-  padding: 1.5rem;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+.avatar-upload-btn {
+  position: absolute;
+  bottom: 0;
+  right: 5px;
+  background-color: var(--primary-blue);
+  color: white;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 3px solid white;
+  transition: 0.2s;
 }
 
+.avatar-upload-btn:hover {
+  background-color: var(--primary-hover);
+  transform: scale(1.1);
+}
+
+/* --- PAYMENT METHOD SECTION --- */
 .section-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-top: 0;
-  margin-bottom: 1rem;
+  gap: 8px;
   font-size: 1rem;
-  color: var(--text-main);
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: #374151;
 }
 
 .payment-mini-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem;
-  background: var(--bg-color);
+  padding: 12px;
+  background-color: #f9fafb;
   border-radius: 8px;
-  margin-bottom: 1rem;
-  border: 1px solid var(--border);
+  margin-bottom: 15px;
+  border: 1px solid #edf2f7;
 }
 
-.payment-info { display: flex; flex-direction: column; }
-.payment-info .brand { font-weight: 700; font-size: 0.9rem; }
-.payment-info .digits { font-family: monospace; color: var(--text-light); font-size: 0.85rem; }
-
-/* ================= MAIN CONTENT ================= */
-.profile-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 2rem;
-  overflow: hidden;
-}
-
+/* --- FORM & DETAILS GRID --- */
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
+  padding: 20px 25px;
+  border-bottom: 1px solid #f3f4f6;
 }
 
-.card-header h3 {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 1.1rem;
-  color: var(--text-main);
-}
-
-/* Forms & Inputs */
-.form-grid {
+.details-grid, .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
+  gap: 20px;
+  padding: 25px;
 }
 
 .span-2 { grid-column: span 2; }
-.full-width { width: 100%; }
 
-.form-group label {
-  display: block;
-  font-size: 0.85rem;
+.detail-item .label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-gray);
   font-weight: 600;
-  color: var(--text-main);
-  margin-bottom: 0.5rem;
+  letter-spacing: 0.05em;
+}
+
+.detail-item .value {
+  font-size: 1rem;
+  color: var(--text-dark);
+  margin-top: 4px;
 }
 
 .form-input {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--border);
+  padding: 10px;
+  border: 1px solid #ddd;
   border-radius: 8px;
-  font-size: 0.95rem;
-  background: var(--bg-color);
-  transition: all 0.2s;
+  font-size: 16px;
+  transition: 0.2s;
 }
 
 .form-input:focus {
+  border-color: var(--primary-blue);
   outline: none;
-  border-color: var(--primary);
-  background: white;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-/* Detail View (Read Only) */
-.details-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-}
-
-.detail-item { display: flex; flex-direction: column; }
-.detail-item .label { font-size: 0.75rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 0.25rem; }
-.detail-item .value { font-size: 1rem; color: var(--text-main); font-weight: 500; }
-
-/* Orders List */
-.order-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 1rem;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.2s;
-}
-
-.order-item:last-child { border-bottom: none; }
-.order-item:hover { background: var(--bg-color); }
-.order-id { font-family: monospace; font-weight: 700; color: var(--text-main); display: block; }
-.order-date { font-size: 0.85rem; color: var(--text-light); }
-.order-right { text-align: right; }
-.order-total { display: block; font-weight: 700; color: var(--primary); margin-top: 4px; }
-.status-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; font-weight: 600; text-transform: uppercase; }
-.status-badge.completed { background: #dcfce7; color: #166534; }
-.status-badge.pending { background: #fef9c3; color: #854d0e; }
-
-/* Buttons */
-.btn-primary { background: var(--primary); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
-.btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
-.btn-secondary { background: white; border: 1px solid var(--border); color: var(--text-main); padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; }
-.btn-outline { background: transparent; border: 1px dashed var(--primary); color: var(--primary); padding: 0.5rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: 0.2s; }
-.btn-outline:hover { background: #eef2ff; }
-.btn-icon { background: transparent; border: none; cursor: pointer; color: var(--text-light); padding: 8px; border-radius: 50%; transition: 0.2s; }
-.btn-icon:hover { background: var(--bg-color); color: var(--primary); }
-.icon-btn.danger { background: none; border: none; color: var(--danger); cursor: pointer; padding: 4px; }
-
-/* Messages */
-.message { padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; }
-.error-message { background: #fee2e2; color: #991b1b; }
-.success-message { background: #dcfce7; color: #166534; }
-
-/* ================= 3D CARD ANIMATION SCENE ================= */
+/* --- 3D CARD FLIP ANIMATION --- */
 .card-scene {
-  width: 320px;
-  height: 200px;
-  margin: 0 auto 2rem auto;
-  perspective: 1000px; /* Essential for 3D effect */
+  width: 100%;
+  height: 180px;
+  perspective: 1000px;
+  margin-bottom: 25px;
 }
 
 .card-object {
@@ -235,10 +183,9 @@
   height: 100%;
   position: relative;
   transition: transform 0.6s;
-  transform-style: preserve-3d; /* Keeps front and back connected */
+  transform-style: preserve-3d;
 }
 
-/* The FLIP Action */
 .card-object.is-flipped {
   transform: rotateY(180deg);
 }
@@ -247,61 +194,295 @@
   position: absolute;
   width: 100%;
   height: 100%;
-  backface-visibility: hidden; /* Hides the back when facing away */
-  border-radius: 16px;
-  padding: 25px;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  backface-visibility: hidden;
+  border-radius: 12px;
+  padding: 20px;
   color: white;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  background: linear-gradient(135deg, #1e293b, #0f172a); /* Default Dark */
 }
 
-/* Card Types Colors */
-.card-face.visa { background: linear-gradient(135deg, #2563eb, #1e3a8a); }
-.card-face.mastercard { background: linear-gradient(135deg, #f59e0b, #b45309); }
-.card-face.americanexpress { background: linear-gradient(135deg, #059669, #064e3b); }
+.card-front { background: linear-gradient(135deg, #1e293b, #334155); }
+.card-back { background: #2d3748; transform: rotateY(180deg); }
 
-.card-front { z-index: 2; transform: rotateY(0deg); }
-.card-back { transform: rotateY(180deg); padding: 0; }
+.card-magnetic-strip {
+  background: #000;
+  height: 35px;
+  width: 100%;
+  margin-top: 10px;
+}
 
-/* Card Front Details */
-.card-chip { width: 50px; height: 35px; background: linear-gradient(135deg, #fbbf24, #d97706); border-radius: 6px; }
-.card-brand-logo { position: absolute; top: 20px; right: 25px; font-weight: 800; font-style: italic; opacity: 0.8; }
-.card-number-display { font-family: 'Courier New', monospace; font-size: 1.4rem; letter-spacing: 2px; text-shadow: 0 2px 2px rgba(0,0,0,0.3); margin-top: 20px; }
-.card-details-row { display: flex; justify-content: space-between; align-items: flex-end; }
-.card-details-row span { font-size: 0.6rem; text-transform: uppercase; opacity: 0.8; display: block; margin-bottom: 2px; }
-.card-details-row div { font-family: 'Courier New', monospace; font-size: 0.9rem; text-transform: uppercase; }
+/* --- BACKGROUND BUBBLE ANIMATION --- */
+.circles {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  overflow: hidden;
+  z-index: 0;
+}
 
-/* Card Back Details */
-.card-magnetic-strip { width: 100%; height: 40px; background: #000; margin-top: 20px; opacity: 0.8; }
-.card-signature-row { padding: 0 20px; margin-top: 20px; display: flex; gap: 10px; align-items: center; }
-.card-signature { flex: 1; height: 30px; background: white; color: #000; font-family: 'Brush Script MT', cursive; display: flex; align-items: center; padding-left: 10px; font-size: 1.2rem; }
-.card-cvv-display { background: white; color: #000; height: 30px; width: 50px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-.card-back-text { padding: 20px; font-size: 0.6rem; opacity: 0.7; text-align: center; margin-top: auto; }
+.circles li {
+  position: absolute;
+  display: block;
+  list-style: none;
+  width: 20px; height: 20px;
+  background: rgba(59, 130, 246, 0.1);
+  animation: animateCircles 25s linear infinite;
+  bottom: -150px;
+}
 
-/* Modal Overlay */
+.circles li:nth-child(1) { left: 25%; width: 80px; height: 80px; animation-delay: 0s; }
+.circles li:nth-child(2) { left: 10%; width: 20px; height: 20px; animation-delay: 2s; animation-duration: 12s; }
+.circles li:nth-child(3) { left: 70%; width: 20px; height: 20px; animation-delay: 4s; }
+.circles li:nth-child(4) { left: 40%; width: 60px; height: 60px; animation-delay: 0s; animation-duration: 18s; }
+.circles li:nth-child(5) { left: 65%; width: 20px; height: 20px; animation-delay: 0s; }
+
+@keyframes animateCircles {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; border-radius: 0; }
+  100% { transform: translateY(-1000px) rotate(720deg); opacity: 0; border-radius: 50%; }
+}
+
+/* --- MODAL STYLES --- */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(5px);
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
 }
+
 .modal-content {
   background: white;
-  padding: 2rem;
-  border-radius: var(--radius);
+  padding: 30px;
+  border-radius: 12px;
   width: 90%;
-  max-width: 450px;
-  position: relative;
+  max-width: 420px;
 }
-.modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; cursor: pointer; color: var(--text-light); }
-.modal-title { margin-top: 0; text-align: center; color: var(--text-main); }
-.form-row { display: flex; gap: 1rem; }
-.modal-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
-.modal-actions button { flex: 1; }
+
+/* --- BUTTONS & STATUS --- */
+.btn-primary {
+  background-color: var(--primary-blue);
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-primary:hover { background-color: var(--primary-hover); }
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-badge.completed { background: #d1fae5; color: #065f46; }
+.status-badge.pending { background: #fef3c7; color: #92400e; }
+
+@media (max-width: 850px) {
+  .profile-container { grid-template-columns: 1fr; }
+}
+
+/* --- PROFILE INNER DETAILS --- */
+
+/* 1. Avatar Section Styling */
+.avatar-wrapper {
+  position: relative;
+  display: inline-block;
+  padding: 5px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+}
+
+.profile-avatar-img, 
+.profile-avatar-placeholder-pic {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #fff;
+  transition: transform 0.3s ease;
+}
+
+.profile-avatar-section h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+
+.profile-user-email {
+  font-size: 0.95rem;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+/* 2. Payment Method Card Styling */
+.payment-mini-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin: 15px 0;
+}
+
+.payment-mini-card .brand {
+  font-weight: 700;
+  color: #1e293b;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+}
+
+.payment-mini-card .digits {
+  color: #64748b;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1rem;
+}
+
+/* 3. User Details Form/Grid */
+.card-header h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.detail-item {
+  padding: 10px 0;
+}
+
+.detail-item .label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.detail-item .value {
+  font-size: 1.05rem;
+  color: #334155;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+/* 4. Edit Mode Inputs */
+.form-input {
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.divider.span-2 {
+  padding: 20px 0 10px 0;
+  font-weight: 700;
+  color: #1e293b;
+  border-bottom: 2px solid #f1f5f9;
+  margin-bottom: 15px;
+}
+
+/* 5. Orders List Styling */
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  background: #ffffff;
+  transition: transform 0.2s ease;
+}
+
+.order-item:hover {
+  transform: translateX(5px);
+  border-color: #e2e8f0;
+}
+
+.order-id {
+  font-weight: 700;
+  color: #1e293b;
+  display: block;
+  font-size: 1rem;
+}
+
+.order-date {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.order-total {
+  font-weight: 800;
+  color: #1e293b;
+  font-size: 1.1rem;
+  text-align: right;
+}
+
+.order-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* Status Badge Refinement */
+.status-badge {
+  padding: 6px 12px;
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 8px;
+}
+
+.status-badge.completed {
+  background-color: #ecfdf5;
+  color: #059669;
+}
+
+.status-badge.pending {
+  background-color: #fffbeb;
+  color: #d97706;
+}
+
+/* Icons styling */
+.btn-icon {
+  background: #f1f5f9;
+  border: none;
+  padding: 8px;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.btn-icon.active {
+  background: #fee2e2;
+  color: #ef4444;
+}
