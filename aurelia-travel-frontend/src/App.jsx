@@ -14,12 +14,19 @@ import TravelPage from './pages/TravelPage'
 import AboutPage from './pages/About'
 import ContactPage from './pages/Contact'
 import HotelPage from './pages/HotelPage'
+import AdminDashboard from './pages/AdminDashboard'
 
 import './index.css'
 
 function App() {
 
-  const { user, isAdmin } = useUser()
+  // Added 'loading' to prevent redirecting before user data is fetched
+  const { user, isAdmin, loading } = useUser()
+
+  if (loading) {
+    return <div className="loading-screen">Loading...</div>; // Optional: Or return null
+  }
+
   return (
     <AuthProvider>
       <Layout>
@@ -33,6 +40,13 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/hotels" element={<HotelPage />} />
+          
+          {/* PROTECTED ADMIN ROUTE */}
+          {/* If isAdmin is true, show Dashboard. Otherwise, redirect to Home */}
+          <Route 
+            path="/adminDashboard" 
+            element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />} 
+          />
         </Routes>
       </Layout>
     </AuthProvider>
