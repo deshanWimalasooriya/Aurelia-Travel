@@ -14,6 +14,7 @@ import TravelPage from './pages/TravelPage'
 import AboutPage from './pages/About'
 import ContactPage from './pages/Contact'
 import HotelPage from './pages/HotelPage'
+import AdminDashboard from './pages/AdminDashboard'
 
 import './index.css'
 
@@ -33,6 +34,7 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/hotels" element={<HotelPage />} />
+          <Route path="/adminDashboard" element={<AdminDashboard/>} />
         </Routes>
       </Layout>
     </AuthProvider>
