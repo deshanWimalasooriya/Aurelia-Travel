@@ -1,223 +1,202 @@
-/* Inherits variables from your global CSS/Home.css */
+:root {
+  --primary: #2563eb;
+  --bg-dark: #0f172a;
+  --bg-light: #f1f5f9;
+  --white: #ffffff;
+  --text: #1e293b;
+  --muted: #94a3b8;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+}
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Inter, system-ui, sans-serif;
+}
+
+/* LAYOUT */
 .admin-container {
   display: flex;
   min-height: 100vh;
-  background-color: #f8f9fa; /* Matching your Listings background */
-  font-family: inherit;
 }
 
-/* --- Sidebar --- */
+/* SIDEBAR */
 .admin-sidebar {
   width: 260px;
-  background-color: #1f2937; /* Matching your listings H2 color */
+  background: var(--bg-dark);
   color: white;
-  display: flex;
-  flex-direction: column;
+  padding: 20px;
   position: fixed;
   height: 100vh;
-  left: 0;
-  top: 0;
-  z-index: 50; /* Ensure sidebar stays on top */
 }
 
 .sidebar-header {
-  padding: 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.sidebar-header h2 {
-  font-size: 1.5rem;
-  margin: 0;
-  color: white;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 30px;
 }
 
 .sidebar-nav {
-  padding: 20px 0;
   display: flex;
   flex-direction: column;
+  gap: 6px;
 }
 
 .nav-item {
-  background: transparent;
+  background: none;
   border: none;
-  color: #9ca3af;
-  padding: 16px 24px;
-  text-align: left;
+  color: var(--muted);
+  padding: 12px;
+  border-radius: 6px;
+  display: flex;
+  gap: 10px;
   cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.2s;
 }
 
-.nav-item:hover, .nav-item.active {
-  background-color: var(--primary-color, #3b82f6); /* Fallback to blue if variable is missing */
+.nav-item:hover,
+.nav-item.active {
+  background: var(--primary);
   color: white;
 }
 
-/* --- Main Content --- */
-.admin-content {
-  margin-left: 260px; /* Offset for sidebar */
-  flex: 1;
-  padding: 32px;
-  width: calc(100% - 260px);
+.logout-btn {
+  margin-top: auto;
+  width: 100%;
+  padding: 10px;
+  background: rgba(239,68,68,.15);
+  border: none;
+  color: var(--danger);
+  border-radius: 6px;
+  cursor: pointer;
 }
 
-.admin-header {
+/* MAIN */
+.main-content {
+  margin-left: 260px;
+  width: 100%;
+  background: var(--bg-light);
+}
+
+.top-bar {
+  height: 64px;
+  background: white;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
+  padding: 0 24px;
 }
 
-.admin-header h1 {
-  font-size: 2rem;
-  color: #1f2937;
-  font-weight: 700;
-}
-
-.admin-profile {
+.search-bar {
+  background: var(--bg-light);
+  padding: 6px 12px;
+  border-radius: 20px;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
-.avatar {
-  width: 40px;
-  height: 40px;
-  background-color: var(--primary-color, #3b82f6);
-  color: white;
+.search-bar input {
+  border: none;
+  background: none;
+  outline: none;
+}
+
+.profile {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.profile img {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
 }
 
-/* --- Stats Grid (Matches your Hotel Grid) --- */
+.content {
+  padding: 32px;
+}
+
+/* DASHBOARD */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 24px;
-  margin-bottom: 40px;
+  grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+  gap: 20px;
+  margin-bottom: 30px;
 }
 
 .stat-card {
   background: white;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  border-radius: 8px;
   display: flex;
-  align-items: center;
+  justify-content: space-between;
+}
+
+.stat-card.success { border-left: 4px solid var(--success); }
+.stat-card.warning { border-left: 4px solid var(--warning); }
+.stat-card.danger { border-left: 4px solid var(--danger); }
+
+.stat-card h3 {
+  font-size: 1.6rem;
+}
+
+.dashboard-bottom {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
   gap: 20px;
 }
 
-.stat-icon {
-  font-size: 2.5rem;
-  background-color: #f3f4f6;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.stat-info h3 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin: 0;
-  color: #1f2937;
-}
-
-.stat-info p {
-  margin: 4px 0;
-  color: #6b7280;
-}
-
-.stat-change {
-  font-size: 0.875rem;
-  color: var(--primary-color, #3b82f6);
-  font-weight: 500;
-}
-
-/* --- Tables --- */
-.recent-section {
+.card {
   background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  overflow-x: auto; /* Adds scroll on small screens */
+  padding: 20px;
+  border-radius: 8px;
 }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.btn-view-all {
-  color: var(--primary-color, #3b82f6);
-  background: none;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.admin-table {
+table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.admin-table th {
-  text-align: left;
-  padding: 16px;
-  color: #6b7280;
-  font-weight: 500;
+th, td {
+  padding: 10px;
   border-bottom: 1px solid #e5e7eb;
 }
 
-.admin-table td {
-  padding: 16px;
-  border-bottom: 1px solid #f3f4f6;
-  color: #374151;
-}
-
-.font-mono {
-  font-family: monospace;
-  color: #6b7280;
-}
-
-.font-bold {
-  font-weight: 600;
-}
-
-/* --- Status Badges --- */
-.status-badge {
-  padding: 6px 12px;
+.badge {
+  padding: 4px 10px;
   border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  text-transform: capitalize;
-  display: inline-block;
+  font-size: 0.75rem;
 }
 
-.status-confirmed { background-color: #d1fae5; color: #065f46; } /* Green */
-.status-checked-in { background-color: #dbeafe; color: #1e40af; } /* Blue */
-.status-pending { background-color: #fef3c7; color: #92400e; } /* Yellow */
-.status-cancelled { background-color: #fee2e2; color: #991b1b; } /* Red */
+.badge.confirmed { background: #dcfce7; color: #166534; }
+.badge.pending { background: #fef3c7; color: #92400e; }
+.badge.checked-in { background: #dbeafe; color: #1e40af; }
 
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-  .admin-sidebar {
-    width: 60px; /* Collapsed sidebar for mobile */
-  }
-  .sidebar-header h2, .nav-item {
-    display: none; /* Hide text */
-  }
-  .admin-content {
-    margin-left: 60px;
-    width: calc(100% - 60px);
-    padding: 16px;
-  }
+.actions {
+  display: grid;
+  gap: 10px;
+}
+
+.actions button {
+  padding: 10px;
+  border: none;
+  background: var(--bg-light);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.fade-in {
+  animation: fade 0.3s ease;
+}
+
+@keyframes fade {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
