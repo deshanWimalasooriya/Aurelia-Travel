@@ -19,6 +19,8 @@ const hotelRoutes = require('./API/routes/hotelRoutes');
 const authRoutes = require('./API/routes/authRoutes');
 const userRoutes = require('./API/routes/userRoutes');
 const adminRoutes = require('./API/routes/adminRoutes');
+const roomRoutes = require('./API/routes/roomRoutes');
+const bookingRoutes = require('./API/routes/bookingRoutes');
 
 const cors = require('cors');
 app.use(cors({
@@ -36,7 +38,11 @@ app.use(express.json());
 app.use('/api/hotels', hotelRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', verifyToken, userRoutes);
-app.use('/api/admin', adminRoutes); // ✅ ADD THIS LINE
+app.use('/api/admin', adminRoutes);
+app.use('/api/rooms', roomRoutes);
+app.use('/api/bookings', bookingRoutes);
+
+
 //Database Establish
 connection.connect((err) => {
     if (err) {
