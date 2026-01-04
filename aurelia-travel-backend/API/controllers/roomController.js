@@ -47,3 +47,13 @@ exports.deleteRoom = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+exports.getRoomsByHotelId = async (req, res) => {
+    try {
+        const rooms = await roomModel.getRoomsByHotelId(req.params.hotelId);
+        res.json(rooms);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+
+};
