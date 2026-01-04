@@ -12,8 +12,9 @@ exports.createRoom = async (room) => {
 exports.updateRoom = (id, room) => knex('rooms').where({ id }).update(room);
 exports.deleteRoom = (id) => knex('rooms').where({ id }).del();
 
-// Backend/models/roomModel.js
+exports.getRoomsByHotelId = (hotelId) => knex('rooms').where({ hotel_id: hotelId });
 
+// Backend/models/roomModel.js
 exports.findById = async (id) => {
   return await knex('rooms')
     .select('*')
