@@ -2,111 +2,161 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import HotelCard from '../components/ui/HotelCard'
 import SearchForm from '../components/ui/SearchForm'
-import Slider from '../components/ui/Slider'
-import Stats from '../components/ui/Stats'
-import './styles/Home.css'
+import { Filter, X, SlidersHorizontal, MapPin } from 'lucide-react'
+import './styles/HotelPage.css' // We will use this new clean file
+
+// Define available amenities for filtering
+const AMENITIES_OPTIONS = [
+  "WiFi", "Pool", "Parking", "Restaurant", "Air Conditioning", "Spa", "Gym", "Bar", "Beach Access"
+]
 
 const HotelPage = () => {
-  const [topRatedHotels, setTopRatedHotels] = useState([])
-  const [newestHotels, setNewestHotels] = useState([])
+  // Data States
+  const [hotels, setHotels] = useState([]) // Stores ALL hotels fetched
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  // Filter States
+  const [selectedFilters, setSelectedFilters] = useState([])
+
+  // --- 1. FETCH DATA ---
   useEffect(() => {
     const fetchHotels = async () => {
       try {
         setLoading(true)
-        setError(null)
-        
-        console.log('🔍 Fetching hotels from backend...')
-        
-        const [topRatedRes, newestRes] = await Promise.all([
+        // Fetch both endpoints
+        const [topRes, newRes] = await Promise.all([
           axios.get('http://localhost:5000/api/hotels/top-rated'),
           axios.get('http://localhost:5000/api/hotels/newest')
         ])
+
+        // Combine and Deduplicate hotels by ID
+        const allFetched = [...(topRes.data.data || topRes.data), ...(newRes.data.data || newRes.data)];
+        const uniqueHotels = Array.from(new Map(allFetched.map(item => [item.id || item._id, item])).values());
         
-        console.log('✅ Top Rated Response:', topRatedRes.data)
-        console.log('✅ Newest Response:', newestRes.data)
-        
-        // Handle different backend response structures
-        setTopRatedHotels(Array.isArray(topRatedRes.data) ? topRatedRes.data : topRatedRes.data.data || [])
-        setNewestHotels(Array.isArray(newestRes.data) ? newestRes.data : newestRes.data.data || [])
-        
+        setHotels(uniqueHotels)
       } catch (err) {
-        console.error('❌ Error fetching hotels:', err.response?.data || err.message)
-        setError(err.response?.data?.message || 'Failed to load hotels')
+        console.error('Fetch Error:', err)
+        setError('Could not load hotels. Please try again.')
       } finally {
         setLoading(false)
       }
     }
-
     fetchHotels()
   }, [])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-lg">Loading hotels...</div>
-      </div>
+  // --- 2. FILTER LOGIC ---
+  const handleFilterChange = (amenity) => {
+    setSelectedFilters(prev => 
+      prev.includes(amenity) 
+        ? prev.filter(item => item !== amenity) 
+        : [...prev, amenity]
     )
   }
 
+  // Filter the hotels based on selection
+  const filteredHotels = hotels.filter(hotel => {
+    if (selectedFilters.length === 0) return true; // Show all if no filter
+
+    // Normalize hotel amenities to array of lowercase strings
+    const hotelAmenities = Array.isArray(hotel.amenities) 
+      ? hotel.amenities.map(a => a.toLowerCase().trim())
+      : (hotel.amenities || '').toLowerCase().split(',').map(a => a.trim());
+
+    // Check if hotel has ALL selected filters
+    return selectedFilters.every(filter => hotelAmenities.includes(filter.toLowerCase()));
+  });
+
+  // --- 3. RENDER ---
+  if (loading) return <div className="loading-container">Loading amazing stays...</div>
+
   return (
-    <div className="min-h-screen">
-      <section className="hero">
-        <Slider />
-        <div className="hero-content">
-          <div className="hero-text">
-            <h1>Discover Your Perfect Stay</h1>
-            <p>Book luxury hotels, resorts and more at unbeatable prices</p>
+    <div className="page-wrapper">
+      
+      {/* SECTION 1: HEADER & SEARCH (No Slider) */}
+      <div className="page-header-section">
+        <div className="header-content">
+          <h1>Find your next stay</h1>
+          <p>Search low prices on hotels, homes and much more...</p>
+          <div className="search-container-wrapper">
             <SearchForm />
           </div>
         </div>
-      </section>
+      </div>
 
-      <section className="listings">
-        <div className="container">
-          <Stats />
-          
-          {/* Top Rated Hotels */}
-          <section>
-            <h2>Top Rated Hotels</h2>
-            {error ? (
-              <div className="text-center py-8">
-                <p className="text-red-500 mb-4">{error}</p>
-                <button 
-                  onClick={() => window.location.reload()} 
-                  className="bg-blue-500 text-white px-4 py-2 rounded"
-                >
-                  Retry
+      {/* SECTION 2: MAIN CONTENT GRID (1:3 Ratio) */}
+      <div className="main-content-container">
+        
+        {/* LEFT COLUMN: FILTERS (25%) */}
+        <aside className="filter-sidebar">
+          <div className="filter-card">
+            <div className="filter-header">
+              <h3><SlidersHorizontal size={18}/> Filters</h3>
+              {selectedFilters.length > 0 && (
+                <button onClick={() => setSelectedFilters([])} className="clear-btn">
+                  Clear all
                 </button>
-              </div>
-            ) : topRatedHotels.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No top rated hotels found</p>
-            ) : (
-              <div className="hotel-grid">
-                {topRatedHotels.slice(0, 8).map((hotel) => (
-                  <HotelCard key={hotel.id} hotel={hotel} />
+              )}
+            </div>
+            
+            <div className="filter-group">
+              <h4>Popular Filters</h4>
+              <div className="checkbox-list">
+                {AMENITIES_OPTIONS.map(amenity => (
+                  <label key={amenity} className="custom-checkbox">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedFilters.includes(amenity)}
+                      onChange={() => handleFilterChange(amenity)}
+                    />
+                    <span className="checkmark"></span>
+                    <span className="label-text">{amenity}</span>
+                  </label>
                 ))}
               </div>
-            )}
-          </section>
+            </div>
 
-          {/* Newest Hotels */}
-          <section>
-            <h2>New Hotels</h2>
-            {topRatedHotels.length === 0 && newestHotels.length === 0 && !error ? (
-              <p className="text-gray-500 text-center py-8">No new hotels found</p>
-            ) : (
-              <div className="hotel-grid">
-                {newestHotels.slice(0, 8).map((hotel) => (
-                  <HotelCard key={hotel.id} hotel={hotel} />
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
-      </section>
+            {/* Simulated Price Filter (Visual Only for now) */}
+            <div className="filter-group">
+                <h4>Price Range</h4>
+                <div className="price-slider-mock">
+                    <div className="price-track"></div>
+                    <div className="price-range-text">$50 - $500+</div>
+                </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* RIGHT COLUMN: HOTELS (75%) */}
+        <main className="hotel-results-area">
+          <div className="results-header">
+            <h2>
+              {selectedFilters.length > 0 
+                ? `Filtered Results (${filteredHotels.length})` 
+                : `All Properties (${filteredHotels.length})`}
+            </h2>
+            <div className="sort-dropdown">
+               Sort by: <strong>Recommended</strong>
+            </div>
+          </div>
+
+          {filteredHotels.length === 0 ? (
+            <div className="no-results-box">
+              <div className="icon-box"><Filter size={40}/></div>
+              <h3>No properties found</h3>
+              <p>Try adjusting your filters to find a place to stay.</p>
+              <button onClick={() => setSelectedFilters([])} className="btn-reset">Reset Filters</button>
+            </div>
+          ) : (
+            <div className="hotel-cards-grid">
+              {filteredHotels.map(hotel => (
+                <HotelCard key={hotel.id || hotel._id} hotel={hotel} />
+              ))}
+            </div>
+          )}
+        </main>
+
+      </div>
     </div>
   )
 }
