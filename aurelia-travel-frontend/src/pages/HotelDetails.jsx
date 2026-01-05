@@ -43,6 +43,40 @@ const HotelDetails = () => {
     if (id) fetchData()
   }, [id])
 
+  // --- 2. HELPER: CALCULATE NIGHTS ---
+  const calculateDays = (start, end) => {
+    if (!start || !end) return 0;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    
+    // Calculate difference in milliseconds
+    const diffTime = Math.abs(endDate - startDate);
+    // Convert to days
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    return diffDays > 0 ? diffDays : 0;
+  };
+
+  // --- 3. AUTO-UPDATE TOTAL PRICE ---
+  // This runs whenever dates or selected room changes
+  useEffect(() => {
+    if (selectedRoomId) {
+        const room = rooms.find(r => (r._id || r.id) === selectedRoomId);
+        if (room) {
+            // Get price from DB (handle naming variations)
+            const pricePerNight = room.price_per_night || room.price || 0;
+            const nights = calculateDays(dates.checkIn, dates.checkOut);
+            
+            // If dates are selected, calculate total. If not, show base price.
+            // Note: If 0 nights (same day), we usually charge for 1 night or show base price
+            const effectiveNights = nights > 0 ? nights : 1;
+            
+            setTotalPrice(pricePerNight * effectiveNights);
+        }
+    } else {
+        setTotalPrice(0);
+    }
+  }, [selectedRoomId, dates, rooms]);
+
   const handleRoomSelect = (room) => {
     if (selectedRoomId === (room._id || room.id)) {
         setSelectedRoomId(null);
@@ -53,12 +87,12 @@ const HotelDetails = () => {
     }
   };
 
-  // --- NEW: HANDLE RESERVATION ---
+  // --- 4. HANDLE RESERVATION ---
   const handleReserve = async () => {
-    // 1. Validation
+    // Validation
     if (!user) {
         alert("You must be logged in to reserve a room!");
-        navigate('/auth'); // Redirect to login
+        navigate('/auth');
         return;
     }
     if (!selectedRoomId) {
@@ -71,33 +105,33 @@ const HotelDetails = () => {
     }
 
     try {
-        // 2. Prepare Payload
+        // Prepare Payload with CALCULATED Total Price
         const bookingPayload = {
             room_id: selectedRoomId,
             check_in: dates.checkIn,
             check_out: dates.checkOut,
             adults: guests.adults,
             children: guests.children,
-            total_price: totalPrice,
-            status: "confirmed" // Since there is no payment, we confirm immediately
+            total_price: totalPrice, // <--- This now holds (Price x Nights)
+            status: "confirmed"
         };
 
         console.log("📤 Sending Booking:", bookingPayload);
 
         // 3. Send to Backend
         const res = await axios.post('http://localhost:5000/api/bookings', bookingPayload, {
-            withCredentials: true // Important: Sends the user's token/cookie
+            withCredentials: true
         });
 
         // 4. Handle Success
         if (res.status === 200 || res.status === 201) {
             alert("🎉 Reservation Successful! You can view it in your profile.");
-            navigate('/profile'); // Send user to their dashboard
+            navigate('/profile');
         }
 
     } catch (err) {
         console.error("❌ Booking Error:", err);
-        const errorMsg = err.response?.data?.message || "Failed to create reservation. Please try again.";
+        const errorMsg = err.response?.data?.message || "Failed to create reservation.";
         alert(errorMsg);
     }
   };
@@ -169,13 +203,16 @@ const HotelDetails = () => {
                                     <th>Room Type</th>
                                     <th>Capacity</th>
                                     <th>Benefits</th>
-                                    <th>Price</th>
+                                    <th>Price / Night</th>
                                     <th>Select</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {rooms.map((room) => {
                                     const isSelected = selectedRoomId === (room._id || room.id);
+                                    // Display raw price per night in table
+                                    const priceDisplay = room.price_per_night || room.price || 0;
+                                    
                                     return (
                                         <tr key={room._id || room.id} className={isSelected ? 'row-active' : ''} onClick={() => handleRoomSelect(room)}>
                                             <td>
@@ -190,7 +227,7 @@ const HotelDetails = () => {
                                             <td>
                                                 <div className="benefit-item"><Check size={14} className="text-green"/> Free Cancellation</div>
                                             </td>
-                                            <td><span className="price-text">${room.price}</span></td>
+                                            <td><span className="price-text">${priceDisplay}</span></td>
                                             <td>
                                                 <div className={`custom-checkbox ${isSelected ? 'checked' : ''}`}>
                                                     {isSelected && <Check size={14} color="white" />}
@@ -209,8 +246,14 @@ const HotelDetails = () => {
             <div className="sidebar-column">
                 <div className="booking-card">
                     <div className="booking-header">
-                        <span className="price-large">${totalPrice > 0 ? totalPrice : (hotel.cheapestPrice || 0)}</span>
-                        <span className="price-unit">/ night</span>
+                        {/* Dynamic Price Display */}
+                        <span className="price-large">
+                            ${totalPrice > 0 ? totalPrice.toFixed(2) : (hotel.cheapestPrice || 0)}
+                        </span>
+                        
+                        <span className="price-unit">
+                             {nightCount > 0 ? ` / total (${nightCount} nights)` : ' / night'}
+                        </span>
                     </div>
 
                     {/* Date Inputs */}
@@ -242,7 +285,7 @@ const HotelDetails = () => {
                     <button 
                         className="btn-primary-large" 
                         disabled={!selectedRoomId}
-                        onClick={handleReserve} // <--- Calls the backend
+                        onClick={handleReserve}
                     >
                         {selectedRoomId ? 'Reserve Now' : 'Check Availability'}
                     </button>
