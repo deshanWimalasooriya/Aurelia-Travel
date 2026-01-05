@@ -22,6 +22,7 @@ const HotelDetails = () => {
   const [dates, setDates] = useState({ checkIn: '', checkOut: '' })
   const [guests, setGuests] = useState({ adults: 2, children: 0 }) // Added Guest State
 
+  // --- 1. FETCH DATA ---
   useEffect(() => {
     const fetchData = async () => {
       try {
