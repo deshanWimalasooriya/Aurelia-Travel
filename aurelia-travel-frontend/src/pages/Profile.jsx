@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useUser } from '../context/UserContext'
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion'; 
-import { CreditCard, MapPin, User, Package, Trash2, Edit2, Save, X, Camera } from 'lucide-react';
+import { CreditCard, MapPin, User, Calendar, Trash2, Edit2, Save, X, Camera } from 'lucide-react'; // Changed Package to Calendar
 import './styles/profile.css'
 
 export default function Profile() {
@@ -13,6 +13,10 @@ export default function Profile() {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [profileError, setProfileError] = useState(null);
   const [profileSuccess, setProfileSuccess] = useState(false);
+
+  // --- BOOKINGS STATE (NEW) ---
+  const [bookings, setBookings] = useState([]);
+  const [loadingBookings, setLoadingBookings] = useState(true);
   
   // Initialize form with current user data
   const [profileData, setProfileData] = useState({
@@ -43,6 +47,26 @@ export default function Profile() {
     cvv: '',
     expiry_date: ''
   });
+
+  // --- FETCH BOOKINGS (NEW) ---
+  useEffect(() => {
+    const fetchBookings = async () => {
+      if (!user) return;
+      try {
+        setLoadingBookings(true);
+        const response = await axios.get('http://localhost:5000/api/bookings/my-bookings', {
+          withCredentials: true
+        });
+        setBookings(response.data);
+      } catch (err) {
+        console.error("Failed to fetch bookings:", err);
+      } finally {
+        setLoadingBookings(false);
+      }
+    };
+
+    fetchBookings();
+  }, [user]);
 
   if (!user) return <div className="profile-not-logged-in">Please sign in to view your profile.</div>
 
@@ -182,6 +206,14 @@ export default function Profile() {
         alert("Could not remove card");
     }
   }
+
+  // --- HELPER FOR DATES ---
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric'
+    });
+  };
 
   return (
     <div className="profile-page-wrapper">
@@ -381,24 +413,32 @@ export default function Profile() {
               </form>
           </motion.div>
 
-          {/* ORDERS CARD */}
+          {/* --- MY BOOKINGS CARD (Updated) --- */}
           <div className="card">
               <div className="card-header">
-                  <h3><Package size={20}/> Orders</h3>
+                  <h3><Calendar size={20}/> My Bookings</h3>
               </div>
               <div className="orders-list">
-                  {(!user.orders || user.orders.length === 0) ? (
-                      <div className="empty-state">No orders found</div>
+                  {loadingBookings ? (
+                    <div className="empty-state">Loading your trips...</div>
+                  ) : (!bookings || bookings.length === 0) ? (
+                      <div className="empty-state">No upcoming trips. Time to book one!</div>
                   ) : (
-                      user.orders.map(order => (
-                          <div key={order.id} className="order-item">
-                              <div>
-                                  <span className="order-id">#{order.id}</span>
-                                  <div className="order-date">{order.date}</div>
+                      bookings.map(booking => (
+                          <div key={booking._id || booking.id} className="order-item">
+                              <div className="order-left">
+                                  {/* Show Hotel Name if populated, otherwise ID */}
+                                  <h4 className="booking-hotel-name">{booking.hotel?.name || "Hotel Reservation"}</h4>
+                                  <div className="booking-room-type">
+                                    {booking.room?.title || booking.room?.name || "Standard Room"}
+                                  </div>
+                                  <div className="order-date">
+                                    {formatDate(booking.checkIn || booking.check_in)} — {formatDate(booking.checkOut || booking.check_out)}
+                                  </div>
                               </div>
                               <div className="order-right">
-                                  <span className={`status-badge ${order.status?.toLowerCase()}`}>{order.status}</span>
-                                  <div className="order-total">${Number(order.total).toFixed(2)}</div>
+                                  <span className={`status-badge ${booking.status?.toLowerCase()}`}>{booking.status}</span>
+                                  <div className="order-total">${Number(booking.totalPrice || booking.total_price).toFixed(2)}</div>
                               </div>
                           </div>
                       ))

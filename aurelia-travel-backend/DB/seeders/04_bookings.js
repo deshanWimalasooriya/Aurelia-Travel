@@ -28,6 +28,8 @@ exports.seed = async function(knex) {
     {
       user_id: testUser.id,
       room_id: baliRoom.id,
+      adults: 2,
+      children: 1,
       check_in: '2024-06-01',
       check_out: '2024-06-07',
       total_price: 1139.94,
@@ -36,6 +38,8 @@ exports.seed = async function(knex) {
     {
       user_id: johnDoe.id,
       room_id: parisRoom.id,
+      adults: 1,
+      children: 0,
       check_in: '2024-08-10',
       check_out: '2024-08-15',
       total_price: 2250.00,
