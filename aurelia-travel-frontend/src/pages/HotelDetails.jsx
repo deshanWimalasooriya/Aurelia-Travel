@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom' // Added useNavigate
+import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { MapPin, Wifi, Car, Coffee, Star, Check, Users, Home, Info, Calendar } from 'lucide-react'
-import { useUser } from '../context/UserContext' // Import User Context
+import { MapPin, Wifi, Car, Coffee, Star, Check, Users, Info } from 'lucide-react'
+import { useUser } from '../context/UserContext'
 import './styles/hotelDetails.css'
 
 const HotelDetails = () => {
   const { id } = useParams()
-  const navigate = useNavigate() // Hook for redirection
-  const { user } = useUser() // Get current user
+  const navigate = useNavigate()
+  const { user } = useUser()
   
   const [hotel, setHotel] = useState(null)
   const [rooms, setRooms] = useState([])
@@ -20,7 +20,7 @@ const HotelDetails = () => {
   
   // Booking Data State
   const [dates, setDates] = useState({ checkIn: '', checkOut: '' })
-  const [guests, setGuests] = useState({ adults: 2, children: 0 }) // Added Guest State
+  const [guests, setGuests] = useState({ adults: 2, children: 0 })
 
   // --- 1. FETCH DATA ---
   useEffect(() => {
@@ -43,35 +43,46 @@ const HotelDetails = () => {
     if (id) fetchData()
   }, [id])
 
+  // --- 2. HELPER: CALCULATE NIGHTS ---
+  const calculateDays = (start, end) => {
+    if (!start || !end) return 0;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const diffTime = Math.abs(endDate - startDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    return diffDays > 0 ? diffDays : 0;
+  };
+
+  // --- 3. AUTO-UPDATE TOTAL PRICE ---
+  useEffect(() => {
+    if (selectedRoomId) {
+        const room = rooms.find(r => (r._id || r.id) === selectedRoomId);
+        if (room) {
+            const pricePerNight = room.price_per_night || room.price || 0;
+            const nights = calculateDays(dates.checkIn, dates.checkOut);
+            const effectiveNights = nights > 0 ? nights : 1;
+            setTotalPrice(pricePerNight * effectiveNights);
+        }
+    } else {
+        setTotalPrice(0);
+    }
+  }, [selectedRoomId, dates, rooms]);
+
   const handleRoomSelect = (room) => {
     if (selectedRoomId === (room._id || room.id)) {
         setSelectedRoomId(null);
-        setTotalPrice(0);
     } else {
         setSelectedRoomId(room._id || room.id);
-        setTotalPrice(room.price);
     }
   };
 
-  // --- NEW: HANDLE RESERVATION ---
+  // --- 4. HANDLE RESERVATION ---
   const handleReserve = async () => {
-    // 1. Validation
-    if (!user) {
-        alert("You must be logged in to reserve a room!");
-        navigate('/auth'); // Redirect to login
-        return;
-    }
-    if (!selectedRoomId) {
-        alert("Please select a room first.");
-        return;
-    }
-    if (!dates.checkIn || !dates.checkOut) {
-        alert("Please select Check-in and Check-out dates.");
-        return;
-    }
+    if (!user) { alert("Please login."); navigate('/auth'); return; }
+    if (!selectedRoomId) { alert("Please select a room."); return; }
+    if (!dates.checkIn || !dates.checkOut) { alert("Please select dates."); return; }
 
     try {
-        // 2. Prepare Payload
         const bookingPayload = {
             room_id: selectedRoomId,
             check_in: dates.checkIn,
@@ -79,26 +90,17 @@ const HotelDetails = () => {
             adults: guests.adults,
             children: guests.children,
             total_price: totalPrice,
-            status: "confirmed" // Since there is no payment, we confirm immediately
+            status: "confirmed"
         };
-
-        console.log("📤 Sending Booking:", bookingPayload);
-
-        // 3. Send to Backend
         const res = await axios.post('http://localhost:5000/api/bookings', bookingPayload, {
-            withCredentials: true // Important: Sends the user's token/cookie
+            withCredentials: true
         });
-
-        // 4. Handle Success
         if (res.status === 200 || res.status === 201) {
-            alert("🎉 Reservation Successful! You can view it in your profile.");
-            navigate('/profile'); // Send user to their dashboard
+            alert("🎉 Reservation Successful!");
+            navigate('/profile');
         }
-
     } catch (err) {
-        console.error("❌ Booking Error:", err);
-        const errorMsg = err.response?.data?.message || "Failed to create reservation. Please try again.";
-        alert(errorMsg);
+        alert(err.response?.data?.message || "Booking Failed");
     }
   };
 
@@ -110,6 +112,9 @@ const HotelDetails = () => {
     'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b',
     'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa'
   ];
+
+  // ⚠️ CRITICAL FIX: Define nightCount BEFORE the return statement
+  const nightCount = calculateDays(dates.checkIn, dates.checkOut); 
 
   return (
     <div className="hotel-details-page">
@@ -134,12 +139,104 @@ const HotelDetails = () => {
 
         {/* GALLERY */}
         <div className="modern-gallery">
-            <div className="gallery-main">
-                <img src={images[0]} alt="Main" />
-            </div>
+            <div className="gallery-main"><img src={images[0]} alt="Main" /></div>
             <div className="gallery-side">
                 <img src={images[1]} alt="Side 1" />
                 <img src={images[2]} alt="Side 2" />
+            </div>
+        </div>
+
+        <div className="content-grid">
+            <div className="details-column">
+                <div className="info-card">
+                    <h2 className="section-title">About this stay</h2>
+                    <p className="description-text">{hotel.description || "Experience the best of local hospitality..."}</p>
+                    <div className="amenities-pills">
+                        <div className="pill"><Wifi size={16}/> Free WiFi</div>
+                        <div className="pill"><Car size={16}/> Parking</div>
+                        <div className="pill"><Coffee size={16}/> Breakfast</div>
+                    </div>
+                </div>
+
+                {/* ROOM TABLE */}
+                <div id="rooms-section" className="rooms-section">
+                    <h2 className="section-title">Choose your Room</h2>
+                    <div className="table-wrapper">
+                        <table className="aurelia-table">
+                            <thead>
+                                <tr>
+                                    <th>Room Type</th>
+                                    <th>Capacity</th>
+                                    <th>Benefits</th>
+                                    <th>Price / Night</th>
+                                    <th>Select</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rooms.map((room) => {
+                                    const isSelected = selectedRoomId === (room._id || room.id);
+                                    const priceDisplay = room.price_per_night || room.price || 0;
+                                    return (
+                                        <tr key={room._id || room.id} className={isSelected ? 'row-active' : ''} onClick={() => handleRoomSelect(room)}>
+                                            <td>
+                                                <div className="room-name">{room.title || room.name}</div>
+                                                <div className="room-meta">{room.desc || "Standard Room"}</div>
+                                            </td>
+                                            <td><div className="capacity-badge"><Users size={14} /> {room.maxPeople || 2} Guests</div></td>
+                                            <td><div className="benefit-item"><Check size={14} className="text-green"/> Free Cancellation</div></td>
+                                            <td><span className="price-text">${priceDisplay}</span></td>
+                                            <td>
+                                                <div className={`custom-checkbox ${isSelected ? 'checked' : ''}`}>
+                                                    {isSelected && <Check size={14} color="white" />}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {/* SIDEBAR */}
+            <div className="sidebar-column">
+                <div className="booking-card">
+                    <div className="booking-header">
+                        <span className="price-large">
+                            ${totalPrice > 0 ? totalPrice.toFixed(2) : (hotel.cheapestPrice || 0)}
+                        </span>
+                        
+                        {/* THIS LINE WAS CAUSING THE ERROR */}
+                        <span className="price-unit">
+                             {nightCount > 0 ? ` / total (${nightCount} nights)` : ' / night'}
+                        </span>
+                    </div>
+
+                    <div className="date-picker-mock">
+                        <div className="date-input">
+                            <label>Check-in</label>
+                            <input type="date" value={dates.checkIn} onChange={(e) => setDates({...dates, checkIn: e.target.value})} />
+                        </div>
+                        <div className="date-input">
+                            <label>Check-out</label>
+                            <input type="date" value={dates.checkOut} onChange={(e) => setDates({...dates, checkOut: e.target.value})} />
+                        </div>
+                    </div>
+
+                    <div className="selection-summary">
+                        {selectedRoomId ? (
+                            <div className="selected-msg success"><Check size={16} /> Room Selected</div>
+                        ) : (
+                            <div className="selected-msg warning"><Info size={16} /> Please select a room</div>
+                        )}
+                    </div>
+
+                    <button className="btn-primary-large" disabled={!selectedRoomId} onClick={handleReserve}>
+                        {selectedRoomId ? 'Reserve Now' : 'Check Availability'}
+                    </button>
+                    <p className="micro-text">No payment required today</p>
+                </div>
             </div>
         </div>
 
