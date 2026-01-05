@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom' // Added useNavigate
 import axios from 'axios'
-import { MapPin, Wifi, Car, Coffee, Star, Check, Users, Info } from 'lucide-react'
-import { useUser } from '../context/UserContext'
+import { MapPin, Wifi, Car, Coffee, Star, Check, Users, Home, Info, Calendar } from 'lucide-react'
+import { useUser } from '../context/UserContext' // Import User Context
 import './styles/hotelDetails.css'
 
 const HotelDetails = () => {
   const { id } = useParams()
-  const navigate = useNavigate()
-  const { user } = useUser()
+  const navigate = useNavigate() // Hook for redirection
+  const { user } = useUser() // Get current user
   
   const [hotel, setHotel] = useState(null)
   const [rooms, setRooms] = useState([])
@@ -20,7 +20,7 @@ const HotelDetails = () => {
   
   // Booking Data State
   const [dates, setDates] = useState({ checkIn: '', checkOut: '' })
-  const [guests, setGuests] = useState({ adults: 2, children: 0 })
+  const [guests, setGuests] = useState({ adults: 2, children: 0 }) // Added Guest State
 
   // --- 1. FETCH DATA ---
   useEffect(() => {
@@ -80,8 +80,10 @@ const HotelDetails = () => {
   const handleRoomSelect = (room) => {
     if (selectedRoomId === (room._id || room.id)) {
         setSelectedRoomId(null);
+        setTotalPrice(0);
     } else {
         setSelectedRoomId(room._id || room.id);
+        setTotalPrice(room.price);
     }
   };
 
@@ -116,10 +118,12 @@ const HotelDetails = () => {
 
         console.log("📤 Sending Booking:", bookingPayload);
 
+        // 3. Send to Backend
         const res = await axios.post('http://localhost:5000/api/bookings', bookingPayload, {
             withCredentials: true
         });
 
+        // 4. Handle Success
         if (res.status === 200 || res.status === 201) {
             alert("🎉 Reservation Successful! You can view it in your profile.");
             navigate('/profile');
@@ -140,8 +144,6 @@ const HotelDetails = () => {
     'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b',
     'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa'
   ];
-
-  const nightCount = calculateDays(dates.checkIn, dates.checkOut);
 
   return (
     <div className="hotel-details-page">
@@ -258,11 +260,11 @@ const HotelDetails = () => {
                     <div className="date-picker-mock">
                         <div className="date-input">
                             <label>Check-in</label>
-                            <input type="date" value={dates.checkIn} onChange={(e) => setDates({...dates, checkIn: e.target.value})} />
+                            <input type="date" onChange={(e) => setDates({...dates, checkIn: e.target.value})} />
                         </div>
                         <div className="date-input">
                             <label>Check-out</label>
-                            <input type="date" value={dates.checkOut} onChange={(e) => setDates({...dates, checkOut: e.target.value})} />
+                            <input type="date" onChange={(e) => setDates({...dates, checkOut: e.target.value})} />
                         </div>
                     </div>
 
