@@ -42,3 +42,4 @@ exports.getNewest = (limit = 4) =>
     .select('*')
     .orderBy('created_at', 'desc')
     .limit(limit);
+
