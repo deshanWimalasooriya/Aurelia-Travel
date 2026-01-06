@@ -238,6 +238,7 @@ const HotelDetails = () => {
                     <p className="micro-text">No payment required today</p>
                 </div>
             </div>
+            
         </div>
       </div>
     </div>
