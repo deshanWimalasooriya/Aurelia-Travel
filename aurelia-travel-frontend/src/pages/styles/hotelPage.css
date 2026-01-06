@@ -1,0 +1,385 @@
+/* =========================================
+   1. GLOBAL VARIABLES & UTILITIES
+   ========================================= */
+:root {
+  --primary: #3b82f6;        /* Brand Blue */
+  --primary-dark: #2563eb;   /* Darker Blue */
+  --primary-light: #eff6ff;  /* Light Blue Background */
+  --bg-page: #f8fafc;        /* Off-white Page BG */
+  --bg-card: #ffffff;        /* White Card BG */
+  --text-main: #1e293b;      /* Dark Slate */
+  --text-muted: #64748b;     /* Gray Text */
+  --border: #e2e8f0;         /* Light Border */
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --radius: 12px;
+}
+
+/* Loading State */
+.loading-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    background: var(--bg-page);
+    color: var(--text-muted);
+}
+
+/* =========================================
+   2. PAGE LAYOUT STRUCTURE
+   ========================================= */
+.page-wrapper {
+  background-color: var(--bg-page);
+  min-height: 100vh;
+  padding-bottom: 80px;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.main-content-container {
+  max-width: 1200px;
+  margin: 60px auto 0;
+  padding: 0 20px;
+  
+  /* 1:3 GRID LAYOUT */
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+/* =========================================
+   3. HEADER & SEARCH SECTION
+   ========================================= */
+.page-header-section {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  padding: 60px 0 90px 0;
+  text-align: center;
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.header-content h1 {
+  font-size: 2.75rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+
+.header-content p {
+  font-size: 1.15rem;
+  opacity: 0.9;
+  font-weight: 400;
+}
+
+.search-container-wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+  transform: translateY(45px);
+  position: relative;
+  z-index: 10;
+  padding: 0 20px;
+}
+
+/* =========================================
+   4. FILTER SIDEBAR (FIXED & POLISHED)
+   ========================================= */
+.filter-sidebar {
+  position: sticky;
+  top: 100px;
+  height: fit-content;
+}
+
+.filter-card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+/* -- Filter Header -- */
+.filter-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: white;
+}
+
+.filter-header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.clear-btn {
+  background: transparent;
+  border: none;
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.clear-btn:hover { background: var(--primary-light); }
+
+/* -- Filter Groups -- */
+.filter-group {
+  padding: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.filter-group:last-child { border-bottom: none; }
+
+.filter-group h4 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+  margin-top: 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* -- Price Slider (Fixed Spacing) -- */
+.price-slider-container {
+    padding: 10px 5px 0 5px; /* Added top padding */
+}
+
+.range-slider {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+    margin-bottom: 15px; /* Space between slider and labels */
+}
+
+/* Slider Knob */
+.range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: transform 0.1s;
+    margin-top: -7px; /* Centers thumb on track */
+}
+
+.range-slider::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 6px;
+    cursor: pointer;
+    background: #e2e8f0;
+    border-radius: 5px;
+}
+
+.price-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+/* -- Amenities List (Fixed Scrollbar & Layout) -- */
+.checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0; /* Remove gap, use padding on items */
+  max-height: 350px;
+  overflow-y: auto;
+  padding-right: 5px; /* Space for scrollbar */
+}
+
+/* Custom Scrollbar Styling */
+.checkbox-list::-webkit-scrollbar {
+  width: 6px;
+}
+.checkbox-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+.checkbox-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.checkbox-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Checkbox Row Item */
+.custom-checkbox {
+  display: flex;
+  align-items: center; /* Ensures vertical centering */
+  cursor: pointer;
+  padding: 8px 0; /* Vertical breathing room */
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.custom-checkbox:hover .label-text {
+  color: var(--primary);
+}
+
+.custom-checkbox input {
+  display: none;
+}
+
+/* The Visible Box (Fixed Overlap Issue) */
+.checkmark {
+  height: 20px;
+  width: 20px;
+  background-color: white;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px; /* Rounded square matches modern UI */
+  margin-right: 12px; /* STRICT MARGIN to push text away */
+  position: relative;
+  flex-shrink: 0; /* Prevents box from getting squished */
+  transition: all 0.2s ease;
+}
+
+/* Text Styling */
+.label-text {
+  font-size: 0.95rem;
+  color: var(--text-main);
+  line-height: 1.4;
+  user-select: none;
+}
+
+/* Checked State */
+.custom-checkbox input:checked ~ .checkmark {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.custom-checkbox input:checked ~ .checkmark:after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 4px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  display: block;
+}
+
+/* =========================================
+   5. RESULTS AREA (RIGHT)
+   ========================================= */
+.hotel-results-area { width: 100%; }
+
+.results-header {
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.results-header h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.sort-dropdown {
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: white;
+  cursor: pointer;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+/* Grid for Hotel Cards */
+.hotel-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+/* No Results State */
+.no-results-box {
+  background: white;
+  padding: 60px 40px;
+  border-radius: 16px;
+  text-align: center;
+  border: 2px dashed var(--border);
+  margin-top: 20px;
+}
+
+.icon-box {
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  background: var(--primary-light);
+  width: 60px; height: 60px;
+  display: flex;
+  align-items: center; justify-content: center;
+  border-radius: 50%;
+  margin: 0 auto 16px;
+}
+
+.btn-reset {
+  padding: 10px 24px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: background 0.2s;
+}
+
+.btn-reset:hover { background: var(--primary-dark); }
+
+/* =========================================
+   6. RESPONSIVE
+   ========================================= */
+@media (max-width: 1024px) {
+  .main-content-container {
+    grid-template-columns: 240px 1fr;
+    gap: 30px;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content-container {
+    display: flex;
+    flex-direction: column;
+    margin-top: 80px;
+  }
+  
+  .filter-sidebar {
+    position: static;
+    width: 100%;
+  }
+
+  .page-header-section { padding-bottom: 60px; }
+  .search-container-wrapper { transform: translateY(30px); }
+}
