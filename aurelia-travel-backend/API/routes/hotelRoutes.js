@@ -12,8 +12,5 @@ router.put("/:id", hotelController.update); // Update
 router.delete("/:id", hotelController.delete); // Delete
 router.get("/:id", hotelController.getHotelById); // Read One
 
-
-
-
 module.exports = router;
 
