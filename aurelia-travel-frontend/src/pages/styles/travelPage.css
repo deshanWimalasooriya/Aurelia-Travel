@@ -1,7 +1,6 @@
 /* =========================================
-   0. GLOBAL RESET & FULL PAGE BACKGROUND
+   1. GLOBAL RESET & PAGE LAYOUT
    ========================================= */
-/* Removes default browser margins so the background touches all edges */
 body, html {
   margin: 0;
   padding: 0;
@@ -9,10 +8,6 @@ body, html {
   height: 100%;
 }
 
-
-/* =========================================
-   1. GLOBAL VARIABLES & RESET
-   ========================================= */
 :root {
   --primary-gold: #D4AF37;       /* Core brand color */
   --primary-gold-hover: #f59e0b; /* Lighter gold for hover states */
@@ -25,23 +20,17 @@ body, html {
   --radius-sm: 8px;              /* Standard curve for inputs */
 }
 
-
 /* Base Page Styling */
 .travel-page {
-  /* 100vh ensures it covers the full viewport height even if content is small */
   min-height: 100vh;
-  width: 100%; 
-  
+  width: 100%;
   /* Top padding clears fixed headers; Bottom padding gives breathing room */
   padding: 70px 20px 40px; 
-  
-  /* The Background Gradient */
   background: radial-gradient(circle at top right, #1e293b, #0f172a);
-  background-attachment: fixed; /* OPTIONAL: Keeps bg static when scrolling */
-  
+  background-attachment: fixed; 
   color: var(--text-main);
   font-family: 'Inter', sans-serif;
-  box-sizing: border-box; /* Ensures padding doesn't add to the width */
+  box-sizing: border-box;
 }
 
 /* =========================================
@@ -49,7 +38,7 @@ body, html {
    ========================================= */
 .travel-hero {
   text-align: center;
-  margin-bottom: 40px; /* Reduced from 50px for compact look */
+  margin-bottom: 40px;
 }
 
 .travel-hero h1 {
@@ -67,216 +56,9 @@ body, html {
   font-size: 1.1rem;
 }
 
-/* =========================================
-   3. LAYOUT CONTAINER (Compact Version)
-   ========================================= */
-.planner-container {
-  max-width: 900px; /* Reduced width to make the tool look more focused */
-  margin: 0 auto;   /* Centers the container */
-  display: grid;
-  grid-template-columns: 1.8fr 1fr; /* Left side (form) is wider than Right side (sidebar) */
-  gap: 20px;        /* Tighter gap between Form and Sidebar */
-}
-
-/* =========================================
-   4. PLANNER CARD (Left Side Form)
-   ========================================= */
-.planner-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(15px); /* Blurs the background behind the card */
-  border: 1px solid var(--glass-border);
-  padding: 30px;    /* Reduced padding for compact look */
-  border-radius: var(--radius-lg);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3); /* Deep shadow for depth */
-}
-
-/* Form Input Groups */
-.input-group {
-  margin-bottom: 15px; /* Tighter spacing between inputs */
-  display: flex;
-  flex-direction: column;
-}
-
-.input-group label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-  color: var(--primary-gold);
-  font-weight: 600;
-  font-size: 0.85rem; /* Slightly smaller text */
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* Input Fields & Selects */
-.input-group input, 
-.input-group select {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--glass-border);
-  padding: 10px 12px; /* Compact padding inside inputs */
-  border-radius: var(--radius-sm);
-  color: white;
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-  width: 100%; /* Ensures inputs fill their container */
-}
-
-.input-group input:focus,
-.input-group select:focus {
-  border-color: var(--primary-gold);
-  outline: none;
-  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2); /* Glow effect */
-}
-
-/* Grid for Two-Column Inputs (Duration/Budget & Date/Vehicle) */
-.input-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-}
-
-/* =========================================
-   5. DATE PICKER SPECIFIC STYLES
-   ========================================= */
-/* Forces the calendar popup to be dark mode to match the theme */
-input[type="datetime-local"] {
-  color-scheme: dark; 
-  cursor: pointer;
-}
-
-/* Inverts the little calendar icon color so it is visible on dark backgrounds */
-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-  filter: invert(1); 
-  opacity: 0.6;
-  cursor: pointer;
-}
-
-input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-}
-
-/* =========================================
-   6. PACE SELECTOR BUTTONS
-   ========================================= */
-.pace-selector {
-  margin-top: 5px;
-}
-
-.pace-selector label {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--primary-gold);
-  font-weight: 600;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-}
-
-.pace-options {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 25px;
-}
-
-.pace-options button {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  padding: 10px; /* Compact button size */
-  border-radius: var(--radius-sm);
-  color: white;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-}
-
-.pace-options button:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.pace-options button.active {
-  background: var(--primary-gold);
-  color: black;
-  font-weight: bold;
-  border-color: var(--primary-gold);
-}
-
-/* =========================================
-   7. GENERATE BUTTON
-   ========================================= */
-.generate-btn {
-  width: 100%;
-  background: linear-gradient(135deg, var(--primary-gold), var(--primary-gold-hover));
-  color: black;
-  border: none;
-  padding: 14px; /* Slightly reduced height */
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.generate-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
-}
-
-/* =========================================
-   8. SIDEBAR (Right Side)
-   ========================================= */
-.safety-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 15px; /* Tighter gap between insights */
-}
-
-.safety-sidebar h3 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text-main);
-  margin-bottom: 5px;
-  font-size: 1.1rem;
-}
-
-.insight-item {
-  background: var(--glass-bg);
-  padding: 15px; /* Compact padding */
-  border-radius: 16px;
-  border-left: 3px solid var(--primary-gold); /* Accent line */
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-.insight-item p {
-  font-size: 0.85rem; /* Smaller text for sidebar */
-  line-height: 1.4;
-  color: var(--text-muted);
-  margin: 0;
-}
-
-.warning-icon {
-  color: #fbbf24; /* Amber color for warnings */
-  flex-shrink: 0;
-}
-
-/* =========================================
-   9. RESPONSIVE DESIGN (Mobile)
-   ========================================= */
+/* Responsive Text for Hero */
 @media (max-width: 900px) {
-  .planner-container {
-    grid-template-columns: 1fr; /* Stack sidebar under form */
-    max-width: 500px; /* Limit width on tablets so it doesn't stretch too wide */
-  }
-  
   .travel-hero h1 {
     font-size: 2rem;
-  }
-  
-  .input-row {
-    grid-template-columns: 1fr; /* Stack inputs vertically on very small screens */
-    gap: 15px;
   }
 }
