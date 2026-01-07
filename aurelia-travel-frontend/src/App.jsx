@@ -12,6 +12,7 @@ import LoginRegister from './pages/LoginRegister'
 import Profile from './pages/Profile'
 import TravelPage from './pages/TravelPage'
 import TravelPlanPage from './pages/TravelPlanPage'
+import TripDashboard from './pages/TripDashboard'
 import AboutPage from './pages/About'
 import ContactPage from './pages/Contact'
 import HotelPage from './pages/HotelPage'
@@ -40,6 +41,7 @@ function App() {
           <Route path="/auth" element={!user ? <LoginRegister /> : <Navigate to="/profile" />} />
           <Route path="/travel-plan" element={user ? <TravelPage /> : <Navigate to="/auth" />} />
           <Route path="/travel-itinerary" element={user ? <TravelPlanPage /> : <Navigate to="/auth" />} />
+          <Route path="/trip-dashboard" element={user ? <TripDashboard /> : <Navigate to="/auth" />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/hotels" element={<HotelPage />} />

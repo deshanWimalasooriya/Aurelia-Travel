@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   MapPin, Navigation, Coffee, Home, Flag, 
   Clock, DollarSign, Calendar, Train, Car, 
-  Wallet, RefreshCw, Bus, Bike
+  Wallet, RefreshCw, Bus, Bike, Edit3
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './styles/travelPlanPage.css';
@@ -159,6 +159,21 @@ const TravelPlanPage = () => {
             </div>
           </div>
         </header>
+
+        {/* UPDATED ACTION BUTTONS */}
+        <div className="plan-actions">
+          {/* 1. New Customize Button */}
+          <button 
+            className="btn-secondary" 
+            onClick={() => navigate('/trip-dashboard')}
+            title="Edit time, costs, and details"
+          >
+            <Edit3 size={16} /> Customize
+          </button>
+
+          {/* 2. Existing Book Button */}
+          <button className="btn-primary">Confirm & Book</button>
+        </div>
 
         {/* TIMELINE */}
         <div className="timeline-container">
