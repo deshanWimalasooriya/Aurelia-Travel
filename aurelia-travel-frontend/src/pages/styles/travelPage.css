@@ -1,30 +1,59 @@
-/* travelPage.css */
-
-:root {
-  --primary-gold: #D4AF37;
-  --dark-bg: #0f172a;
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
+/* =========================================
+   0. GLOBAL RESET & FULL PAGE BACKGROUND
+   ========================================= */
+/* Removes default browser margins so the background touches all edges */
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
 }
 
+
+/* =========================================
+   1. GLOBAL VARIABLES & RESET
+   ========================================= */
+:root {
+  --primary-gold: #D4AF37;       /* Core brand color */
+  --primary-gold-hover: #f59e0b; /* Lighter gold for hover states */
+  --dark-bg: #0f172a;            /* Deep blue/black background */
+  --glass-bg: rgba(255, 255, 255, 0.05); /* Transparent background for glass effect */
+  --glass-border: rgba(255, 255, 255, 0.1); /* Subtle white border */
+  --text-main: #f8fafc;          /* White text */
+  --text-muted: #94a3b8;         /* Gray text for secondary info */
+  --radius-lg: 20px;             /* Standard curve for cards */
+  --radius-sm: 8px;              /* Standard curve for inputs */
+}
+
+
+/* Base Page Styling */
 .travel-page {
+  /* 100vh ensures it covers the full viewport height even if content is small */
   min-height: 100vh;
-  padding: 120px 20px 60px; /* Top padding to clear fixed header */
+  width: 100%; 
+  
+  /* Top padding clears fixed headers; Bottom padding gives breathing room */
+  padding: 70px 20px 40px; 
+  
+  /* The Background Gradient */
   background: radial-gradient(circle at top right, #1e293b, #0f172a);
+  background-attachment: fixed; /* OPTIONAL: Keeps bg static when scrolling */
+  
   color: var(--text-main);
   font-family: 'Inter', sans-serif;
+  box-sizing: border-box; /* Ensures padding doesn't add to the width */
 }
 
-/* Hero Section */
+/* =========================================
+   2. HERO SECTION
+   ========================================= */
 .travel-hero {
   text-align: center;
-  margin-bottom: 50px;
+  margin-bottom: 40px; /* Reduced from 50px for compact look */
 }
 
 .travel-hero h1 {
-  font-size: 3rem;
+  font-size: 2.8rem;
   margin-bottom: 10px;
   font-weight: 800;
 }
@@ -38,27 +67,32 @@
   font-size: 1.1rem;
 }
 
-/* Layout Container */
+/* =========================================
+   3. LAYOUT CONTAINER (Compact Version)
+   ========================================= */
 .planner-container {
-  max-width: 1100px;
-  margin: 0 auto;
+  max-width: 900px; /* Reduced width to make the tool look more focused */
+  margin: 0 auto;   /* Centers the container */
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 30px;
+  grid-template-columns: 1.8fr 1fr; /* Left side (form) is wider than Right side (sidebar) */
+  gap: 20px;        /* Tighter gap between Form and Sidebar */
 }
 
-/* Planner Card (Left Side) */
+/* =========================================
+   4. PLANNER CARD (Left Side Form)
+   ========================================= */
 .planner-card {
   background: var(--glass-bg);
-  backdrop-filter: blur(15px);
+  backdrop-filter: blur(15px); /* Blurs the background behind the card */
   border: 1px solid var(--glass-border);
-  padding: 40px;
-  border-radius: 24px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  padding: 30px;    /* Reduced padding for compact look */
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3); /* Deep shadow for depth */
 }
 
+/* Form Input Groups */
 .input-group {
-  margin-bottom: 25px;
+  margin-bottom: 15px; /* Tighter spacing between inputs */
   display: flex;
   flex-direction: column;
 }
@@ -66,61 +100,98 @@
 .input-group label {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 6px;
   color: var(--primary-gold);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* Slightly smaller text */
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
+/* Input Fields & Selects */
 .input-group input, 
 .input-group select {
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid var(--glass-border);
-  padding: 14px;
-  border-radius: 12px;
+  padding: 10px 12px; /* Compact padding inside inputs */
+  border-radius: var(--radius-sm);
   color: white;
-  font-size: 1rem;
+  font-size: 0.95rem;
   transition: all 0.3s ease;
+  width: 100%; /* Ensures inputs fill their container */
 }
 
-.input-group input:focus {
+.input-group input:focus,
+.input-group select:focus {
   border-color: var(--primary-gold);
   outline: none;
-  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2); /* Glow effect */
 }
 
+/* Grid for Two-Column Inputs (Duration/Budget & Date/Vehicle) */
 .input-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 15px;
 }
 
-/* Pace Selection Buttons */
+/* =========================================
+   5. DATE PICKER SPECIFIC STYLES
+   ========================================= */
+/* Forces the calendar popup to be dark mode to match the theme */
+input[type="datetime-local"] {
+  color-scheme: dark; 
+  cursor: pointer;
+}
+
+/* Inverts the little calendar icon color so it is visible on dark backgrounds */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1); 
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* =========================================
+   6. PACE SELECTOR BUTTONS
+   ========================================= */
+.pace-selector {
+  margin-top: 5px;
+}
+
 .pace-selector label {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   color: var(--primary-gold);
   font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
 }
 
 .pace-options {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  margin-bottom: 30px;
+  margin-bottom: 25px;
 }
 
 .pace-options button {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  padding: 12px;
-  border-radius: 10px;
+  padding: 10px; /* Compact button size */
+  border-radius: var(--radius-sm);
   color: white;
   cursor: pointer;
+  font-size: 0.9rem;
   transition: all 0.3s ease;
+}
+
+.pace-options button:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .pace-options button.active {
@@ -130,14 +201,17 @@
   border-color: var(--primary-gold);
 }
 
+/* =========================================
+   7. GENERATE BUTTON
+   ========================================= */
 .generate-btn {
   width: 100%;
-  background: linear-gradient(135deg, #D4AF37, #f59e0b);
+  background: linear-gradient(135deg, var(--primary-gold), var(--primary-gold-hover));
   color: black;
   border: none;
-  padding: 18px;
+  padding: 14px; /* Slightly reduced height */
   border-radius: 12px;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -148,11 +222,13 @@
   box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
 }
 
-/* Sidebar (Right Side) */
+/* =========================================
+   8. SIDEBAR (Right Side)
+   ========================================= */
 .safety-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 15px; /* Tighter gap between insights */
 }
 
 .safety-sidebar h3 {
@@ -160,37 +236,47 @@
   align-items: center;
   gap: 10px;
   color: var(--text-main);
-  margin-bottom: 10px;
+  margin-bottom: 5px;
+  font-size: 1.1rem;
 }
 
 .insight-item {
   background: var(--glass-bg);
-  padding: 20px;
-  border-radius: 18px;
-  border-left: 4px solid var(--primary-gold);
+  padding: 15px; /* Compact padding */
+  border-radius: 16px;
+  border-left: 3px solid var(--primary-gold); /* Accent line */
   display: flex;
-  gap: 15px;
+  gap: 12px;
   align-items: flex-start;
 }
 
 .insight-item p {
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: 0.85rem; /* Smaller text for sidebar */
+  line-height: 1.4;
   color: var(--text-muted);
+  margin: 0;
 }
 
 .warning-icon {
-  color: #fbbf24;
+  color: #fbbf24; /* Amber color for warnings */
   flex-shrink: 0;
 }
 
-/* Responsive Design */
+/* =========================================
+   9. RESPONSIVE DESIGN (Mobile)
+   ========================================= */
 @media (max-width: 900px) {
   .planner-container {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* Stack sidebar under form */
+    max-width: 500px; /* Limit width on tablets so it doesn't stretch too wide */
   }
   
   .travel-hero h1 {
-    font-size: 2.2rem;
+    font-size: 2rem;
+  }
+  
+  .input-row {
+    grid-template-columns: 1fr; /* Stack inputs vertically on very small screens */
+    gap: 15px;
   }
 }
