@@ -1,0 +1,257 @@
+/* =========================================
+   1. DASHBOARD LAYOUT
+   ========================================= */
+.dashboard-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #0f172a;
+  color: #f8fafc;
+  overflow: hidden;
+}
+
+/* =========================================
+   2. HEADER BAR
+   ========================================= */
+.dash-header {
+  height: 80px;
+  background: rgba(30, 41, 59, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 30px;
+  flex-shrink: 0;
+}
+
+.header-left h1 {
+  font-size: 1.2rem;
+  margin: 0;
+  color: #f8fafc;
+}
+
+.header-left .subtitle {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 2px 0 0;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: #D4AF37;
+  cursor: pointer;
+  margin-right: 15px;
+  font-weight: 600;
+}
+
+.header-right {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+/* Stat Pills */
+.stat-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.stat-pill .label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; }
+.stat-pill .value { font-size: 1.1rem; font-weight: 700; color: white; }
+
+.stat-pill.success .value { color: #10b981; } /* Green */
+.stat-pill.danger .value { color: #ef4444; }  /* Red */
+
+.btn-primary-sm {
+  background: #D4AF37;
+  color: #0f172a;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* =========================================
+   3. KANBAN BOARD (Horizontal Scroll)
+   ========================================= */
+.kanban-board {
+  flex: 1;
+  display: flex;
+  overflow-x: auto; /* Horizontal scroll enabled */
+  padding: 30px;
+  gap: 25px;
+  align-items: flex-start;
+}
+
+/* Scrollbar styling */
+.kanban-board::-webkit-scrollbar { height: 8px; }
+.kanban-board::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+/* Day Columns */
+.kanban-column {
+  min-width: 320px;
+  max-width: 320px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  max-height: 100%; /* Height relative to board */
+}
+
+.column-header {
+  padding: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 12px 12px 0 0;
+}
+
+.column-header h3 { margin: 0; font-size: 1rem; color: #D4AF37; }
+.date-badge { font-size: 0.8rem; color: #64748b; background: rgba(0,0,0,0.2); padding: 2px 8px; border-radius: 4px; }
+
+.column-content {
+  padding: 15px;
+  overflow-y: auto; /* Vertical scroll inside columns */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Cards */
+.kanban-card {
+  background: #1e293b;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  display: flex;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.kanban-card:hover {
+  border-color: #D4AF37;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Card Type Colors (Left Border) */
+.kanban-card.location { border-left: 3px solid #D4AF37; }
+.kanban-card.food { border-left: 3px solid #f97316; }
+.kanban-card.stay { border-left: 3px solid #8b5cf6; }
+.kanban-card.transport { border-left: 3px solid #06b6d4; }
+
+.card-icon { color: #94a3b8; margin-top: 2px; }
+.card-info { flex: 1; }
+.card-info h4 { margin: 0 0 5px; font-size: 0.9rem; color: #f1f5f9; }
+.card-meta { display: flex; gap: 10px; font-size: 0.75rem; color: #64748b; }
+.card-meta span { display: flex; align-items: center; gap: 4px; }
+
+.edit-trigger { opacity: 0; color: #D4AF37; }
+.kanban-card:hover .edit-trigger { opacity: 1; }
+
+.add-card-btn {
+  background: transparent;
+  border: 1px dashed #475569;
+  color: #94a3b8;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+.add-card-btn:hover { background: rgba(255,255,255,0.05); color: white; border-color: #64748b; }
+
+/* =========================================
+   4. EDIT SIDEBAR
+   ========================================= */
+.edit-sidebar {
+  position: fixed;
+  top: 0; right: -400px;
+  width: 400px;
+  height: 100%;
+  background: #1e293b;
+  border-left: 1px solid #334155;
+  box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+  z-index: 100;
+  transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 30px;
+}
+
+.edit-sidebar.open { right: 0; }
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.sidebar-header h2 { margin: 0; color: #D4AF37; }
+.sidebar-header button { background: none; border: none; color: white; cursor: pointer; }
+
+/* Forms */
+.form-group { margin-bottom: 20px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+.form-group label { display: block; color: #94a3b8; font-size: 0.8rem; margin-bottom: 8px; }
+.form-group input, .form-group textarea {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: white;
+  padding: 10px;
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+.form-group input:focus, .form-group textarea:focus {
+  outline: none;
+  border-color: #D4AF37;
+}
+
+/* Actions */
+.sidebar-actions {
+  margin-top: 40px;
+  display: flex;
+  gap: 15px;
+}
+
+.btn-save {
+  flex: 2;
+  background: #D4AF37;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+
+.btn-delete {
+  flex: 1;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+
+/* Overlay */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 90;
+  backdrop-filter: blur(2px);
+}
