@@ -257,3 +257,248 @@
   .flow-sidebar { width: 100%; height: auto; border-right: none; }
   .map-section { height: 300px; flex: none; }
 }
+
+/* ... existing code ... */
+
+/* =========================================
+   UPDATED: ACTIVITY CARD STYLING
+   ========================================= */
+.activities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0; /* Remove gap, we handle spacing manually for flow */
+}
+
+/* Standard Card (Location, Food, Stay) */
+.activity-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 12px;
+  margin-left: 20px;
+  margin-bottom: 20px; /* Spacing between cards */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.activity-card:hover, .activity-card.active {
+  background: rgba(212, 175, 55, 0.1);
+  border-color: #D4AF37;
+  transform: translateX(5px);
+}
+
+/* -----------------------------------------
+   NEW: TRANSPORT SPECIFIC STYLING
+   ----------------------------------------- */
+/* When the card has the class 'transport' */
+.activity-card.transport {
+  background: transparent; /* Remove background box */
+  border: none;
+  padding: 5px 0; /* Reduce height */
+  margin-left: 20px;
+  margin-bottom: 20px;
+}
+
+.activity-card.transport .act-icon {
+  background: #0f172a;
+  border: 1px dashed #64748b; /* Dashed border suggests movement */
+  color: #D4AF37;
+  width: 36px;
+  height: 36px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  z-index: 3;
+}
+
+.activity-card.transport .act-details h4 {
+  color: #D4AF37; /* Highlight transport name in gold */
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.activity-card.transport .act-details p {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.activity-card.transport:hover {
+  transform: none; /* Don't move transport cards on hover */
+  background: transparent;
+}
+
+/* Connector Line Fix for Transport items */
+/* This ensures the vertical line runs through the transport icon nicely */
+.activity-card.transport::before {
+  content: '';
+  position: absolute;
+  left: 17px; /* Align with icon center */
+  top: -20px;
+  bottom: -20px;
+  width: 2px;
+  background: #334155; /* Darker line for transport segments */
+  z-index: -1;
+}
+
+/* ... existing code ... */
+
+/* =========================================
+   UPDATED HEADER (Budget Widget)
+   ========================================= */
+.plan-header {
+  padding: 20px 30px;
+  background: rgba(15, 23, 42, 0.95); /* Darker background for contrast */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.back-link {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+}
+
+/* The Budget Card */
+.budget-widget {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 15px;
+  transition: all 0.3s ease;
+}
+
+.budget-widget.active-mode {
+  border-color: #D4AF37; /* Highlights when user interacts */
+  background: rgba(212, 175, 55, 0.05);
+}
+
+.budget-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.budget-row .label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #D4AF37;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+.budget-row .value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: white;
+}
+
+.budget-row .value.low {
+  color: #ef4444; /* Red warning if budget gets low */
+}
+
+.budget-row .currency {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #94a3b8;
+}
+
+.budget-details-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.budget-details-row .expense-value {
+  color: #cbd5e1;
+}
+
+/* =========================================
+   UPDATED CARD DETAILS (Cost Tags)
+   ========================================= */
+.act-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.cost-tag {
+  font-size: 0.75rem;
+  color: #ef4444; /* Red to indicate expense */
+  background: rgba(239, 68, 68, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.activity-card.transport .cost-tag {
+  /* Adjust cost tag for transport items */
+  background: rgba(0, 0, 0, 0.5); 
+}
+
+/* ... existing css ... */
+
+/* TRANSPORT SPECIFIC UPDATES */
+.activity-card.transport {
+  padding: 8px 15px; /* Slightly taller to fit dropdown */
+  background: rgba(0, 0, 0, 0.2); /* Slight dark background to distinguish */
+  border-radius: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.transport-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+.transport-row .arrow {
+  color: #64748b;
+  font-size: 0.8rem;
+  padding: 0 5px;
+}
+
+/* The Dropdown Styling */
+.vehicle-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.vehicle-selector select {
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #D4AF37; /* Gold text */
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  outline: none;
+  width: 120px;
+}
+
+.vehicle-selector select:hover {
+  border-color: #D4AF37;
+}
+
+.time-est {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-left: auto; /* Push to right */
+}
