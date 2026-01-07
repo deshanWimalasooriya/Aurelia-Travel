@@ -1,0 +1,259 @@
+/* =========================================
+   1. LAYOUT & GRID
+   ========================================= */
+.travel-plan-page {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 80px); /* Fill remaining height (minus header) */
+  background: #0f172a;
+  overflow: hidden; /* Prevents double scrolling */
+}
+
+/* =========================================
+   2. LEFT SIDE: TIMELINE FLOW (40%)
+   ========================================= */
+.flow-sidebar {
+  width: 400px; /* Fixed width for stability */
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(10px);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  z-index: 10;
+}
+
+/* Header Section */
+.plan-header {
+  padding: 30px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.plan-header h1 {
+  font-size: 1.8rem;
+  margin: 0 0 10px;
+  color: white;
+}
+
+.plan-header span { color: #D4AF37; }
+
+.trip-meta {
+  display: flex;
+  gap: 15px;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.trip-meta span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Scrollable Timeline Area */
+.timeline-container {
+  flex: 1; /* Takes all available vertical space */
+  overflow-y: auto; /* Enables scrolling inside this div */
+  padding: 30px;
+  position: relative;
+}
+
+/* Custom Scrollbar for Timeline */
+.timeline-container::-webkit-scrollbar { width: 6px; }
+.timeline-container::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+/* Timeline Logic: Connecting Line */
+.timeline-container::before {
+  content: '';
+  position: absolute;
+  left: 49px; /* Align with icons */
+  top: 30px;
+  bottom: 30px;
+  width: 2px;
+  background: linear-gradient(to bottom, #D4AF37, rgba(255, 255, 255, 0.1));
+  z-index: 0;
+}
+
+/* START / END NODES */
+.special-node {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 40px;
+  position: relative;
+  z-index: 1;
+}
+
+.special-node .node-icon {
+  width: 40px;
+  height: 40px;
+  background: #D4AF37;
+  color: black;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+}
+
+.special-node.end .node-icon {
+  background: #10b981; /* Green for finish */
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+
+.node-content h3 { font-size: 1rem; margin: 0; color: white; }
+.node-content p { font-size: 0.85rem; color: #94a3b8; margin: 2px 0; }
+.time-badge {
+  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  color: #D4AF37;
+}
+
+/* DAY GROUPS */
+.day-group { margin-bottom: 40px; position: relative; z-index: 1; }
+
+.day-header h2 {
+  font-size: 0.9rem;
+  color: #D4AF37;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-left: 60px;
+  margin-bottom: 15px;
+}
+
+/* Activity Cards */
+.activity-list { display: flex; flex-direction: column; gap: 15px; }
+
+.activity-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 12px;
+  margin-left: 20px; /* Indent */
+  margin-bottom: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Hover Effect */
+.activity-card:hover, .activity-card.active {
+  background: rgba(212, 175, 55, 0.1); /* Gold Tint */
+  border-color: #D4AF37;
+  transform: translateX(5px);
+}
+
+.act-icon {
+  width: 32px;
+  height: 32px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+}
+
+.activity-card:hover .act-icon {
+  color: #D4AF37;
+  border-color: #D4AF37;
+}
+
+.act-details h4 { margin: 0; font-size: 0.95rem; color: #f1f5f9; }
+.act-details p { margin: 0; font-size: 0.8rem; color: #64748b; }
+.act-time { margin-left: auto; font-size: 0.75rem; color: #D4AF37; font-weight: bold; }
+
+/* FOOTER BUTTONS */
+.plan-actions {
+  padding: 20px 30px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  gap: 10px;
+  background: #0f172a;
+}
+
+.btn-primary, .btn-secondary {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #D4AF37;
+  color: black;
+}
+.btn-primary:hover { background: #f59e0b; }
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid #334155;
+  color: white;
+}
+.btn-secondary:hover { border-color: white; }
+
+
+/* =========================================
+   3. RIGHT SIDE: MAP (60%)
+   ========================================= */
+.map-section {
+  flex: 1; /* Takes remaining width */
+  background: #1e293b;
+  position: relative;
+}
+
+.map-placeholder {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: radial-gradient(circle at center, #2d3748, #000000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.map-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.6; /* Dark mode map effect */
+}
+
+/* Floating Map Overlay Info */
+.map-overlay {
+  position: absolute;
+  text-align: center;
+  z-index: 20;
+}
+
+.floating-pin {
+  color: #D4AF37;
+  animation: bounce 2s infinite;
+  margin-bottom: 10px;
+}
+
+.map-overlay h3 { color: white; margin: 0; }
+.map-overlay p { color: #94a3b8; font-size: 0.9rem; }
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .travel-plan-page { flex-direction: column-reverse; height: auto; }
+  .flow-sidebar { width: 100%; height: auto; border-right: none; }
+  .map-section { height: 300px; flex: none; }
+}

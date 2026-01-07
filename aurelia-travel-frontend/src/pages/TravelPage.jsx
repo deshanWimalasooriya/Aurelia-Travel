@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // 1. Import useNavigate
 import { MapPin, Calendar, Wallet, Car, CloudRain, AlertTriangle, Clock } from 'lucide-react';
 import './styles/travelPage.css';
 
 const TravelPage = () => {
+  const navigate = useNavigate(); // 2. Initialize hook
+
   const [formData, setFormData] = useState({
     startLocation: '',
-    startDate: '',       // New State
-    hasVehicle: 'no',    // New State
+    startDate: '',
+    hasVehicle: 'no',
     duration: 3,
     budget: '',
     pace: 'chill',
@@ -15,7 +18,10 @@ const TravelPage = () => {
   const handleGenerate = (e) => {
     e.preventDefault();
     console.log("Generating Roadmap for:", formData);
-    // Logic to call your AI/Algorithm goes here
+    
+    // 3. Navigate to the Itinerary Page
+    // You can pass the formData via state if you want to use it on the next page
+    navigate('/travel-itinerary', { state: { formData } }); 
   };
 
   return (
@@ -28,7 +34,7 @@ const TravelPage = () => {
       <div className="planner-container">
         <form className="planner-card" onSubmit={handleGenerate}>
           
-          {/* 1. Starting Location */}
+          {/* Starting Location */}
           <div className="input-group">
             <label><MapPin size={18} /> Starting From</label>
             <input 
@@ -40,7 +46,7 @@ const TravelPage = () => {
             />
           </div>
 
-          {/* 2. NEW ROW: Date & Vehicle */}
+          {/* Date & Vehicle */}
           <div className="input-row">
             <div className="input-group">
               <label><Clock size={18} /> Start Date & Time</label>
@@ -64,7 +70,7 @@ const TravelPage = () => {
             </div>
           </div>
 
-          {/* 3. Duration & Budget */}
+          {/* Duration & Budget */}
           <div className="input-row">
             <div className="input-group">
               <label><Calendar size={18} /> Duration (Days)</label>
@@ -92,7 +98,7 @@ const TravelPage = () => {
             </div>
           </div>
 
-          {/* 4. Pace Selection */}
+          {/* Pace Selection */}
           <div className="pace-selector">
             <label>Trip Pace</label>
             <div className="pace-options">
