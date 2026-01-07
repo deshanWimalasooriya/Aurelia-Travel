@@ -502,3 +502,17 @@
   color: #64748b;
   margin-left: auto; /* Push to right */
 }
+
+.plan-actions {
+  /* ... existing styles ... */
+  display: flex;
+  gap: 10px; /* Space between the two buttons */
+}
+
+.btn-secondary {
+  /* ... existing styles ... */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px; /* Space between icon and text */
+}
