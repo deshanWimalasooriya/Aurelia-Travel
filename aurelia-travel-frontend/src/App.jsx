@@ -11,10 +11,12 @@ import HotelDetails from './pages/HotelDetails'
 import LoginRegister from './pages/LoginRegister'
 import Profile from './pages/Profile'
 import TravelPage from './pages/TravelPage'
+import TravelPlanPage from './pages/TravelPlanPage'
 import AboutPage from './pages/About'
 import ContactPage from './pages/Contact'
 import HotelPage from './pages/HotelPage'
 import AdminDashboard from './pages/AdminDashboard'
+
 
 import './index.css'
 
@@ -37,6 +39,7 @@ function App() {
           <Route path="/profile" element={user ? <Profile /> : <Navigate to="/auth" />} />
           <Route path="/auth" element={!user ? <LoginRegister /> : <Navigate to="/profile" />} />
           <Route path="/travel-plan" element={user ? <TravelPage /> : <Navigate to="/auth" />} />
+          <Route path="/travel-itinerary" element={user ? <TravelPlanPage /> : <Navigate to="/auth" />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/hotels" element={<HotelPage />} />
