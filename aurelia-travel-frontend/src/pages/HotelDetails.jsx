@@ -238,6 +238,101 @@ const HotelDetails = () => {
                     <p className="micro-text">No payment required today</p>
                 </div>
             </div>
+            
+        </div>
+
+        <div className="content-grid">
+            <div className="details-column">
+                <div className="info-card">
+                    <h2 className="section-title">About this stay</h2>
+                    <p className="description-text">{hotel.description || "Experience the best of local hospitality..."}</p>
+                    <div className="amenities-pills">
+                        <div className="pill"><Wifi size={16}/> Free WiFi</div>
+                        <div className="pill"><Car size={16}/> Parking</div>
+                        <div className="pill"><Coffee size={16}/> Breakfast</div>
+                    </div>
+                </div>
+
+                {/* ROOM TABLE */}
+                <div id="rooms-section" className="rooms-section">
+                    <h2 className="section-title">Choose your Room</h2>
+                    <div className="table-wrapper">
+                        <table className="aurelia-table">
+                            <thead>
+                                <tr>
+                                    <th>Room Type</th>
+                                    <th>Capacity</th>
+                                    <th>Benefits</th>
+                                    <th>Price / Night</th>
+                                    <th>Select</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rooms.map((room) => {
+                                    const isSelected = selectedRoomId === (room._id || room.id);
+                                    const priceDisplay = room.price_per_night || room.price || 0;
+                                    return (
+                                        <tr key={room._id || room.id} className={isSelected ? 'row-active' : ''} onClick={() => handleRoomSelect(room)}>
+                                            <td>
+                                                <div className="room-name">{room.title || room.name}</div>
+                                                <div className="room-meta">{room.desc || "Standard Room"}</div>
+                                            </td>
+                                            <td><div className="capacity-badge"><Users size={14} /> {room.maxPeople || 2} Guests</div></td>
+                                            <td><div className="benefit-item"><Check size={14} className="text-green"/> Free Cancellation</div></td>
+                                            <td><span className="price-text">${priceDisplay}</span></td>
+                                            <td>
+                                                <div className={`custom-checkbox ${isSelected ? 'checked' : ''}`}>
+                                                    {isSelected && <Check size={14} color="white" />}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {/* SIDEBAR */}
+            <div className="sidebar-column">
+                <div className="booking-card">
+                    <div className="booking-header">
+                        <span className="price-large">
+                            ${totalPrice > 0 ? totalPrice.toFixed(2) : (hotel.cheapestPrice || 0)}
+                        </span>
+                        
+                        {/* THIS LINE WAS CAUSING THE ERROR */}
+                        <span className="price-unit">
+                             {nightCount > 0 ? ` / total (${nightCount} nights)` : ' / night'}
+                        </span>
+                    </div>
+
+                    <div className="date-picker-mock">
+                        <div className="date-input">
+                            <label>Check-in</label>
+                            <input type="date" value={dates.checkIn} onChange={(e) => setDates({...dates, checkIn: e.target.value})} />
+                        </div>
+                        <div className="date-input">
+                            <label>Check-out</label>
+                            <input type="date" value={dates.checkOut} onChange={(e) => setDates({...dates, checkOut: e.target.value})} />
+                        </div>
+                    </div>
+
+                    <div className="selection-summary">
+                        {selectedRoomId ? (
+                            <div className="selected-msg success"><Check size={16} /> Room Selected</div>
+                        ) : (
+                            <div className="selected-msg warning"><Info size={16} /> Please select a room</div>
+                        )}
+                    </div>
+
+                    <button className="btn-primary-large" disabled={!selectedRoomId} onClick={handleReserve}>
+                        {selectedRoomId ? 'Reserve Now' : 'Check Availability'}
+                    </button>
+                    <p className="micro-text">No payment required today</p>
+                </div>
+            </div>
         </div>
 
         <div className="content-grid">

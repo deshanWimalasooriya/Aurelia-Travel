@@ -1,0 +1,444 @@
+/* =========================================
+   1. DASHBOARD LAYOUT
+   ========================================= */
+.dashboard-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #0f172a;
+  color: #f8fafc;
+  overflow: hidden;
+}
+
+/* =========================================
+   2. HEADER BAR
+   ========================================= */
+.dash-header {
+  height: 80px;
+  background: rgba(30, 41, 59, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 30px;
+  flex-shrink: 0;
+}
+
+.header-left h1 {
+  font-size: 1.2rem;
+  margin: 0;
+  color: #f8fafc;
+}
+
+.header-left .subtitle {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 2px 0 0;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: #D4AF37;
+  cursor: pointer;
+  margin-right: 15px;
+  font-weight: 600;
+}
+
+.header-right {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+/* Stat Pills */
+.stat-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.stat-pill .label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; }
+.stat-pill .value { font-size: 1.1rem; font-weight: 700; color: white; }
+
+.stat-pill.success .value { color: #10b981; } /* Green */
+.stat-pill.danger .value { color: #ef4444; }  /* Red */
+
+.btn-primary-sm {
+  background: #D4AF37;
+  color: #0f172a;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* =========================================
+   3. KANBAN BOARD (Horizontal Scroll)
+   ========================================= */
+.kanban-board {
+  flex: 1;
+  display: flex;
+  overflow-x: auto; /* Horizontal scroll enabled */
+  padding: 30px;
+  gap: 25px;
+  align-items: flex-start;
+}
+
+/* Scrollbar styling */
+.kanban-board::-webkit-scrollbar { height: 8px; }
+.kanban-board::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+/* Day Columns */
+.kanban-column {
+  min-width: 320px;
+  max-width: 320px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  max-height: 100%; /* Height relative to board */
+}
+
+.column-header {
+  padding: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 12px 12px 0 0;
+}
+
+.column-header h3 { margin: 0; font-size: 1rem; color: #D4AF37; }
+.date-badge { font-size: 0.8rem; color: #64748b; background: rgba(0,0,0,0.2); padding: 2px 8px; border-radius: 4px; }
+
+.column-content {
+  padding: 15px;
+  overflow-y: auto; /* Vertical scroll inside columns */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Cards */
+.kanban-card {
+  background: #1e293b;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  display: flex;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.kanban-card:hover {
+  border-color: #D4AF37;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Card Type Colors (Left Border) */
+.kanban-card.location { border-left: 3px solid #D4AF37; }
+.kanban-card.food { border-left: 3px solid #f97316; }
+.kanban-card.stay { border-left: 3px solid #8b5cf6; }
+.kanban-card.transport { border-left: 3px solid #06b6d4; }
+
+.card-icon { color: #94a3b8; margin-top: 2px; }
+.card-info { flex: 1; }
+.card-info h4 { margin: 0 0 5px; font-size: 0.9rem; color: #f1f5f9; }
+.card-meta { display: flex; gap: 10px; font-size: 0.75rem; color: #64748b; }
+.card-meta span { display: flex; align-items: center; gap: 4px; }
+
+.edit-trigger { opacity: 0; color: #D4AF37; }
+.kanban-card:hover .edit-trigger { opacity: 1; }
+
+.add-card-btn {
+  background: transparent;
+  border: 1px dashed #475569;
+  color: #94a3b8;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+.add-card-btn:hover { background: rgba(255,255,255,0.05); color: white; border-color: #64748b; }
+
+/* =========================================
+   4. EDIT SIDEBAR
+   ========================================= */
+.edit-sidebar {
+  position: fixed;
+  top: 0; right: -400px;
+  width: 400px;
+  height: 100%;
+  background: #1e293b;
+  border-left: 1px solid #334155;
+  box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+  z-index: 100;
+  transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 30px;
+}
+
+.edit-sidebar.open { right: 0; }
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.sidebar-header h2 { margin: 0; color: #D4AF37; }
+.sidebar-header button { background: none; border: none; color: white; cursor: pointer; }
+
+/* Forms */
+.form-group { margin-bottom: 20px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+.form-group label { display: block; color: #94a3b8; font-size: 0.8rem; margin-bottom: 8px; }
+.form-group input, .form-group textarea {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: white;
+  padding: 10px;
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+.form-group input:focus, .form-group textarea:focus {
+  outline: none;
+  border-color: #D4AF37;
+}
+
+/* Actions */
+.sidebar-actions {
+  margin-top: 40px;
+  display: flex;
+  gap: 15px;
+}
+
+.btn-save {
+  flex: 2;
+  background: #D4AF37;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+
+.btn-delete {
+  flex: 1;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+
+/* Overlay */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 90;
+  backdrop-filter: blur(2px);
+}
+
+/* ... existing css ... */
+
+/* =========================================
+   NEW: EXTENSION COLUMN STYLING
+   ========================================= */
+.kanban-actions-column {
+  min-width: 280px;
+  max-width: 280px;
+  /* Dashed border makes it look like a "placeholder" or tool area */
+  border: 2px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 30px;
+  text-align: center;
+  /* Make sure it matches height of other columns visually */
+  height: auto; 
+  align-self: stretch; 
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.kanban-actions-column h3 {
+  color: #f8fafc;
+  margin-bottom: 5px;
+}
+
+.kanban-actions-column p {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  margin-bottom: 25px;
+}
+
+/* Manual Add Button */
+.btn-extend-manual {
+  width: 100%;
+  background: transparent;
+  border: 1px solid #475569;
+  color: #e2e8f0;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.btn-extend-manual:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #94a3b8;
+}
+
+/* Divider Text */
+.divider {
+  margin: 15px 0;
+  font-size: 0.8rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* AI Generate Button */
+.btn-extend-ai {
+  width: 100%;
+  background: linear-gradient(135deg, #D4AF37, #b45309);
+  border: none;
+  color: black;
+  padding: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 700;
+  transition: transform 0.2s;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+}
+
+.btn-extend-ai:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.3);
+}
+
+.btn-extend-ai:disabled {
+  opacity: 0.7;
+  cursor: wait;
+  transform: none;
+}
+
+/* Hint Text */
+.hint-text {
+  font-size: 0.75rem !important; /* Force smaller size */
+  margin-top: 20px !important;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* Loading Spin Animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ... Add this to the bottom of tripDashboard.css ... */
+
+/* =========================================
+   POPUP MODAL STYLING
+   ========================================= */
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8); /* Darker backdrop */
+  backdrop-filter: blur(5px);
+  z-index: 200; /* Higher than sidebar */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.popup-content {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 600px; /* Limit width */
+  max-height: 90vh; /* Allow scrolling if screen is short */
+  overflow-y: auto;
+  padding: 30px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.popup-header h2 {
+  margin: 0;
+  color: #D4AF37;
+  font-size: 1.5rem;
+}
+
+.popup-subtitle {
+  color: #94a3b8;
+  margin-bottom: 25px;
+  font-size: 0.95rem;
+}
+
+.close-popup-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-popup-btn:hover {
+  color: white;
+}
+
+/* OVERRIDE PLANNER STYLES FOR POPUP CONTEXT */
+/* This makes the planner look better inside the modal */
+.popup-content .planner-container {
+  display: block; /* Remove grid layout in popup */
+  max-width: 100%;
+}
+
+.popup-content .planner-card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
