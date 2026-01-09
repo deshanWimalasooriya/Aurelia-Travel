@@ -1,103 +1,139 @@
-const knex = require('../../config/knex');
+// aurelia-travel-backend/API/controllers/adminController.js
+const adminModel = require('../models/adminModel');
 
+// Dashboard Overview Statistics
 exports.getDashboardStats = async (req, res) => {
-    try {
-        // 1. Basic Counts
-        const [bookingsCount] = await knex('bookings').count('id as count');
-        const [usersCount] = await knex('users').count('id as count');
-        const [roomsCount] = await knex('rooms').count('id as count');
-        
-        // 2. Total Revenue
-        const [revenueData] = await knex('bookings')
-            .sum('total_price as total')
-            .where('status', 'confirmed')
-            .orWhere('status', 'completed');
-
-        // 3. Occupancy Rate Calculation (Simplified: Booked Days / Total Possible Days in last 30 days)
-        // For this demo, we'll use a snapshot: Active Bookings / Total Rooms
-        const [activeBookings] = await knex('bookings')
-            .count('id as count')
-            .where('check_in', '<=', new Date())
-            .andWhere('check_out', '>=', new Date());
-        
-        const occupancyRate = roomsCount.count > 0 
-            ? Math.round((activeBookings.count / roomsCount.count) * 100) 
-            : 0;
-
-        // 4. Monthly Revenue Data (for Chart)
-        // Note: Raw queries vary by SQL dialect. This is for MySQL.
-        const monthlyRevenue = await knex.raw(`
-            SELECT DATE_FORMAT(created_at, '%b') as name, SUM(total_price) as value
-            FROM bookings
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-            GROUP BY DATE_FORMAT(created_at, '%Y-%m'), DATE_FORMAT(created_at, '%b')
-            ORDER BY DATE_FORMAT(created_at, '%Y-%m') ASC
-        `);
-
-        // Format Stats for Frontend
-        const stats = [
-            { 
-                label: 'Total Revenue', 
-                value: `$${(revenueData.total || 0).toLocaleString()}`, 
-                icon: 'DollarSign', 
-                trend: '+12.5%', 
-                color: '#10b981' // Green
-            },
-            { 
-                label: 'Active Bookings', 
-                value: bookingsCount.count, 
-                icon: 'Calendar', 
-                trend: '+5.2%', 
-                color: '#3b82f6' // Blue
-            },
-            { 
-                label: 'Occupancy Rate', 
-                value: `${occupancyRate}%`, 
-                icon: 'PieChart', 
-                trend: occupancyRate > 70 ? '+High' : '-Low', 
-                color: '#f59e0b' // Orange
-            },
-            { 
-                label: 'Registered Users', 
-                value: usersCount.count, 
-                icon: 'Users', 
-                trend: '+8.1%', 
-                color: '#8b5cf6' // Purple
-            }
-        ];
-
-        res.json({
-            stats,
-            chartData: monthlyRevenue[0] // knex.raw returns [rows, fields]
-        });
-
-    } catch (err) {
-        console.error("Dashboard Stats Error:", err);
-        res.status(500).json({ error: err.message });
-    }
+  try {
+    const stats = await adminModel.getStats();
+    res.json({ success: true, data: stats });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
 };
 
+// Recent Bookings
 exports.getRecentBookings = async (req, res) => {
-    try {
-        const bookings = await knex('bookings')
-            .join('users', 'bookings.user_id', 'users.id')
-            .join('rooms', 'bookings.room_id', 'rooms.id')
-            .select(
-                'bookings.id',
-                'users.username as guest', // or users.full_name if you add it
-                'users.profile_image',
-                'rooms.room_type as room',
-                'bookings.check_in',
-                'bookings.check_out',
-                'bookings.total_price',
-                'bookings.status'
-            )
-            .orderBy('bookings.created_at', 'desc')
-            .limit(10);
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const bookings = await adminModel.getRecentBookings(limit);
+    res.json({ success: true, data: bookings });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
 
-        res.json(bookings);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
+// Revenue Chart Data
+exports.getRevenueChart = async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 7;
+    const data = await adminModel.getRevenueChart(days);
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// Top Hotels
+exports.getTopHotels = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 5;
+    const hotels = await adminModel.getTopHotels(limit);
+    res.json({ success: true, data: hotels });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// User Activity
+exports.getUserActivity = async (req, res) => {
+  try {
+    const activity = await adminModel.getUserActivity();
+    res.json({ success: true, data: activity });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// Booking Status Distribution
+exports.getBookingStatus = async (req, res) => {
+  try {
+    const status = await adminModel.getBookingStatus();
+    res.json({ success: true, data: status });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// Get All Users with Pagination
+exports.getAllUsers = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const result = await adminModel.getAllUsers(page, limit);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// Update User Status/Role
+exports.updateUserStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const updates = req.body;
+    await adminModel.updateUserStatus(userId, updates);
+    res.json({ success: true, message: 'User updated successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// Delete User
+exports.deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    await adminModel.deleteUser(userId);
+    res.json({ success: true, message: 'User deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// Get All Bookings with Filters
+exports.getAllBookings = async (req, res) => {
+  try {
+    const { status, startDate, endDate, page = 1, limit = 10 } = req.query;
+    const filters = { status, startDate, endDate };
+    const result = await adminModel.getAllBookingsWithFilters(
+      filters,
+      parseInt(page),
+      parseInt(limit)
+    );
+    res.json({ success: true, data: result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// Update Booking Status
+exports.updateBookingStatus = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { status } = req.body;
+    await adminModel.updateBookingStatus(bookingId, status);
+    res.json({ success: true, message: 'Booking status updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
 };

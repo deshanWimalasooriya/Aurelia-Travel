@@ -1,14 +1,27 @@
+// aurelia-travel-backend/API/routes/adminRoutes.js
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 
-// Route: GET /api/admin/stats
-// Protected: Only 'admin' role can access
-router.get('/stats', verifyToken, checkRole('admin'), adminController.getDashboardStats);
+// All routes require admin role
+router.use(verifyToken, checkRole('admin'));
 
-// Route: GET /api/admin/bookings
-// Protected: Only 'admin' role can access
-router.get('/bookings', verifyToken, checkRole('admin'), adminController.getRecentBookings);
+// Dashboard Stats
+router.get('/dashboard/stats', adminController.getDashboardStats);
+router.get('/dashboard/revenue-chart', adminController.getRevenueChart);
+router.get('/dashboard/top-hotels', adminController.getTopHotels);
+router.get('/dashboard/user-activity', adminController.getUserActivity);
+router.get('/dashboard/booking-status', adminController.getBookingStatus);
+
+// Bookings Management
+router.get('/bookings', adminController.getAllBookings);
+router.get('/bookings/recent', adminController.getRecentBookings);
+router.put('/bookings/:bookingId/status', adminController.updateBookingStatus);
+
+// User Management
+router.get('/users', adminController.getAllUsers);
+router.put('/users/:userId', adminController.updateUserStatus);
+router.delete('/users/:userId', adminController.deleteUser);
 
 module.exports = router;
