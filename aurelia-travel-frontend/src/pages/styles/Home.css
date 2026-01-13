@@ -117,3 +117,125 @@
 .btn-primary {
   background-color: var(--primary-color);
 }
+
+
+/* --- CINEMATIC PRELOADER --- */
+.preloader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    /* Frosted glass effect */
+    background: rgba(255, 255, 255, 0.7); 
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    transition: opacity 0.8s ease-in-out, visibility 0.8s;
+}
+
+.preloader-overlay.fade-out {
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* Container to hold the text */
+.brand-container {
+    position: relative;
+    padding: 10px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* THE LOGO TEXT WITH LIGHT ANIMATION */
+.brand-text {
+    font-size: 4rem; /* Large size for impact */
+    font-weight: 800;
+    letter-spacing: -1px;
+    text-decoration: none;
+    
+    /* 1. The Gradient: Blue -> Indigo -> WHITE LIGHT -> Indigo -> Blue */
+    background: linear-gradient(
+        110deg,
+        #3b82f6 20%,
+        #4f46e5 40%,
+        #ffffff 50%,  /* <--- The Bright Light */
+        #4f46e5 60%,
+        #3b82f6 80%
+    );
+    
+    /* 2. Stretch background so we can animate movement */
+    background-size: 200% auto;
+    
+    /* 3. Clip background to text */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    
+    /* 4. Initial State for Entrance */
+    opacity: 0;
+    transform: translateY(30px);
+    
+    /* 5. Run Two Animations: Appear + Shine */
+    animation: 
+        revealUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards, /* Slides up */
+        shine 2.5s linear infinite; /* Moves the light */
+}
+
+/* "Travel" text - slightly smaller */
+.brand-subtext {
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: #64748b; /* Muted slate to contrast with the bright logo */
+    margin-top: 5px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: revealUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards; /* 0.3s delay */
+}
+
+/* --- ANIMATION KEYFRAMES --- */
+
+/* Text Entrance */
+@keyframes revealUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* The Light Moving Across */
+@keyframes shine {
+    to {
+        background-position: 200% center;
+    }
+}
+
+/* --- MAIN PAGE BLUR --- */
+.content-wrapper {
+    transition: filter 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.content-wrapper.blurred {
+    filter: blur(12px) grayscale(10%);
+    transform: scale(0.98);
+    height: 100vh;
+    overflow: hidden;
+}
+
+.content-wrapper.clear {
+    filter: blur(0) grayscale(0);
+    transform: scale(1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .brand-text { font-size: 2.5rem; }
+    .brand-subtext { font-size: 0.9rem; letter-spacing: 4px; }
+}
