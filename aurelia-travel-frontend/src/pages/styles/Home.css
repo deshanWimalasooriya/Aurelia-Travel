@@ -1,241 +1,344 @@
-.min-h-screen {
-  min-height: 100vh;
+/* --- GLOBAL RESET & VARS --- */
+:root {
+  --primary-blue: #3b82f6;
+  --deep-navy: #1e293b;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --text-grey: #94a3b8;
 }
 
-/* Hero Section */
-.hero {
-  position: relative;
-  height: 100vh;
-  background-color: var(--primary-color);
-  background-image: var(--hero-bg, none);
-  overflow: hidden;
+body {
+    background-color: #0f172a; /* Dark premium background */
+    color: white;
+    font-family: 'Inter', sans-serif; /* Ensure you have a nice font imported */
+    overflow-x: hidden;
+}
+
+/* --- ANIMATION UTILITIES (Scroll Reveal) --- */
+.section-header, .feature-card, .step-item, .parallax-content, .cta-content {
+    opacity: 0;
+    transform: translateY(50px);
+    transition: all 0.8s ease-out;
+}
+
+.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* --- HERO SECTION --- */
+.hero-section {
+    position: relative;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.hero-bg {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 1;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(to bottom, rgba(15, 23, 42, 0.3), #0f172a); /* Gradient to blend with body */
+    z-index: 2;
 }
 
 .hero-content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    max-width: 900px;
+    padding: 0 20px;
 }
 
-.hero-text {
-  text-align: center;
-  color: white;
-  max-width: 800px;
-  padding: 0 20px;
+.hero-title {
+    font-size: 5rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 1.5rem;
+    letter-spacing: -2px;
+    color: #ffffff;
 }
 
-.hero-text h1 {
-  font-size: 3rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
+.gradient-text {
+    background: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
-.hero-text p {
-  font-size: 1.5rem;
-  margin-bottom: 2rem;
-  opacity: 0.9;
+.hero-subtitle {
+    font-size: 1.25rem;
+    color: #cbd5e1;
+    margin-bottom: 2.5rem;
+    font-weight: 300;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-/* Hotel Listings Section */
-.listings {
-  padding: 80px 0;
-  background-color: #f8f9fa;
+/* Buttons */
+.hero-cta-group {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
 }
 
-.listings .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
+.btn-primary-glow {
+    background: var(--primary-blue);
+    padding: 16px 40px;
+    border-radius: 50px;
+    color: white;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+    transition: transform 0.3s, box-shadow 0.3s;
 }
 
-.listings h2 {
-  font-size: 1.875rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 48px;
-  text-align: center;
+.btn-primary-glow:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.8);
 }
 
-.listings .hotel-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 32px;
+.btn-secondary-outline {
+    padding: 16px 40px;
+    border-radius: 50px;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+    text-decoration: none;
+    transition: background 0.3s;
 }
 
-/* Responsive Grid */
-@media (min-width: 768px) {
-  .listings .hotel-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.btn-secondary-outline:hover {
+    background: rgba(255,255,255,0.1);
 }
 
-@media (min-width: 1024px) {
-  .listings .hotel-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+/* Scroll Mouse Animation */
+.scroll-indicator {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0.7;
 }
 
-@media (min-width: 1280px) {
-  .listings .hotel-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
+.mouse {
+    width: 26px;
+    height: 40px;
+    border: 2px solid white;
+    border-radius: 20px;
+    position: relative;
+    margin-top: 10px;
 }
 
-/* Stats Section */
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 32px;
-  margin-bottom: 80px;
+.mouse::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background: white;
+    border-radius: 50%;
+    animation: scrollMouse 1.5s infinite;
 }
 
-.stats-item {
-  text-align: center;
+@keyframes scrollMouse {
+    0% { top: 8px; opacity: 1; }
+    100% { top: 25px; opacity: 0; }
 }
 
-.stats-item .icon {
-  font-size: 2rem;
-  margin-bottom: 8px;
+/* --- FEATURES SECTION --- */
+.features-section {
+    padding: 100px 20px;
+    background: #0f172a;
+    position: relative;
 }
 
-.stats-item .value {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 4px;
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-.stats-item .label {
-  color: #666;
+.section-header {
+    text-align: center;
+    margin-bottom: 80px;
 }
 
-.btn-primary {
-  background-color: var(--primary-color);
+.section-header h2 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-top: 20px;
 }
 
+.badge {
+    background: rgba(59, 130, 246, 0.1);
+    color: #60a5fa;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
 
-/* --- CINEMATIC PRELOADER --- */
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 40px;
+}
+
+.feature-card {
+    background: #1e293b;
+    padding: 40px;
+    border-radius: 20px;
+    border: 1px solid #334155;
+    transition: transform 0.3s, border-color 0.3s;
+    cursor: default;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    border-color: #60a5fa;
+}
+
+.icon-box {
+    font-size: 3rem;
+    margin-bottom: 20px;
+}
+
+.feature-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: white;
+}
+
+.feature-card p {
+    color: #94a3b8;
+    line-height: 1.6;
+}
+
+/* --- PARALLAX QUOTE --- */
+.parallax-banner {
+    padding: 120px 20px;
+    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?ixlib=rb-4.0.3');
+    background-size: cover;
+    background-attachment: fixed; /* Creates parallax effect */
+    background-position: center;
+    text-align: center;
+    color: white;
+}
+
+.parallax-content h2 {
+    font-size: 2.5rem;
+    font-style: italic;
+    font-family: serif; /* Elegant contrast */
+    margin-bottom: 20px;
+}
+
+/* --- STEPS SECTION --- */
+.steps-section {
+    padding: 100px 20px;
+    background: #0f172a;
+}
+
+.steps-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-top: 60px;
+    position: relative;
+    flex-wrap: wrap;
+    gap: 30px;
+}
+
+.step-item {
+    flex: 1;
+    text-align: center;
+    min-width: 250px;
+}
+
+.step-number {
+    font-size: 4rem;
+    font-weight: 900;
+    color: #1e293b; /* Dark text on dark bg creates embossed look */
+    -webkit-text-stroke: 1px #334155;
+    margin-bottom: 20px;
+}
+
+.step-item h4 {
+    font-size: 1.4rem;
+    margin-bottom: 10px;
+}
+
+.step-item p {
+    color: #94a3b8;
+}
+
+/* --- FINAL CTA --- */
+.final-cta-section {
+    padding: 100px 20px;
+    background: linear-gradient(120deg, #2563eb, #7c3aed);
+    text-align: center;
+}
+
+.btn-white-shine {
+    display: inline-block;
+    background: white;
+    color: #2563eb;
+    padding: 18px 50px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-top: 40px;
+    text-decoration: none;
+    transition: transform 0.3s;
+}
+
+.btn-white-shine:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .hero-title { font-size: 3rem; }
+    .hero-cta-group { flex-direction: column; }
+    .steps-row { flex-direction: column; }
+    .step-line { display: none; }
+}
+
+/* --- YOUR PRELOADER CSS (Keep intact at bottom) --- */
 .preloader-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0; width: 100%; height: 100%;
     z-index: 9999;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    /* Frosted glass effect */
     background: rgba(255, 255, 255, 0.7); 
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     transition: opacity 0.8s ease-in-out, visibility 0.8s;
 }
-
-.preloader-overlay.fade-out {
-    opacity: 0;
-    visibility: hidden;
-}
-
-/* Container to hold the text */
-.brand-container {
-    position: relative;
-    padding: 10px 40px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-/* THE LOGO TEXT WITH LIGHT ANIMATION */
-.brand-text {
-    font-size: 4rem; /* Large size for impact */
-    font-weight: 800;
-    letter-spacing: -1px;
-    text-decoration: none;
-    
-    /* 1. The Gradient: Blue -> Indigo -> WHITE LIGHT -> Indigo -> Blue */
-    background: linear-gradient(
-        110deg,
-        #3b82f6 20%,
-        #4f46e5 40%,
-        #ffffff 50%,  /* <--- The Bright Light */
-        #4f46e5 60%,
-        #3b82f6 80%
-    );
-    
-    /* 2. Stretch background so we can animate movement */
-    background-size: 200% auto;
-    
-    /* 3. Clip background to text */
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    
-    /* 4. Initial State for Entrance */
-    opacity: 0;
-    transform: translateY(30px);
-    
-    /* 5. Run Two Animations: Appear + Shine */
-    animation: 
-        revealUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards, /* Slides up */
-        shine 2.5s linear infinite; /* Moves the light */
-}
-
-/* "Travel" text - slightly smaller */
-.brand-subtext {
-    font-size: 1.2rem;
-    font-weight: 600;
-    letter-spacing: 6px;
-    text-transform: uppercase;
-    color: #64748b; /* Muted slate to contrast with the bright logo */
-    margin-top: 5px;
-    opacity: 0;
-    transform: translateY(20px);
-    animation: revealUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards; /* 0.3s delay */
-}
-
-/* --- ANIMATION KEYFRAMES --- */
-
-/* Text Entrance */
-@keyframes revealUp {
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* The Light Moving Across */
-@keyframes shine {
-    to {
-        background-position: 200% center;
-    }
-}
-
-/* --- MAIN PAGE BLUR --- */
-.content-wrapper {
-    transition: filter 0.8s ease-out, transform 0.8s ease-out;
-}
-
-.content-wrapper.blurred {
-    filter: blur(12px) grayscale(10%);
-    transform: scale(0.98);
-    height: 100vh;
-    overflow: hidden;
-}
-
-.content-wrapper.clear {
-    filter: blur(0) grayscale(0);
-    transform: scale(1);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .brand-text { font-size: 2.5rem; }
-    .brand-subtext { font-size: 0.9rem; letter-spacing: 4px; }
-}
+.preloader-overlay.fade-out { opacity: 0; visibility: hidden; }
+/* ... (Keep the rest of your preloader CSS exactly as you had it) ... */
+.brand-container { position: relative; padding: 10px 40px; display: flex; flex-direction: column; align-items: center; }
+.brand-text { font-size: 4rem; font-weight: 800; letter-spacing: -1px; text-decoration: none; background: linear-gradient(110deg, #3b82f6 20%, #4f46e5 40%, #ffffff 50%, #4f46e5 60%, #3b82f6 80%); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; opacity: 0; transform: translateY(30px); animation: revealUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards, shine 2.5s linear infinite; }
+.brand-subtext { font-size: 1.2rem; font-weight: 600; letter-spacing: 6px; text-transform: uppercase; color: #64748b; margin-top: 5px; opacity: 0; transform: translateY(20px); animation: revealUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards; }
+@keyframes revealUp { to { opacity: 1; transform: translateY(0); } }
+@keyframes shine { to { background-position: 200% center; } }
+.content-wrapper { transition: filter 0.8s ease-out, transform 0.8s ease-out; }
+.content-wrapper.blurred { filter: blur(12px) grayscale(10%); transform: scale(0.98); height: 100vh; overflow: hidden; }
+.content-wrapper.clear { filter: blur(0) grayscale(0); transform: scale(1); }

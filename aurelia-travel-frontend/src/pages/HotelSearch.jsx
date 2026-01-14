@@ -3,30 +3,23 @@ import { useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import HotelCard from '../components/ui/HotelCard'
 import SearchForm from '../components/ui/SearchForm'
-import { Filter, MapPin, SlidersHorizontal, X } from 'lucide-react' 
+import { MapPin, SlidersHorizontal, X } from 'lucide-react'
 import './styles/HotelPage.css'
 
-const HotelPage = () => {
+const HotelSearch = () => {
   const [searchParams] = useSearchParams();
-  
-  // --- DATA STATES (Untouched) ---
   const [hotels, setHotels] = useState([]) 
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  // --- FILTER STATES (Untouched) ---
+  
+  // Filter States
   const [selectedFilters, setSelectedFilters] = useState([])
   const [availableAmenities, setAvailableAmenities] = useState([]) 
   const [amenityCounts, setAmenityCounts] = useState({}) 
-  
-  // --- PRICE STATES (Untouched) ---
   const [priceRange, setPriceRange] = useState(1000) 
   const [maxPriceLimit, setMaxPriceLimit] = useState(1000)
-  
-  // Mobile Filter Toggle State
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
 
-  // --- 1. FETCH DATA (Untouched) ---
+  // 1. FETCH & COMBINE DATA (Same logic as before to get full list)
   useEffect(() => {
     const fetchHotels = async () => {
       try {
@@ -37,10 +30,12 @@ const HotelPage = () => {
         ])
 
         const allFetched = [...(topRes.data.data || topRes.data), ...(newRes.data.data || newRes.data)];
+        // Remove duplicates
         const uniqueHotels = Array.from(new Map(allFetched.map(item => [item.id || item._id, item])).values());
         
         setHotels(uniqueHotels)
 
+        // Calculate Filters
         const allAmenities = new Set();
         const counts = {};
         let highestPrice = 0;
@@ -59,14 +54,12 @@ const HotelPage = () => {
 
         setAvailableAmenities(Array.from(allAmenities).sort());
         setAmenityCounts(counts);
-        
         const limit = Math.ceil(highestPrice + 100);
         setMaxPriceLimit(limit);
         setPriceRange(limit);
 
       } catch (err) {
-        console.error('Fetch Error:', err)
-        setError('Could not load hotels.')
+        console.error('Error', err)
       } finally {
         setLoading(false)
       }
@@ -74,14 +67,14 @@ const HotelPage = () => {
     fetchHotels()
   }, [])
 
-  // --- 2. HANDLERS (Untouched) ---
+  // 2. HANDLERS
   const handleFilterChange = (amenity) => {
     setSelectedFilters(prev => 
       prev.includes(amenity) ? prev.filter(i => i !== amenity) : [...prev, amenity]
     )
   }
 
-  // --- 3. FILTERING LOGIC (Untouched) ---
+  // 3. FILTERING LOGIC
   const filteredHotels = hotels.filter(hotel => {
     const locationParam = searchParams.get('location')?.toLowerCase() || '';
     const matchesLocation = !locationParam || hotel.location.toLowerCase().includes(locationParam) || hotel.name.toLowerCase().includes(locationParam);
@@ -98,25 +91,16 @@ const HotelPage = () => {
     return matchesLocation && matchesAmenities && matchesPrice;
   });
 
-  if (loading) return (
-    <div className="loading-container">
-        <div className="loader-spinner"></div>
-        <p>Curating the best stays for you...</p>
-    </div>
-  )
+  if (loading) return <div className="loading-container"><div className="loader-spinner"></div></div>
 
   return (
     <div className="page-wrapper">
       
-      {/* --- HERO HEADER --- */}
-      <div className="modern-header">
+      {/* COMPACT HEADER FOR SEARCH PAGE */}
+      <div className="modern-header compact">
         <div className="header-bg-overlay"></div>
         <div className="header-content-centered">
-          <h1>Find your sanctuary</h1>
-          <p>Discover luxury, comfort, and adventure.</p>
-          
-          {/* Floating Search Glass */}
-          <div className="floating-search-bar">
+          <div className="floating-search-bar compact-bar">
             <SearchForm /> 
           </div>
         </div>
@@ -124,65 +108,46 @@ const HotelPage = () => {
 
       <div className="main-layout-grid">
         
-        {/* --- MOBILE FILTER TOGGLE --- */}
+        {/* MOBILE TOGGLE */}
         <button className="mobile-filter-btn" onClick={() => setIsMobileFilterOpen(true)}>
             <SlidersHorizontal size={18} /> Filters
         </button>
 
-        {/* --- LEFT SIDEBAR --- */}
+        {/* --- SIDEBAR (FILTERS) --- */}
         <aside className={`filter-sidebar ${isMobileFilterOpen ? 'mobile-open' : ''}`}>
-          
           <div className="sidebar-header-mobile">
             <h3>Filters</h3>
             <button onClick={() => setIsMobileFilterOpen(false)}><X size={20}/></button>
           </div>
 
           <div className="sidebar-sticky-content">
-            
-            {/* 1. Price Section */}
+            {/* Price Filter */}
             <div className="filter-card">
                <div className="card-header">
                    <h4>Price Range</h4>
                    <span className="price-tag">Up to LKR {priceRange}</span>
                </div>
-               
                <div className="histogram-wrapper">
-                    <div className="histogram-bars">
-                        {/* Visual only - kept your logic */}
-                        {[20, 40, 30, 60, 90, 50, 70, 40, 60, 30, 80, 40, 20].map((h, i) => (
-                            <div key={i} className="hist-bar" style={{height: `${h}%`, opacity: i/13 + 0.3}}></div>
-                        ))}
-                    </div>
                     <input 
-                        type="range" 
-                        min="0" 
-                        max={maxPriceLimit} 
-                        value={priceRange} 
+                        type="range" min="0" max={maxPriceLimit} value={priceRange} 
                         onChange={(e) => setPriceRange(Number(e.target.value))}
                         className="modern-range"
                     />
                </div>
             </div>
             
-            {/* 2. Amenities Section */}
+            {/* Amenities Filter */}
             <div className="filter-card">
               <div className="card-header">
                   <h4>Amenities</h4>
-                  {(selectedFilters.length > 0 || priceRange < maxPriceLimit) && (
-                    <button onClick={() => {setSelectedFilters([]); setPriceRange(maxPriceLimit);}} className="reset-link">
-                        Reset
-                    </button>
+                  {(selectedFilters.length > 0) && (
+                    <button onClick={() => setSelectedFilters([])} className="reset-link">Reset</button>
                   )}
               </div>
-              
               <div className="amenities-scroll-area">
                 {availableAmenities.map(amenity => (
                   <label key={amenity} className="amenity-row">
-                      <input 
-                        type="checkbox" 
-                        checked={selectedFilters.includes(amenity)}
-                        onChange={() => handleFilterChange(amenity)}
-                      />
+                      <input type="checkbox" checked={selectedFilters.includes(amenity)} onChange={() => handleFilterChange(amenity)}/>
                       <span className="custom-check"></span>
                       <span className="amenity-name">{amenity}</span>
                       <span className="amenity-count">({amenityCounts[amenity] || 0})</span>
@@ -190,28 +155,23 @@ const HotelPage = () => {
                 ))}
               </div>
             </div>
-
           </div>
         </aside>
 
-        {/* --- RIGHT CONTENT --- */}
+        {/* --- RESULTS GRID --- */}
         <main className="results-feed">
           <div className="results-toolbar">
             <div className="result-count">
-                <strong>{filteredHotels.length}</strong> 
-                <span>properties available in this area</span>
+                <strong>{filteredHotels.length}</strong> properties found
             </div>
-            {/* Sort Dropdown could be here */}
           </div>
 
           {filteredHotels.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon"><MapPin size={40} /></div>
               <h3>No matches found</h3>
-              <p>We couldn't find any properties matching your specific filters. Try adjusting your price range or amenities.</p>
-              <button onClick={() => { setSelectedFilters([]); setPriceRange(maxPriceLimit); }} className="btn-primary-outline">
-                Clear Filters
-              </button>
+              <p>Try adjusting your filters.</p>
+              <button onClick={() => { setSelectedFilters([]); setPriceRange(maxPriceLimit); }} className="btn-primary-outline">Clear Filters</button>
             </div>
           ) : (
             <div className="hotel-grid-modern">
@@ -228,4 +188,4 @@ const HotelPage = () => {
   )
 }
 
-export default HotelPage
+export default HotelSearch

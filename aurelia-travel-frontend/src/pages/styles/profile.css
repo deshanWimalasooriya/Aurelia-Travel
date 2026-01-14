@@ -1,488 +1,478 @@
-/* --- AURELIA PROFILE DESIGN SYSTEM --- */
-
+/* --- AURELIA HIGH-CONTRAST PROFILE THEME --- */
 :root {
-  --primary-blue: #3b82f6;
-  --primary-hover: #2563eb;
-  --bg-light: #f8f9fa;
-  --text-dark: #1f2937;
-  --text-gray: #6b7280;
-  --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  --card-hover-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  --primary-blue: #2563eb;
+  --primary-dark: #1e40af;
+  --bg-page: #f1f5f9;
+  --card-bg: #ffffff;
+  
+  /* --- CONTRAST FIX: Deep Black for main text --- */
+  --text-main: #000000;       /* Pure Black */
+  --text-secondary: #334155;  /* Dark Slate (Readable) */
+  --text-muted: #475569;      /* Darker Grey (No light ash) */
+  
+  --border-light: #cbd5e1;    /* Darker border for visibility */
+  --accent-green: #10b981;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-md: 0 10px 15px -3px rgba(0,0,0,0.1);
+  --radius-card: 16px;
 }
 
-/* Wrapper to hold the background animation */
 .profile-page-wrapper {
   position: relative;
   min-height: 100vh;
-  background-color: var(--bg-light);
+  background-color: var(--bg-page);
+  padding-bottom: 80px;
   overflow-x: hidden;
-  padding-bottom: 50px;
+  font-family: 'Inter', sans-serif;
+  
+  /* --- FORCE BLACK TEXT GLOBALLY --- */
+  color: var(--text-main); 
 }
 
+/* Container Layout */
 .profile-container {
   position: relative;
-  z-index: 1; /* Sits above the circles */
+  z-index: 2;
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 350px 1fr;
   gap: 30px;
   max-width: 1200px;
-  margin: 100px auto 0;
-  padding: 0 20px;
+  margin: 60px auto 0;
+  padding: 0 24px;
 }
 
-/* --- REUSABLE CARD STYLE --- */
+/* --- UNIVERSAL CARD STYLES --- */
 .card {
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: var(--card-shadow);
-  border: 1px solid #eee;
+  background: var(--card-bg);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
   overflow: hidden;
-  transition: all 0.3s ease;
+  margin-bottom: 24px;
+  
+  /* --- FORCE BLACK TEXT INSIDE CARDS --- */
+  color: var(--text-main);
 }
 
-.card:hover {
-  box-shadow: var(--card-hover-shadow);
-}
+/* --- SIDEBAR COMPONENTS --- */
+.profile-sidebar { display: flex; flex-direction: column; gap: 24px; }
 
-/* --- SIDEBAR STYLES --- */
-.profile-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
+/* Avatar Card */
 .profile-avatar-section {
-  padding: 40px 20px;
+  padding: 40px 24px;
   text-align: center;
+  background: white; /* Ensure white background */
 }
 
 .avatar-wrapper {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 15px;
+  position: relative; width: 120px; height: 120px; margin: 0 auto 16px;
 }
 
-.profile-avatar-img, 
-.profile-avatar-placeholder-pic {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 4px solid #f8f9fa;
-  background-color: var(--primary-blue);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 3rem;
-  font-weight: bold;
+.profile-avatar-img, .profile-avatar-placeholder-pic {
+  width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+  border: 4px solid white; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--primary-blue); 
+  color: white; /* White text on Blue BG */
+  font-size: 3rem; font-weight: 700;
 }
 
 .avatar-upload-btn {
-  position: absolute;
-  bottom: 0;
-  right: 5px;
-  background-color: var(--primary-blue);
-  color: white;
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border: 3px solid white;
-  transition: 0.2s;
+  position: absolute; bottom: 0; right: 0;
+  background: #000; color: white; /* Black Button, White Icon */
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 3px solid white; cursor: pointer;
 }
 
-.avatar-upload-btn:hover {
-  background-color: var(--primary-hover);
-  transform: scale(1.1);
+.profile-user-name {
+  font-size: 1.1rem; color: var(--text-secondary); font-weight: 500;
+}
+.highlight-name {
+  font-size: 1.5rem; color: #000000; font-weight: 800; display: block; margin-top: 4px;
+}
+.profile-user-email {
+  font-size: 0.95rem; color: var(--text-secondary); margin-top: 8px; font-weight: 500;
 }
 
-/* --- PAYMENT METHOD SECTION --- */
+/* Member Stats */
+.member-stats {
+  display: flex; justify-content: center; align-items: center;
+  margin-top: 24px; padding-top: 24px;
+  border-top: 1px solid var(--border-light);
+}
+.stat-item { display: flex; flex-direction: column; align-items: center; padding: 0 20px; }
+.stat-val { font-size: 1.2rem; font-weight: 800; color: #000000; }
+.stat-label { font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; }
+.stat-line { width: 1px; height: 30px; background: var(--border-light); }
+
+/* --- PREMIUM WALLET SECTION (Sidebar) --- */
+.payment-methods-section {
+  padding: 24px;
+  background: white;
+}
+
 .section-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 15px;
-  color: #374151;
-}
-
-.payment-mini-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  background-color: #f9fafb;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  border: 1px solid #edf2f7;
-}
-
-/* --- FORM & DETAILS GRID --- */
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 25px;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.details-grid, .form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  padding: 25px;
-}
-
-.span-2 { grid-column: span 2; }
-
-.detail-item .label {
-  font-size: 0.75rem;
+  font-size: 1rem; 
+  font-weight: 800; 
+  color: #0f172a;
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  margin-bottom: 20px;
   text-transform: uppercase;
-  color: var(--text-gray);
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.5px;
 }
 
-.detail-item .value {
-  font-size: 1rem;
-  color: var(--text-dark);
-  margin-top: 4px;
-}
-
-.form-input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: 0.2s;
-}
-
-.form-input:focus {
-  border-color: var(--primary-blue);
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-}
-
-/* --- 3D CARD FLIP ANIMATION --- */
-.card-scene {
-  width: 100%;
-  height: 180px;
-  perspective: 1000px;
-  margin-bottom: 25px;
-}
-
-.card-object {
-  width: 100%;
-  height: 100%;
+/* THE MINI CREDIT CARD (Sidebar) */
+.payment-mini-card {
+  display: flex; 
+  justify-content: space-between;
+  align-items: flex-end; /* Align bottom for card look */
+  padding: 20px; 
+  border-radius: 16px; 
+  margin-bottom: 20px;
   position: relative;
-  transition: transform 0.6s;
-  transform-style: preserve-3d;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  transition: transform 0.3s, box-shadow 0.3s;
+  
+  /* Premium Dark Gradient Background */
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid #334155;
 }
 
-.card-object.is-flipped {
-  transform: rotateY(180deg);
+.payment-mini-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.25);
 }
 
-.card-face {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
+/* Decorative Circles on Mini Card */
+.payment-mini-card::before {
+  content: ''; position: absolute; top: -20px; right: -20px;
+  width: 100px; height: 100px; background: rgba(255,255,255,0.05);
+  border-radius: 50%; pointer-events: none;
+}
+.payment-mini-card::after {
+  content: ''; position: absolute; bottom: -30px; left: -10px;
+  width: 80px; height: 80px; background: rgba(255,255,255,0.03);
+  border-radius: 50%; pointer-events: none;
+}
+
+/* Card Content */
+.card-text-group { flex: 1; z-index: 2; }
+
+.card-text-group .brand { 
+  font-size: 0.85rem; 
+  font-weight: 800; 
+  color: #94a3b8; /* Muted Silver */
+  text-transform: uppercase; 
+  letter-spacing: 2px;
+  margin-bottom: 15px;
+}
+
+.card-text-group .digits { 
+  font-size: 1.2rem; 
+  font-weight: 500; 
+  color: #ffffff; 
+  font-family: 'Courier New', monospace; 
+  letter-spacing: 2px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+
+.card-icon-box {
+  display: none; /* Hide the old white box */
+}
+
+/* Trash Icon (Floating) */
+.icon-btn.danger {
+  background: rgba(255,255,255,0.1); 
+  border: none; 
+  color: #ff8a8a; /* Soft Red */
+  cursor: pointer; 
+  padding: 8px; 
+  border-radius: 8px; 
+  transition: all 0.2s;
+  backdrop-filter: blur(5px);
+  z-index: 5;
+}
+.icon-btn.danger:hover { 
+  background: #ef4444; 
+  color: white; 
+}
+
+/* Add/Update Button */
+.btn-outline {
+  width: 100%; 
+  padding: 14px;
+  border: 2px dashed #cbd5e1; 
+  color: #64748b;
+  background: transparent; 
   border-radius: 12px;
-  padding: 20px;
-  color: white;
+  font-weight: 700; 
+  cursor: pointer; 
+  transition: all 0.2s;
+  display: flex; justify-content: center; align-items: center; gap: 8px;
+}
+.btn-outline:hover { 
+  border-color: var(--primary-blue); 
+  color: var(--primary-blue); 
+  background: rgba(37, 99, 235, 0.04); 
 }
 
-.card-front { background: linear-gradient(135deg, #1e293b, #334155); }
-.card-back { background: #2d3748; transform: rotateY(180deg); }
 
-.card-magnetic-strip {
-  background: #000;
-  height: 35px;
-  width: 100%;
+/* --- 3D MODAL CARD (The "Next Level" Scene) --- */
+.card-scene { 
+  width: 100%; 
+  height: 200px; /* Slightly taller */
+  perspective: 1200px; 
+  margin-bottom: 30px; 
+}
+
+.card-object { 
+  width: 100%; 
+  height: 100%; 
+  position: relative; 
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy flip */
+  transform-style: preserve-3d; 
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.3);
+  border-radius: 16px;
+}
+
+.card-object.is-flipped { 
+  transform: rotateY(180deg); 
+}
+
+.card-face { 
+  position: absolute; 
+  width: 100%; 
+  height: 100%; 
+  backface-visibility: hidden; 
+  border-radius: 16px; 
+  padding: 25px; 
+  color: white; 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: space-between;
+  border: 1px solid rgba(255,255,255,0.1);
+  overflow: hidden;
+}
+
+/* Realistic Matte Finishes */
+.card-front { 
+  background: linear-gradient(135deg, #2c3e50, #4ca1af); /* Default Teal/Slate */
+}
+
+/* Brand Specific Colors */
+.card-front.visa { 
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); /* Deep Ocean */
+}
+.card-front.mastercard { 
+  background: linear-gradient(135deg, #232526, #414345); /* Matte Black */
+}
+
+/* Shine Effect */
+.card-front::after {
+  content: ''; position: absolute; top: 0; left: 0; width: 200%; height: 100%;
+  background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+  transform: skewX(-20deg) translateX(-150%);
+  animation: shineCard 6s infinite;
+}
+
+@keyframes shineCard {
+  0% { transform: skewX(-20deg) translateX(-150%); }
+  20% { transform: skewX(-20deg) translateX(50%); }
+  100% { transform: skewX(-20deg) translateX(50%); }
+}
+
+/* The Gold Chip */
+.card-chip { 
+  width: 45px; 
+  height: 34px; 
+  background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c); 
+  border-radius: 6px; 
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  border: 1px solid #8a6e3c;
+}
+
+/* The Details */
+.card-number-display { 
+  font-size: 1.5rem; 
+  letter-spacing: 3px; 
+  text-align: center; 
+  font-family: 'Courier New', monospace; 
+  text-shadow: 0 2px 2px rgba(0,0,0,0.5); 
   margin-top: 10px;
 }
 
-/* --- BACKGROUND BUBBLE ANIMATION --- */
-.circles {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  overflow: hidden;
-  z-index: 0;
+.card-details-row { 
+  display: flex; 
+  justify-content: space-between; 
+  font-size: 0.8rem; 
+  text-transform: uppercase; 
+  letter-spacing: 1.5px; 
+  opacity: 0.9;
 }
 
+/* Back of Card */
+.card-back { 
+  background: #1e293b; 
+  transform: rotateY(180deg); 
+  padding: 0; /* Reset padding for strip */
+}
+
+.card-magnetic-strip { 
+  background: #000; 
+  height: 45px; 
+  width: 100%; 
+  margin-top: 25px; 
+  opacity: 0.9;
+}
+
+.card-cvv-display {
+  background: white;
+  color: black;
+  width: 80%;
+  margin: 20px auto;
+  padding: 8px 15px;
+  text-align: right;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  border-radius: 4px;
+  letter-spacing: 2px;
+}
+
+/* --- MAIN CONTENT --- */
+.card-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 24px; border-bottom: 1px solid var(--border-light);
+  background: white;
+}
+.card-header h3 { color: #000000; font-weight: 800; display: flex; align-items: center; gap: 10px; margin: 0; }
+.icon-blue { color: var(--primary-blue); }
+
+.btn-edit-toggle {
+  background: white; border: 1px solid var(--border-light);
+  color: #000000; font-weight: 600; cursor: pointer; 
+  padding: 8px 16px; border-radius: 8px; display: flex; align-items: center; gap: 8px;
+}
+
+.details-grid, .form-grid {
+  padding: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+}
+.span-2 { grid-column: span 2; }
+
+/* Labels & Values */
+.detail-item .label {
+  display: block; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 6px;
+}
+.detail-item .value {
+  font-size: 1.1rem; color: #000000; font-weight: 600; /* Deep Black */
+}
+.flex-align { display: flex; align-items: center; gap: 6px; }
+
+/* Inputs (Force White BG / Black Text) */
+.form-group label { display: block; font-size: 0.9rem; font-weight: 700; color: #000; margin-bottom: 8px; }
+
+.form-input {
+  width: 100%; padding: 12px; 
+  border: 1px solid #94a3b8; /* Visible Border */
+  border-radius: 10px; font-size: 1rem;
+  background: #ffffff; 
+  color: #000000; /* FORCE BLACK TEXT */
+}
+.form-input::placeholder { color: #64748b; }
+
+.btn-primary {
+  background: var(--primary-blue); 
+  color: #ffffff; /* White Text on Blue */
+  border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 1rem;
+  width: 100%; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px;
+}
+
+/* --- BOOKING TICKETS --- */
+.section-title { font-size: 1.3rem; font-weight: 800; color: #000000; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+
+.booking-ticket {
+  background: white; border: 1px solid var(--border-light);
+  border-radius: 16px; display: flex; height: 120px; margin-bottom: 20px;
+  box-shadow: var(--shadow-sm); color: #000;
+}
+
+/* Ticket Left */
+.ticket-left {
+  width: 100px; background: #f1f5f9; border-right: 2px dashed #94a3b8;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: relative;
+}
+.ticket-date-box .month { display: block; text-transform: uppercase; font-size: 0.9rem; font-weight: 800; color: #475569; }
+.ticket-date-box .day { display: block; font-size: 2.2rem; font-weight: 900; color: #000000; line-height: 1; }
+
+/* Ticket Center */
+.ticket-center {
+  flex: 1; padding: 20px 24px; display: flex; flex-direction: column; justify-content: center;
+}
+.booking-hotel-name { font-size: 1.3rem; font-weight: 800; color: #000000; margin-bottom: 6px; }
+.booking-meta { display: flex; gap: 12px; font-size: 0.95rem; color: #334155; margin-bottom: 8px; font-weight: 500; }
+.booking-dates-text { font-size: 0.9rem; font-weight: 700; color: var(--primary-blue); background: #eff6ff; padding: 4px 10px; border-radius: 6px; width: fit-content; }
+
+/* Ticket Right */
+.ticket-right {
+  width: 150px; display: flex; flex-direction: column; align-items: flex-end; justify-content: center;
+  padding: 20px; border-left: 1px solid var(--border-light);
+}
+.ticket-price { font-size: 1.6rem; font-weight: 800; color: #000000; margin-top: 10px; }
+
+.ticket-status {
+  padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase;
+}
+.ticket-status.confirmed { background: #d1fae5; color: #064e3b; } /* Dark Green Text */
+.ticket-status.pending { background: #fef3c7; color: #78350f; }   /* Dark Orange Text */
+
+/* Messages */
+.message { padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: 700; }
+.success-message { background: #dcfce7; color: #14532d; border: 1px solid #86efac; }
+.error-message { background: #fee2e2; color: #7f1d1d; border: 1px solid #fca5a5; }
+
+/* --- MODAL FIX --- */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 999; display: flex; justify-content: center; align-items: center; }
+
+.modal-content { 
+    background: #ffffff; 
+    padding: 30px; 
+    border-radius: 20px; 
+    width: 95%; max-width: 450px; 
+    color: #000000; /* FORCE BLACK TEXT */
+}
+.modal-title { color: #000000; font-weight: 800; }
+.modal-close { position: absolute; top: 15px; right: 15px; background: none; border: none; cursor: pointer; color: #000; }
+
+/* 3D Card (Always White Text on Dark BG) */
+.card-face { color: #ffffff !important; } 
+.card-number-display, .card-details-row, .card-cvv-display { color: #ffffff !important; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+
+/* Animation Background */
+.circles { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 0; }
 .circles li {
-  position: absolute;
-  display: block;
-  list-style: none;
-  width: 20px; height: 20px;
-  background: rgba(59, 130, 246, 0.1);
-  animation: animateCircles 25s linear infinite;
-  bottom: -150px;
+  position: absolute; display: block; list-style: none;
+  width: 20px; height: 20px; background: rgba(37, 99, 235, 0.1);
+  animation: animateCircles 25s linear infinite; bottom: -150px;
 }
-
-.circles li:nth-child(1) { left: 25%; width: 80px; height: 80px; animation-delay: 0s; }
-.circles li:nth-child(2) { left: 10%; width: 20px; height: 20px; animation-delay: 2s; animation-duration: 12s; }
-.circles li:nth-child(3) { left: 70%; width: 20px; height: 20px; animation-delay: 4s; }
-.circles li:nth-child(4) { left: 40%; width: 60px; height: 60px; animation-delay: 0s; animation-duration: 18s; }
-.circles li:nth-child(5) { left: 65%; width: 20px; height: 20px; animation-delay: 0s; }
-
 @keyframes animateCircles {
   0% { transform: translateY(0) rotate(0deg); opacity: 1; border-radius: 0; }
   100% { transform: translateY(-1000px) rotate(720deg); opacity: 0; border-radius: 50%; }
 }
 
-/* --- MODAL STYLES --- */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.4);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 420px;
-}
-
-/* --- BUTTONS & STATUS --- */
-.btn-primary {
-  background-color: var(--primary-blue);
-  color: white;
-  padding: 12px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.btn-primary:hover { background-color: var(--primary-hover); }
-
-.status-badge {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.status-badge.completed { background: #d1fae5; color: #065f46; }
-.status-badge.pending { background: #fef3c7; color: #92400e; }
-
-@media (max-width: 850px) {
-  .profile-container { grid-template-columns: 1fr; }
-}
-
-/* --- PROFILE INNER DETAILS --- */
-
-/* 1. Avatar Section Styling */
-.avatar-wrapper {
-  position: relative;
-  display: inline-block;
-  padding: 5px;
-  background: white;
-  border-radius: 50%;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-}
-
-.profile-avatar-img, 
-.profile-avatar-placeholder-pic {
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 4px solid #fff;
-  transition: transform 0.3s ease;
-}
-
-.profile-avatar-section h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #111827;
-  margin-bottom: 4px;
-  letter-spacing: -0.5px;
-}
-
-.profile-user-email {
-  font-size: 0.95rem;
-  color: #6b7280;
-  font-weight: 400;
-}
-
-/* 2. Payment Method Card Styling */
-.payment-mini-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  margin: 15px 0;
-}
-
-.payment-mini-card .brand {
-  font-weight: 700;
-  color: #1e293b;
-  text-transform: uppercase;
-  font-size: 0.8rem;
-  letter-spacing: 1px;
-}
-
-.payment-mini-card .digits {
-  color: #64748b;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 1rem;
-}
-
-/* 3. User Details Form/Grid */
-.card-header h3 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.detail-item {
-  padding: 10px 0;
-}
-
-.detail-item .label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 6px;
-  display: block;
-}
-
-.detail-item .value {
-  font-size: 1.05rem;
-  color: #334155;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-}
-
-/* 4. Edit Mode Inputs */
-.form-input {
-  border: 1px solid #cbd5e1;
-  background-color: #ffffff;
-  padding: 12px 16px;
-  border-radius: 10px;
-  font-size: 0.95rem;
-  width: 100%;
-  transition: all 0.2s ease;
-}
-
-.form-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-}
-
-.divider.span-2 {
-  padding: 20px 0 10px 0;
-  font-weight: 700;
-  color: #1e293b;
-  border-bottom: 2px solid #f1f5f9;
-  margin-bottom: 15px;
-}
-
-/* 5. Orders List Styling */
-.order-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border: 1px solid #f1f5f9;
-  border-radius: 12px;
-  margin-bottom: 12px;
-  background: #ffffff;
-  transition: transform 0.2s ease;
-}
-
-.order-item:hover {
-  transform: translateX(5px);
-  border-color: #e2e8f0;
-}
-
-.order-id {
-  font-weight: 700;
-  color: #1e293b;
-  display: block;
-  font-size: 1rem;
-}
-
-.order-date {
-  font-size: 0.85rem;
-  color: #94a3b8;
-}
-
-.order-total {
-  font-weight: 800;
-  color: #1e293b;
-  font-size: 1.1rem;
-  text-align: right;
-}
-
-.order-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-/* Status Badge Refinement */
-.status-badge {
-  padding: 6px 12px;
-  font-weight: 700;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-radius: 8px;
-}
-
-.status-badge.completed {
-  background-color: #ecfdf5;
-  color: #059669;
-}
-
-.status-badge.pending {
-  background-color: #fffbeb;
-  color: #d97706;
-}
-
-/* Icons styling */
-.btn-icon {
-  background: #f1f5f9;
-  border: none;
-  padding: 8px;
-  border-radius: 8px;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-icon:hover {
-  background: #e2e8f0;
-  color: #1e293b;
-}
-
-.btn-icon.active {
-  background: #fee2e2;
-  color: #ef4444;
+/* Responsive */
+@media (max-width: 900px) {
+  .profile-container { grid-template-columns: 1fr; margin-top: 30px; }
+  .profile-sidebar { flex-direction: column-reverse; }
+  .details-grid, .form-grid { grid-template-columns: 1fr; }
+  .span-2 { grid-column: span 1; }
+  .booking-ticket { height: auto; flex-direction: column; }
+  .ticket-left { width: 100%; height: 70px; border-right: none; border-bottom: 2px dashed #cbd5e1; flex-direction: row; gap: 20px; }
+  .ticket-left::before, .ticket-left::after { display: none; }
+  .ticket-right { width: 100%; flex-direction: row; justify-content: space-between; align-items: center; border-left: none; border-top: 1px solid var(--border-light); padding: 15px; }
 }
