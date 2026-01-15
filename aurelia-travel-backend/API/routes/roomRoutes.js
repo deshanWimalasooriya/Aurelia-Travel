@@ -6,11 +6,11 @@ const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 // Public routes
 router.get('/', roomController.getAllRooms);
 router.get('/:id', roomController.getRoomById);
-router.get('/hotel/:hotelId', roomController.getRoomsByHotelId); // Get rooms by hotel id
+router.get('/hotel/:hotelId', roomController.getRoomsByHotelId); 
 
-// Protected routes (Admin only)
-router.post('/', verifyToken, checkRole('admin'), roomController.createRoom);
-router.put('/:id', verifyToken, checkRole('admin'), roomController.updateRoom);
-router.delete('/:id', verifyToken, checkRole('admin'), roomController.deleteRoom);
+// ✅ Protected Routes: Allow HotelManager and Admin
+router.post('/', verifyToken, checkRole('admin', 'HotelManager'), roomController.createRoom);
+router.put('/:id', verifyToken, checkRole('admin', 'HotelManager'), roomController.updateRoom);
+router.delete('/:id', verifyToken, checkRole('admin', 'HotelManager'), roomController.deleteRoom);
 
 module.exports = router;

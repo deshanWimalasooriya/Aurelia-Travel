@@ -26,7 +26,7 @@ const HotelDetails = () => {
   const [dates, setDates] = useState({ checkIn: '', checkOut: '' })
   const [guests, setGuests] = useState({ adults: 2, children: 0 })
 
-  // --- 1. FETCH DATA ---
+  // --- 1. FETCH DATA (Untouched) ---
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -88,7 +88,7 @@ const HotelDetails = () => {
     }
   };
 
-  // --- 4. HANDLE RESERVATION ---
+  // --- 4. HANDLE RESERVATION (Untouched) ---
   const handleReserve = async () => {
     if (!user) { alert("Please login to book this stay."); navigate('/auth'); return; }
     if (!selectedRoomId) { 
