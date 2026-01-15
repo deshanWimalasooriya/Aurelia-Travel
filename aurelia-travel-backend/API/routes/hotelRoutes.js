@@ -2,18 +2,16 @@
 const express = require("express");
 const router = express.Router();
 const hotelController = require("../controllers/hotelController");
-const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 
-// Public Routes
+// Static Routes first
 router.get("/", hotelController.getAllHotels);
 router.get("/newest", hotelController.getNewest);
 router.get("/top-rated", hotelController.getTopRated);
-router.get("/:id", hotelController.getHotelById);
 
-// ✅ Protected Routes (Managers & Admins)
-// Note: We use checkRole to allow both admin and HotelManager
-router.post("/", verifyToken, checkRole('admin', 'HotelManager'), hotelController.create); 
-router.put("/:id", verifyToken, checkRole('admin', 'HotelManager'), hotelController.update); 
-router.delete("/:id", verifyToken, checkRole('admin', 'HotelManager'), hotelController.delete); 
+// Dynamic Routes next
+router.get("/:id", hotelController.getHotelById);
+router.post("/", hotelController.create); 
+router.put("/:id", hotelController.update); 
+router.delete("/:id", hotelController.delete); 
 
 module.exports = router;

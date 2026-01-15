@@ -138,7 +138,6 @@ export default function Profile() {
     try {
       let imageUrlToSave = user.profile_image;
 
-      // 1. Upload Image First (if selected)
       if (profileImageFile) {
         const imageFormData = new FormData();
         imageFormData.append('profile_image', profileImageFile);
@@ -175,7 +174,6 @@ export default function Profile() {
           payload.password = profileData.password;
       }
 
-      // 3. Send Update Request
       const response = await axios.put(
         `http://localhost:5000/api/users/${user.id}`,
         payload, 
@@ -196,7 +194,6 @@ export default function Profile() {
     }
   };
 
-  // ... (Payment Handlers remain unchanged) ...
   const handlePaymentInput = (e) => {
     const { name, value } = e.target;
     if (name === 'card_number') {
@@ -267,20 +264,13 @@ export default function Profile() {
 
   // --- HANDLER: BECOME HOTEL MANAGER ---
   const handleBecomeManager = async () => {
-      // 1. Check NIC Requirement
-      let nicValue = user.nic;
-      
-      if (!nicValue) {
-          nicValue = window.prompt("To become a partner, we require your National Identity Card (NIC) number. Please enter it below:");
-          if (!nicValue) return; // User cancelled
-      } else {
-          if(!window.confirm("Confirm registration as a Hotel Manager? You will gain access to the Hotel Dashboard.")) return;
-      }
+      // 1. Confirmation
+      if(!window.confirm("Confirm registration as a Hotel Manager? You will gain access to the Hotel Dashboard.")) return;
       
       setIsUpgrading(true);
       try {
-          // 2. API Call (Send NIC if we just collected it)
-          const res = await axios.put('http://localhost:5000/api/users/upgrade-to-manager', { nic: nicValue }, {
+          // 2. API Call
+          const res = await axios.put('http://localhost:5000/api/users/upgrade-to-manager/', {}, {
               withCredentials: true
           });
           
@@ -332,7 +322,6 @@ export default function Profile() {
                   <div className="message success-message">Card Saved Successfully!</div>
                 ) : (
                   <>
-                    {/* (Payment Form Code - Kept Same) */}
                     <div className="card-scene">
                       <div className={`card-object ${isCardFlipped ? 'is-flipped' : ''}`}>
                         <div className={`card-face card-front ${paymentData.card_type ? paymentData.card_type.toLowerCase() : ''}`}>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Search, Heart, User, LogOut, Settings, LayoutDashboard, Building2 } from 'lucide-react' 
+import { Search, Heart, User, LogOut, Settings, LayoutDashboard } from 'lucide-react' // Added LayoutDashboard icon
 import { useUser } from '../../context/UserContext'
 import axios from 'axios'
 import './styles/header.css'
@@ -8,9 +8,7 @@ import './styles/header.css'
 const Header = () => {
   const location = useLocation()
   const navigate = useNavigate()
-  
-  // ✅ Extract isManager and isAdmin
-  const { user, clearUser, isAdmin, isManager } = useUser()
+  const { user, clearUser } = useUser()
   
   // State for Dropdown
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -27,6 +25,7 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Helper function for Greeting
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good Morning!';
@@ -34,21 +33,23 @@ const Header = () => {
     return 'Good Evening!';
   }
 
+  // Helper to get First Name
   const getFirstName = () => {
     if (!user) return '';
     const name = user.username || user.name || 'Traveler';
     return name.split(' ')[0]; 
   }
 
+  // Logout Function
   const handleLogout = async () => {
     setDropdownOpen(false);
     try {
       await axios.post('http://localhost:5000/api/auth/logout', {}, {
         withCredentials: true
       });
-      // Clear all storage just in case
       localStorage.removeItem('token');
       sessionStorage.removeItem('token');
+      document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       clearUser();
       navigate('/auth');
     } catch (err) {
@@ -71,6 +72,7 @@ const Header = () => {
             Travel Plan
           </Link>
           <Link to="/hotel-showcase" className="header-nav-link">Hotels</Link>
+          <Link to="/vehicles" className="header-nav-link">Vehicles</Link>
           <Link to="/about" className="header-nav-link">About</Link>
           <Link to="/contact" className="header-nav-link">Contact</Link>
         </nav>
@@ -109,36 +111,22 @@ const Header = () => {
                     <div className="dropdown-user-details">
                       <span className="dropdown-username">{user.name || user.username || 'User'}</span>
                       <span className="dropdown-email">{user.email}</span>
-                      <span className="dropdown-role-badge">
-                        {isManager ? 'Hotel Partner' : (isAdmin ? 'Admin' : 'Traveler')}
-                      </span>
                     </div>
                     
                     <div className="dropdown-divider"></div>
                     
-                    {/* --- HOTEL MANAGER DASHBOARD LINK --- */}
-                    {(isManager || isAdmin) && (
-                      <Link 
-                        to="/admin"
-                        className="dropdown-item highlight-item"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <Building2 size={16} />
-                        Manager Dashboard
-                      </Link>
-                    )}
-                    
-                    {/* --- SYSTEM ADMIN LINK (Superuser only) --- */}
-                    {isAdmin && (
+                    {/* --- ADMIN DASHBOARD LINK (Only for Admins) --- */}
+                    {(user.role === 'admin' || user.isAdmin) && (
                       <Link 
                         to="/adminDashboard" 
                         className="dropdown-item"
                         onClick={() => setDropdownOpen(false)}
                       >
                         <LayoutDashboard size={16} />
-                        System Admin
+                        Admin Dashboard
                       </Link>
                     )}
+                    {/* --------------------------------------------- */}
 
                     {/* --- ADMIN DASHBOARD LINK (Only for Hotel Managers) --- */}
                     {(user.role === 'admin' || user.isManager) && (
@@ -159,7 +147,7 @@ const Header = () => {
                       onClick={() => setDropdownOpen(false)}
                     >
                       <Settings size={16} />
-                      Profile Settings
+                      Profile
                     </Link>
                     
                     <button 
