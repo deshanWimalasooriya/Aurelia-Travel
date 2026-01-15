@@ -140,6 +140,19 @@ const Header = () => {
                       </Link>
                     )}
 
+                    {/* --- ADMIN DASHBOARD LINK (Only for Hotel Managers) --- */}
+                    {(user.role === 'admin' || user.isManager) && (
+                      <Link 
+                        to="/admin"
+                        className="dropdown-item"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <LayoutDashboard size={16} />
+                        Manager Dashboard
+                      </Link>
+                    )}
+                    {/* --------------------------------------------- */}
+
                     <Link 
                       to="/profile" 
                       className="dropdown-item"
