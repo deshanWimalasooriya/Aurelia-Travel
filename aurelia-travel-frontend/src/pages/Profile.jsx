@@ -267,13 +267,20 @@ export default function Profile() {
 
   // --- HANDLER: BECOME HOTEL MANAGER ---
   const handleBecomeManager = async () => {
-      // 1. Confirmation
-      if(!window.confirm("Confirm registration as a Hotel Manager? You will gain access to the Hotel Dashboard.")) return;
+      // 1. Check NIC Requirement
+      let nicValue = user.nic;
+      
+      if (!nicValue) {
+          nicValue = window.prompt("To become a partner, we require your National Identity Card (NIC) number. Please enter it below:");
+          if (!nicValue) return; // User cancelled
+      } else {
+          if(!window.confirm("Confirm registration as a Hotel Manager? You will gain access to the Hotel Dashboard.")) return;
+      }
       
       setIsUpgrading(true);
       try {
-          // 2. API Call
-          const res = await axios.put('http://localhost:5000/api/users/upgrade-to-manager/', {}, {
+          // 2. API Call (Send NIC if we just collected it)
+          const res = await axios.put('http://localhost:5000/api/users/upgrade-to-manager', { nic: nicValue }, {
               withCredentials: true
           });
           
