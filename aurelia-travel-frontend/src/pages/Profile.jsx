@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useUser } from '../context/UserContext'
+import { useNavigate } from 'react-router-dom'
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion'; 
+<<<<<<< HEAD
 import { CreditCard, MapPin, User, Calendar, Trash2, Edit2, Save, X, Camera, ShieldCheck, Clock, Plane, AlertCircle } from 'lucide-react'; 
+=======
+import { CreditCard, MapPin, User, Calendar, Trash2, Edit2, Save, X, Camera, ShieldCheck, Clock, Plane, AlertCircle, Briefcase, CheckCircle2 } from 'lucide-react'; 
+>>>>>>> origin/dev
 import './styles/profile.css'
 
 export default function Profile() {
   const { user, refreshUser } = useUser()
+  const navigate = useNavigate()
   
   // --- STATE MANAGEMENT ---
   const [editingProfile, setEditingProfile] = useState(false);
@@ -18,6 +24,12 @@ export default function Profile() {
   const [bookings, setBookings] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
   
+<<<<<<< HEAD
+=======
+  // --- MANAGER UPGRADE STATE ---
+  const [isUpgrading, setIsUpgrading] = useState(false);
+
+>>>>>>> origin/dev
   // Form State
   const [profileData, setProfileData] = useState({
     username: '',
@@ -54,7 +66,11 @@ export default function Profile() {
         setProfileData({
             username: user.username || '',
             email: user.email || '',
+<<<<<<< HEAD
             password: '', // Always reset password field
+=======
+            password: '', 
+>>>>>>> origin/dev
             address_line_1: user.address_line_1 || '',
             address_line_2: user.address_line_2 || '',
             address_line_3: user.address_line_3 || '',
@@ -64,7 +80,11 @@ export default function Profile() {
         });
         setPicPreview(user.profile_image || '');
     }
+<<<<<<< HEAD
   }, [user]); // This ensures form fills up when user data arrives
+=======
+  }, [user]);
+>>>>>>> origin/dev
 
   // --- 2. FETCH BOOKINGS ---
   useEffect(() => {
@@ -87,7 +107,8 @@ export default function Profile() {
 
   if (!user) return <div className="profile-not-logged-in">Please sign in to view your profile.</div>
 
-  // --- HANDLERS ---
+
+  // --- HANDLERS (Profile & Payment) ---
   const onFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -105,7 +126,10 @@ export default function Profile() {
 
   const handleEditToggle = () => {
     if (editingProfile) {
+<<<<<<< HEAD
         // Cancel logic: Reset form to original user data
+=======
+>>>>>>> origin/dev
         setProfileData({
             username: user.username || '',
             email: user.email || '',
@@ -131,7 +155,11 @@ export default function Profile() {
     setLoadingProfile(true);
 
     try {
+<<<<<<< HEAD
       let imageUrlToSave = user.profile_image; // Default to existing
+=======
+      let imageUrlToSave = user.profile_image;
+>>>>>>> origin/dev
 
       // 1. Upload Image First (if selected)
       if (profileImageFile) {
@@ -145,7 +173,10 @@ export default function Profile() {
               { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } }
             );
             
+<<<<<<< HEAD
             // Assuming backend returns { imageUrl: '...' }
+=======
+>>>>>>> origin/dev
             if (imageResponse.data.imageUrl) {
                 imageUrlToSave = imageResponse.data.imageUrl;
             }
@@ -155,7 +186,10 @@ export default function Profile() {
         }
       }
 
+<<<<<<< HEAD
       // 2. Prepare Payload (Robust approach: Send fields that are not empty)
+=======
+>>>>>>> origin/dev
       const payload = {
           username: profileData.username,
           email: profileData.email,
@@ -168,7 +202,10 @@ export default function Profile() {
           profile_image: imageUrlToSave
       };
 
+<<<<<<< HEAD
       // Only add password if user typed one
+=======
+>>>>>>> origin/dev
       if (profileData.password && profileData.password.trim() !== "") {
           payload.password = profileData.password;
       }
@@ -182,9 +219,15 @@ export default function Profile() {
 
       if (response.status === 200 || response.data.success) {
         setProfileSuccess(true);
+<<<<<<< HEAD
         await refreshUser(); // Update Context
         setEditingProfile(false);
         setProfileImageFile(null); // Clear selected file
+=======
+        await refreshUser(); 
+        setEditingProfile(false);
+        setProfileImageFile(null); 
+>>>>>>> origin/dev
       }
     } catch (err) {
       console.error('Update failed:', err);
@@ -262,6 +305,39 @@ export default function Profile() {
       return 'Good evening';
   }
 
+<<<<<<< HEAD
+=======
+
+  // --- HANDLER: BECOME HOTEL MANAGER ---
+  const handleBecomeManager = async () => {
+      // 1. Confirmation
+      if(!window.confirm("Confirm registration as a Hotel Manager? You will gain access to the Hotel Dashboard.")) return;
+      
+      setIsUpgrading(true);
+      try {
+          // 2. API Call
+          const res = await axios.put('http://localhost:5000/api/users/upgrade-to-manager/', {}, {
+              withCredentials: true
+          });
+          
+          // 3. Success Handling
+          if(res.data.success) {
+              await refreshUser(); // Update Context State
+              alert("🎉 Congratulations! You are now a Partner.");
+              
+              // Force reload to ensure all Admin Routes are accessible immediately
+              window.location.href = '/admin'; 
+          }
+      } catch (err) {
+          console.error(err);
+          alert("Failed to upgrade: " + (err.response?.data?.message || "Server Error"));
+      } finally {
+          setIsUpgrading(false);
+      }
+  };
+
+
+>>>>>>> origin/dev
   // --- RENDER ---
   return (
     <div className="profile-page-wrapper">
@@ -372,8 +448,15 @@ export default function Profile() {
                   </div>
                   <div className="stat-line"></div>
                   <div className="stat-item">
+<<<<<<< HEAD
                       <span className="stat-val">Member</span>
                       <span className="stat-label">Verified</span>
+=======
+                      <span className="stat-val">
+                          {user.role === 'HotelManager' ? 'Manager' : (user.role === 'admin' ? 'Admin' : 'Member')}
+                      </span>
+                      <span className="stat-label">Status</span>
+>>>>>>> origin/dev
                   </div>
               </div>
           </div>
@@ -385,7 +468,10 @@ export default function Profile() {
                     <div className="card-text-group">
                         <div className="brand">{user.card_type}</div>
                         <div className="digits">
+<<<<<<< HEAD
                             {/* Use fake dots + last 4 digits */}
+=======
+>>>>>>> origin/dev
                             ••••  ••••  ••••  {user.card_number?.slice(-4) || "0000"}
                         </div>
                     </div>
@@ -398,6 +484,27 @@ export default function Profile() {
                   {user.card_type ? 'Update Card' : 'Add New Card'}
               </button>
           </div>
+
+          {/* --- NEW: BECOME A MANAGER SECTION --- */}
+          {user.role !== 'HotelManager' && user.role !== 'admin' && (
+              <div className="card partner-card">
+                  <div className="partner-content">
+                      <div className="partner-icon-bg">
+                          <Briefcase size={24} color="white" />
+                      </div>
+                      <h4>Become a Partner</h4>
+                      <p>Manage your own hotel and reach millions of travelers.</p>
+                      <button 
+                          className="btn-partner full-width" 
+                          onClick={handleBecomeManager}
+                          disabled={isUpgrading}
+                      >
+                          {isUpgrading ? 'Registering...' : 'Register as Hotel Manager'}
+                      </button>
+                  </div>
+              </div>
+          )}
+
         </motion.div>
 
         {/* --- MAIN CONTENT --- */}

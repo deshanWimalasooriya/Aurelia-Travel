@@ -3,14 +3,15 @@ const express = require("express");
 const router = express.Router();
 const hotelController = require("../controllers/hotelController");
 
-
-router.get("/", hotelController.getAllHotels); // Read All
+// Static Routes first
+router.get("/", hotelController.getAllHotels);
 router.get("/newest", hotelController.getNewest);
-router.get('/top-rated', hotelController.getTopRated);
-router.post("/", hotelController.create); // Create
-router.put("/:id", hotelController.update); // Update
-router.delete("/:id", hotelController.delete); // Delete
-router.get("/:id", hotelController.getHotelById); // Read One
+router.get("/top-rated", hotelController.getTopRated);
+
+// Dynamic Routes next
+router.get("/:id", hotelController.getHotelById);
+router.post("/", hotelController.create); 
+router.put("/:id", hotelController.update); 
+router.delete("/:id", hotelController.delete); 
 
 module.exports = router;
-

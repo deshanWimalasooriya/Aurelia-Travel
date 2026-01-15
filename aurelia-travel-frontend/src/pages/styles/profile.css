@@ -476,3 +476,62 @@
   .ticket-left::before, .ticket-left::after { display: none; }
   .ticket-right { width: 100%; flex-direction: row; justify-content: space-between; align-items: center; border-left: none; border-top: 1px solid var(--border-light); padding: 15px; }
 }
+
+/* Partner/Manager Card */
+.partner-card {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    color: white;
+    border: none;
+    overflow: hidden;
+    position: relative;
+    padding: 30px 20px;
+    text-align: center;
+}
+
+.partner-content h4 {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+    color: white;
+}
+
+.partner-content p {
+    font-size: 0.9rem;
+    color: #cbd5e1;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.partner-icon-bg {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px;
+}
+
+.btn-partner {
+    background: #3b82f6; /* Bright Blue */
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+.btn-partner:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.btn-partner:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}

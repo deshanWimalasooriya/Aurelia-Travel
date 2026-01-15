@@ -1,49 +1,53 @@
-// seeds/04_bookings.js
+/**
+ * @param { import("knex").Knex } knex
+ * @returns { Promise<void> } 
+ */
 exports.seed = async function(knex) {
+  console.log('🌱 Seeding Bookings...');
+
+  // 1. Clear existing bookings
   await knex('bookings').del();
 
-  // 1. Fetch Users by the EXACT usernames we set in 01_users.js
-  const testUser = await knex('users').where('username', 'testuser').first();
-  const johnDoe = await knex('users').where('username', 'johndoe').first();
+  // 2. Fetch dependencies (We need a valid User and valid Rooms)
+  const users = await knex('users').select('id', 'username');
+  const rooms = await knex('rooms').select('id', 'hotel_id', 'price_per_night', 'title');
 
-  // 2. Fetch Rooms (Using the names from 03_rooms.js)
-  // Note: Ensure your 03_rooms.js actually creates 'Eiffel View Suite'
-  const parisRoom = await knex('rooms').where('room_type', 'Eiffel View Suite').first();
-  const baliRoom = await knex('rooms').where('room_type', 'Pool Villa').first();
-
-  // Debug: If this prints "false", it means Step 1 didn't run correctly
-  if (!testUser || !johnDoe || !parisRoom || !baliRoom) {
-    console.error("❌ CRITICAL ERROR: Data missing.");
-    console.log("Debug Info:", {
-        User_TestUser: !!testUser,
-        User_JohnDoe: !!johnDoe,
-        Room_Paris: !!parisRoom,
-        Room_Bali: !!baliRoom
-    });
-    return; // Stop here so we don't crash
+  if (users.length === 0 || rooms.length === 0) {
+      console.log('⚠️ SKIPPING BOOKINGS: No users or rooms found to link.');
+      return;
   }
 
-  // 3. Insert Bookings
+  const user = users[0]; // Pick the first user
+  
+  // Pick two different rooms
+  const room1 = rooms[0];
+  const room2 = rooms.length > 1 ? rooms[1] : rooms[0];
+
+  // 3. Create Bookings
   await knex('bookings').insert([
     {
-      user_id: testUser.id,
-      room_id: baliRoom.id,
+      user_id: user.id,
+      hotel_id: room1.hotel_id,
+      room_id: room1.id,
+      check_in: '2026-04-10',
+      check_out: '2026-04-15', // 5 nights
       adults: 2,
-      children: 1,
-      check_in: '2024-06-01',
-      check_out: '2024-06-07',
-      total_price: 1139.94,
+      children: 0,
+      total_price: (room1.price_per_night * 5).toFixed(2), // Calculate total
       status: 'confirmed'
     },
     {
-      user_id: johnDoe.id,
-      room_id: parisRoom.id,
+      user_id: user.id,
+      hotel_id: room2.hotel_id,
+      room_id: room2.id,
+      check_in: '2026-05-20',
+      check_out: '2026-05-22', // 2 nights
       adults: 1,
       children: 0,
-      check_in: '2024-08-10',
-      check_out: '2024-08-15',
-      total_price: 2250.00,
-      status: 'completed'
+      total_price: (room2.price_per_night * 2).toFixed(2),
+      status: 'pending'
     }
   ]);
+
+  console.log(`✅ Created bookings for user: ${user.username}`);
 };

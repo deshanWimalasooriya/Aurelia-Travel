@@ -1,23 +1,36 @@
-const knex = require('../../config/knex')
+const knex = require('../../config/knex');
 
-//Get all rooms
-exports.getAllRooms = async () => await knex('rooms').select('*');
-exports.getRoomById = (id) => knex('rooms').where({ id }).first();
-exports.createRoom = async (room) => {
-  const [newRoom] = await knex('rooms')
-    .insert(room)
-    .returning(['id', 'name', 'type', 'price', 'created_at', 'updated_at']);
-  return newRoom;
+// Get all rooms
+exports.getAllRooms = () => {
+  return knex('rooms').select('*');
 };
-exports.updateRoom = (id, room) => knex('rooms').where({ id }).update(room);
-exports.deleteRoom = (id) => knex('rooms').where({ id }).del();
 
-exports.getRoomsByHotelId = (hotelId) => knex('rooms').where({ hotel_id: hotelId });
+// Get room by ID
+exports.getRoomById = (id) => {
+  return knex('rooms').where({ id }).first();
+};
 
-// Backend/models/roomModel.js
-exports.findById = async (id) => {
-  return await knex('rooms')
-    .select('*')
-    .where({ id })
-    .first();
-}
+// Create new room (MySQL Compatible - No .returning)
+exports.createRoom = async (roomData) => {
+  const [id] = await knex('rooms').insert(roomData);
+  return exports.getRoomById(id);
+};
+
+// Update room
+exports.updateRoom = async (id, roomData) => {
+  await knex('rooms').where({ id }).update(roomData);
+  return exports.getRoomById(id);
+};
+
+// Delete room
+exports.deleteRoom = (id) => {
+  return knex('rooms').where({ id }).del();
+};
+
+// Get rooms by Hotel ID
+exports.getRoomsByHotelId = (hotelId) => {
+  return knex('rooms').where({ hotel_id: hotelId });
+};
+
+// Alias for internal use if needed
+exports.findById = exports.getRoomById;
