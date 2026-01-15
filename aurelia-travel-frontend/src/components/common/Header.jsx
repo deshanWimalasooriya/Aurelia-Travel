@@ -71,7 +71,7 @@ const Header = () => {
           >
             Travel Plan
           </Link>
-          <Link to="/hotels" className="header-nav-link">Hotels</Link>
+          <Link to="/hotel-showcase" className="header-nav-link">Hotels</Link>
           <Link to="/vehicles" className="header-nav-link">Vehicles</Link>
           <Link to="/about" className="header-nav-link">About</Link>
           <Link to="/contact" className="header-nav-link">Contact</Link>

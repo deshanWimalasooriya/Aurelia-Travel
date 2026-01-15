@@ -17,6 +17,9 @@ import AboutPage from './pages/About'
 import ContactPage from './pages/Contact'
 import HotelPage from './pages/HotelPage'
 import AdminDashboard from './pages/AdminDashboard'
+import HotelSearch from './pages/HotelSearch'
+import HotelShowcase from './pages/HotelShowcase'
+
 
 
 import './index.css'
@@ -45,6 +48,8 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/hotels" element={<HotelPage />} />
+          <Route path="/hotel-search" element={<HotelSearch />} />
+          <Route path="/hotel-showcase" element={<HotelShowcase />} />
           
           {/* PROTECTED ADMIN ROUTE */}
           {/* If isAdmin is true, show Dashboard. Otherwise, redirect to Home */}

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useUser } from '../context/UserContext'
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion'; 
-import { CreditCard, MapPin, User, Calendar, Trash2, Edit2, Save, X, Camera } from 'lucide-react'; // Changed Package to Calendar
+import { CreditCard, MapPin, User, Calendar, Trash2, Edit2, Save, X, Camera, ShieldCheck, Clock, Plane, AlertCircle } from 'lucide-react'; 
 import './styles/profile.css'
 
 export default function Profile() {
@@ -14,24 +14,24 @@ export default function Profile() {
   const [profileError, setProfileError] = useState(null);
   const [profileSuccess, setProfileSuccess] = useState(false);
 
-  // --- BOOKINGS STATE (NEW) ---
+  // --- BOOKINGS STATE ---
   const [bookings, setBookings] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
   
-  // Initialize form with current user data
+  // Form State
   const [profileData, setProfileData] = useState({
-    username: user?.username || '',
-    email: user?.email || '',
+    username: '',
+    email: '',
     password: '',
-    address_line_1: user?.address_line_1 || '',
-    address_line_2: user?.address_line_2 || '',
-    address_line_3: user?.address_line_3 || '',
-    city: user?.city || '',
-    postal_code: user?.postal_code || '',
-    country: user?.country || ''
+    address_line_1: '',
+    address_line_2: '',
+    address_line_3: '',
+    city: '',
+    postal_code: '',
+    country: ''
   });
 
-  const [picPreview, setPicPreview] = useState(user?.profile_image || '');
+  const [picPreview, setPicPreview] = useState('');
   const [profileImageFile, setProfileImageFile] = useState(null);
 
   // Payment State
@@ -48,7 +48,25 @@ export default function Profile() {
     expiry_date: ''
   });
 
-  // --- FETCH BOOKINGS (NEW) ---
+  // --- 1. CRITICAL FIX: SYNC STATE WHEN USER LOADS ---
+  useEffect(() => {
+    if (user) {
+        setProfileData({
+            username: user.username || '',
+            email: user.email || '',
+            password: '', // Always reset password field
+            address_line_1: user.address_line_1 || '',
+            address_line_2: user.address_line_2 || '',
+            address_line_3: user.address_line_3 || '',
+            city: user.city || '',
+            postal_code: user.postal_code || '',
+            country: user.country || ''
+        });
+        setPicPreview(user.profile_image || '');
+    }
+  }, [user]); // This ensures form fills up when user data arrives
+
+  // --- 2. FETCH BOOKINGS ---
   useEffect(() => {
     const fetchBookings = async () => {
       if (!user) return;
@@ -64,7 +82,6 @@ export default function Profile() {
         setLoadingBookings(false);
       }
     };
-
     fetchBookings();
   }, [user]);
 
@@ -88,20 +105,21 @@ export default function Profile() {
 
   const handleEditToggle = () => {
     if (editingProfile) {
-      setProfileData({
-        username: user?.username || '',
-        email: user?.email || '',
-        password: '',
-        address_line_1: user?.address_line_1 || '',
-        address_line_2: user?.address_line_2 || '',
-        address_line_3: user?.address_line_3 || '',
-        city: user?.city || '',
-        postal_code: user?.postal_code || '',
-        country: user?.country || ''
-      });
-      setPicPreview(user?.profile_image || '');
-      setProfileImageFile(null);
-      setProfileError(null);
+        // Cancel logic: Reset form to original user data
+        setProfileData({
+            username: user.username || '',
+            email: user.email || '',
+            password: '',
+            address_line_1: user.address_line_1 || '',
+            address_line_2: user.address_line_2 || '',
+            address_line_3: user.address_line_3 || '',
+            city: user.city || '',
+            postal_code: user.postal_code || '',
+            country: user.country || ''
+        });
+        setPicPreview(user.profile_image || '');
+        setProfileImageFile(null);
+        setProfileError(null);
     }
     setEditingProfile(!editingProfile);
   }
@@ -113,44 +131,60 @@ export default function Profile() {
     setLoadingProfile(true);
 
     try {
-      const updateData = {};
-      if (profileData.username !== user.username) updateData.username = profileData.username;
-      if (profileData.email !== user.email) updateData.email = profileData.email;
-      if (profileData.password) updateData.password = profileData.password;
-      if (profileData.address_line_1 !== user.address_line_1) updateData.address_line_1 = profileData.address_line_1;
-      if (profileData.address_line_2 !== user.address_line_2) updateData.address_line_2 = profileData.address_line_2;
-      if (profileData.address_line_3 !== user.address_line_3) updateData.address_line_3 = profileData.address_line_3;
-      if (profileData.city !== user.city) updateData.city = profileData.city;
-      if (profileData.postal_code !== user.postal_code) updateData.postal_code = profileData.postal_code;
-      if (profileData.country !== user.country) updateData.country = profileData.country;
+      let imageUrlToSave = user.profile_image; // Default to existing
 
+      // 1. Upload Image First (if selected)
       if (profileImageFile) {
         const imageFormData = new FormData();
         imageFormData.append('profile_image', profileImageFile);
-        const imageResponse = await axios.post(
-          `http://localhost:5000/api/users/${user.id}/upload-image`,
-          imageFormData,
-          { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } }
-        );
-        if (imageResponse.data.imageUrl) updateData.profile_image = imageResponse.data.imageUrl;
+        
+        try {
+            const imageResponse = await axios.post(
+              `http://localhost:5000/api/users/${user.id}/upload-image`,
+              imageFormData,
+              { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } }
+            );
+            
+            // Assuming backend returns { imageUrl: '...' }
+            if (imageResponse.data.imageUrl) {
+                imageUrlToSave = imageResponse.data.imageUrl;
+            }
+        } catch (uploadErr) {
+            console.error("Image upload failed", uploadErr);
+            setProfileError("Image upload failed, but saving text data...");
+        }
       }
 
-      if (Object.keys(updateData).length === 0) {
-        setProfileError('No changes detected.');
-        setLoadingProfile(false);
-        return;
+      // 2. Prepare Payload (Robust approach: Send fields that are not empty)
+      const payload = {
+          username: profileData.username,
+          email: profileData.email,
+          address_line_1: profileData.address_line_1,
+          address_line_2: profileData.address_line_2,
+          address_line_3: profileData.address_line_3,
+          city: profileData.city,
+          postal_code: profileData.postal_code,
+          country: profileData.country,
+          profile_image: imageUrlToSave
+      };
+
+      // Only add password if user typed one
+      if (profileData.password && profileData.password.trim() !== "") {
+          payload.password = profileData.password;
       }
 
+      // 3. Send Update Request
       const response = await axios.put(
         `http://localhost:5000/api/users/${user.id}`,
-        updateData,
+        payload, 
         { withCredentials: true }
       );
 
-      if (response.data.success) {
+      if (response.status === 200 || response.data.success) {
         setProfileSuccess(true);
+        await refreshUser(); // Update Context
         setEditingProfile(false);
-        await refreshUser(); 
+        setProfileImageFile(null); // Clear selected file
       }
     } catch (err) {
       console.error('Update failed:', err);
@@ -160,6 +194,7 @@ export default function Profile() {
     }
   };
 
+  // ... (Payment Handlers remain unchanged) ...
   const handlePaymentInput = (e) => {
     const { name, value } = e.target;
     if (name === 'card_number') {
@@ -207,7 +242,6 @@ export default function Profile() {
     }
   }
 
-  // --- HELPER FOR DATES ---
   const formatDate = (dateString) => {
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -215,9 +249,22 @@ export default function Profile() {
     });
   };
 
+  const calculateNights = (start, end) => {
+    if(!start || !end) return 1;
+    const s = new Date(start); const e = new Date(end);
+    return Math.max(1, Math.ceil(Math.abs(e-s)/(1000*60*60*24)));
+  }
+
+  const getGreeting = () => {
+      const hour = new Date().getHours();
+      if (hour < 12) return 'Good morning';
+      if (hour < 18) return 'Good afternoon';
+      return 'Good evening';
+  }
+
+  // --- RENDER ---
   return (
     <div className="profile-page-wrapper">
-      {/* Background Animation Elements */}
       <div className="area">
         <ul className="circles">
           <li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li>
@@ -226,8 +273,8 @@ export default function Profile() {
 
       <motion.div 
         className="profile-container"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
       >
         <AnimatePresence>
@@ -236,20 +283,20 @@ export default function Profile() {
               <motion.div 
                 className="modal-content" 
                 onClick={e => e.stopPropagation()}
-                initial={{ scale: 0.8, opacity: 0 }}
+                initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
+                exit={{ scale: 0.9, opacity: 0 }}
               >
                 <button className="modal-close" onClick={() => setShowPaymentModal(false)}><X /></button>
                 <h2 className="modal-title">Add Payment Method</h2>
-                
                 {paymentSuccess ? (
-                  <div className="message success-message">Card Saved!</div>
+                  <div className="message success-message">Card Saved Successfully!</div>
                 ) : (
                   <>
+                    {/* (Payment Form Code - Kept Same) */}
                     <div className="card-scene">
                       <div className={`card-object ${isCardFlipped ? 'is-flipped' : ''}`}>
-                        <div className={`card-face card-front ${paymentData.card_type.toLowerCase()}`}>
+                        <div className={`card-face card-front ${paymentData.card_type ? paymentData.card_type.toLowerCase() : ''}`}>
                            <div className="card-chip"></div>
                            <div className="card-number-display">{paymentData.card_number || '•••• •••• •••• ••••'}</div>
                            <div className="card-details-row">
@@ -257,16 +304,15 @@ export default function Profile() {
                              <div>{paymentData.expiry_date || 'MM/YY'}</div>
                            </div>
                         </div>
-                        <div className={`card-face card-back ${paymentData.card_type.toLowerCase()}`}>
+                        <div className={`card-face card-back ${paymentData.card_type ? paymentData.card_type.toLowerCase() : ''}`}>
                            <div className="card-magnetic-strip"></div>
                            <div className="card-cvv-display">{paymentData.cvv}</div>
                         </div>
                       </div>
                     </div>
-
                     <form onSubmit={handleSavePayment} className="payment-modal-form">
                       <select name="card_type" value={paymentData.card_type} onChange={handlePaymentInput} className="form-input" required>
-                          <option value="">Select Brand</option>
+                          <option value="">Select Card Brand</option>
                           <option value="Visa">Visa</option>
                           <option value="MasterCard">MasterCard</option>
                       </select>
@@ -286,7 +332,9 @@ export default function Profile() {
                           />
                       </div>
                       {paymentError && <div className="message error-message">{paymentError}</div>}
-                      <button type="submit" className="btn-primary full-width" disabled={loadingPayment}>Save Card</button>
+                      <button type="submit" className="btn-primary full-width" disabled={loadingPayment}>
+                          {loadingPayment ? 'Processing...' : 'Save Payment Method'}
+                      </button>
                     </form>
                   </>
                 )}
@@ -295,13 +343,8 @@ export default function Profile() {
           )}
         </AnimatePresence>
 
-        {/* SIDEBAR */}
-        <motion.div 
-          className="profile-sidebar"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-        >
+        {/* --- LEFT SIDEBAR --- */}
+        <motion.div className="profile-sidebar">
           <div className="profile-avatar-section card">
               <div className="avatar-wrapper">
                   {picPreview ? (
@@ -316,63 +359,84 @@ export default function Profile() {
                       </label>
                   )}
               </div>
-              <h2 className="profile-user-name">{user.username}</h2>
+              <h2 className="profile-user-name">
+                  {getGreeting()}, <br/>
+                  <span className="highlight-name">{user.username}</span>
+              </h2>
               <p className="profile-user-email">{user.email}</p>
+              
+              <div className="member-stats">
+                  <div className="stat-item">
+                      <span className="stat-val">{bookings.length}</span>
+                      <span className="stat-label">Trips</span>
+                  </div>
+                  <div className="stat-line"></div>
+                  <div className="stat-item">
+                      <span className="stat-val">Member</span>
+                      <span className="stat-label">Verified</span>
+                  </div>
+              </div>
           </div>
 
           <div className="payment-methods-section card">
-              <h4 className="section-header"><CreditCard size={18}/> Payment Method</h4>
+              <h4 className="section-header"><CreditCard size={18}/> Wallet</h4>
               {user.card_type ? (
                   <div className="payment-mini-card">
-                      <div>
-                          <div className="brand">{user.card_type}</div>
-                          <div className="digits">•••• {user.card_number?.slice(-4)}</div>
-                      </div>
-                      <button className="icon-btn danger" onClick={handleRemovePayment}><Trash2 size={16}/></button>
-                  </div>
+                    <div className="card-text-group">
+                        <div className="brand">{user.card_type}</div>
+                        <div className="digits">
+                            {/* Use fake dots + last 4 digits */}
+                            ••••  ••••  ••••  {user.card_number?.slice(-4) || "0000"}
+                        </div>
+                    </div>
+                    <button className="icon-btn danger" onClick={handleRemovePayment} title="Remove"><Trash2 size={16}/></button>
+                </div>
               ) : (
-                  <div className="empty-state">No card added</div>
+                  <div className="empty-state-small">No payment method added</div>
               )}
               <button className="btn-outline full-width" onClick={() => setShowPaymentModal(true)}>
-                  {user.card_type ? 'Change Card' : 'Add Card'}
+                  {user.card_type ? 'Update Card' : 'Add New Card'}
               </button>
           </div>
         </motion.div>
 
-        {/* MAIN CONTENT */}
-        <motion.div 
-          className="profile-main"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <motion.div className="card" layout>
+        {/* --- MAIN CONTENT --- */}
+        <motion.div className="profile-main">
+          
+          <motion.div className="card details-card" layout>
               <div className="card-header">
-                  <h3><User size={20}/> User Details</h3>
-                  <button className={`btn-icon ${editingProfile ? 'active' : ''}`} onClick={handleEditToggle}>
-                      {editingProfile ? <X size={20}/> : <Edit2 size={20}/>}
+                  <h3><ShieldCheck size={20} className="icon-blue"/> Account Details</h3>
+                  <button className={`btn-edit-toggle ${editingProfile ? 'active' : ''}`} onClick={handleEditToggle}>
+                      {editingProfile ? <><X size={16}/> Cancel</> : <><Edit2 size={16}/> Edit Profile</>}
                   </button>
               </div>
 
-              {profileError && <div className="message error-message">{profileError}</div>}
-              {profileSuccess && <div className="message success-message">Profile Updated!</div>}
+              {profileError && (
+                <div className="message error-message">
+                  <AlertCircle size={16} style={{display:'inline', marginRight:'5px'}}/>
+                  {profileError}
+                </div>
+              )}
+              
+              {profileSuccess && <div className="message success-message">Profile Updated Successfully!</div>}
 
               <form onSubmit={handleSaveProfile} className={editingProfile ? 'form-grid' : 'details-grid'}>
                   {editingProfile ? (
+                      /* EDIT MODE */
                       <>
                           <div className="form-group">
                               <label>Username</label>
                               <input name="username" value={profileData.username} onChange={handleInputChange} className="form-input"/>
                           </div>
                           <div className="form-group">
-                              <label>Email</label>
+                              <label>Email Address</label>
                               <input name="email" value={profileData.email} onChange={handleInputChange} className="form-input"/>
                           </div>
                           <div className="form-group span-2">
-                              <label>New Password (Optional)</label>
-                              <input name="password" type="password" value={profileData.password} onChange={handleInputChange} className="form-input" placeholder="Leave blank to keep current"/>
+                              <label>New Password <span className="optional">(Leave blank to keep current)</span></label>
+                              <input name="password" type="password" value={profileData.password} onChange={handleInputChange} className="form-input" placeholder="••••••" />
                           </div>
-                          <div className="divider span-2">Address</div>
+                          <div className="divider span-2">Shipping / Billing Address</div>
                           <div className="form-group span-2">
                               <label>Address Line 1</label>
                               <input name="address_line_1" value={profileData.address_line_1} onChange={handleInputChange} className="form-input"/>
@@ -392,19 +456,20 @@ export default function Profile() {
                           </div>
                       </>
                   ) : (
+                      /* VIEW MODE */
                       <>
                           <div className="detail-item">
-                              <span className="label">Username</span>
+                              <span className="label">Full Name</span>
                               <span className="value">{user.username}</span>
                           </div>
                           <div className="detail-item">
-                              <span className="label">Email</span>
+                              <span className="label">Email Address</span>
                               <span className="value">{user.email}</span>
                           </div>
                           <div className="detail-item span-2">
                               <span className="label">Address</span>
-                              <span className="value">
-                                  <MapPin size={14} style={{display:'inline', marginRight:5}}/>
+                              <span className="value flex-align">
+                                  <MapPin size={16} className="icon-gray"/>
                                   {[user.address_line_1, user.city, user.country].filter(Boolean).join(', ') || 'No address set'}
                               </span>
                           </div>
@@ -413,38 +478,48 @@ export default function Profile() {
               </form>
           </motion.div>
 
-          {/* --- MY BOOKINGS CARD (Updated) --- */}
-          <div className="card">
-              <div className="card-header">
-                  <h3><Calendar size={20}/> My Bookings</h3>
-              </div>
+          {/* BOOKINGS LIST */}
+          <div className="bookings-section">
+              <h3 className="section-title"><Plane size={22}/> Your Journeys</h3>
+              
               <div className="orders-list">
                   {loadingBookings ? (
                     <div className="empty-state">Loading your trips...</div>
                   ) : (!bookings || bookings.length === 0) ? (
-                      <div className="empty-state">No upcoming trips. Time to book one!</div>
+                      <div className="empty-state">
+                          <Calendar size={40} className="empty-icon"/>
+                          <p>You haven't booked any trips yet.</p>
+                          <span className="sub-empty">Your next adventure is just a click away.</span>
+                      </div>
                   ) : (
                       bookings.map(booking => (
-                          <div key={booking._id || booking.id} className="order-item">
-                              <div className="order-left">
-                                  {/* Show Hotel Name if populated, otherwise ID */}
-                                  <h4 className="booking-hotel-name">{booking.hotel?.name || "Hotel Reservation"}</h4>
-                                  <div className="booking-room-type">
-                                    {booking.room?.title || booking.room?.name || "Standard Room"}
-                                  </div>
-                                  <div className="order-date">
-                                    {formatDate(booking.checkIn || booking.check_in)} — {formatDate(booking.checkOut || booking.check_out)}
+                          <div key={booking._id || booking.id} className="booking-ticket">
+                              <div className="ticket-left">
+                                  <div className="ticket-date-box">
+                                      <span className="month">{new Date(booking.checkIn || booking.check_in).toLocaleString('default', { month: 'short' })}</span>
+                                      <span className="day">{new Date(booking.checkIn || booking.check_in).getDate()}</span>
                                   </div>
                               </div>
-                              <div className="order-right">
-                                  <span className={`status-badge ${booking.status?.toLowerCase()}`}>{booking.status}</span>
-                                  <div className="order-total">${Number(booking.totalPrice || booking.total_price).toFixed(2)}</div>
+                              <div className="ticket-center">
+                                  <h4 className="booking-hotel-name">{booking.hotel?.name || "Hotel Reservation"}</h4>
+                                  <div className="booking-meta">
+                                      <span className="meta-item"><Clock size={14}/> {calculateNights(booking.checkIn, booking.checkOut)} Nights</span>
+                                      <span className="meta-item">• {booking.room?.title || booking.room?.name || "Standard Room"}</span>
+                                  </div>
+                                  <div className="booking-dates-text">
+                                      {formatDate(booking.checkIn || booking.check_in)} — {formatDate(booking.checkOut || booking.check_out)}
+                                  </div>
+                              </div>
+                              <div className="ticket-right">
+                                  <span className={`ticket-status ${booking.status?.toLowerCase()}`}>{booking.status}</span>
+                                  <div className="ticket-price">${Number(booking.totalPrice || booking.total_price).toFixed(0)}</div>
                               </div>
                           </div>
                       ))
                   )}
               </div>
           </div>
+
         </motion.div>
       </motion.div>
     </div>
