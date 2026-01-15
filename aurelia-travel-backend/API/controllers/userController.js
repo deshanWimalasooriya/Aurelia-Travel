@@ -207,3 +207,37 @@ exports.getCurrentUser = async (req, res) => {
         });
     }
 };
+
+//update the user role to manager
+exports.upgradeToManager = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+        if (user.role === 'manager') {
+            return res.status(400).json({
+                success: false,
+                message: 'User is already a manager'
+            });
+        }
+        const updatedUser = await userModel.updateUser(userId, { role: 'manager' });
+        res.status(200).json({
+            success: true,
+            message: 'User upgraded to manager successfully',
+            data: updatedUser
+        });
+    } catch (err) {
+        console.error('Error upgrading user to manager:', err);
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
+    }
+};
+
+

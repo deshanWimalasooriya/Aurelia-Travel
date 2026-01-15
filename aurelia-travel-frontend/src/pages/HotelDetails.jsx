@@ -12,7 +12,7 @@ const HotelDetails = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useUser()
-  const roomsRef = useRef(null) // Scroll reference
+  const roomsRef = useRef(null) 
   
   const [hotel, setHotel] = useState(null)
   const [rooms, setRooms] = useState([])
@@ -36,10 +36,15 @@ const HotelDetails = () => {
           axios.get(`http://localhost:5000/api/rooms/hotel/${id}`)
         ]);
         
-        setHotel(Array.isArray(hotelRes.data) ? hotelRes.data[0] : hotelRes.data);
-        setRooms(Array.isArray(roomRes.data) ? roomRes.data : (roomRes.data.data || []));
+        // Handle array vs object response safely
+        const hotelData = Array.isArray(hotelRes.data) ? hotelRes.data[0] : hotelRes.data;
+        // Backend now returns { data: ... } or array depending on controller
+        const roomsData = Array.isArray(roomRes.data) ? roomRes.data : (roomRes.data.data || []);
+        
+        setHotel(hotelData);
+        setRooms(roomsData);
       } catch (err) {
-        console.error(err);
+        console.error("Fetch details error:", err);
       } finally {
         setLoading(false)
       }
@@ -47,7 +52,7 @@ const HotelDetails = () => {
     if (id) fetchData()
   }, [id])
 
-  // --- 2. CALCULATIONS (Untouched) ---
+  // --- 2. CALCULATIONS ---
   const calculateDays = (start, end) => {
     if (!start || !end) return 0;
     const startDate = new Date(start);
@@ -59,12 +64,13 @@ const HotelDetails = () => {
 
   const nightCount = calculateDays(dates.checkIn, dates.checkOut); 
 
-  // --- 3. AUTO-UPDATE PRICE (Untouched) ---
+  // --- 3. AUTO-UPDATE PRICE ---
   useEffect(() => {
     if (selectedRoomId) {
         const room = rooms.find(r => (r._id || r.id) === selectedRoomId);
         if (room) {
-            const pricePerNight = room.price_per_night || room.price || 0;
+            // Support both old 'price' and new 'price_per_night'
+            const pricePerNight = parseFloat(room.price_per_night || room.price || 0);
             const effectiveNights = nightCount > 0 ? nightCount : 1;
             setTotalPrice(pricePerNight * effectiveNights);
         }
@@ -74,6 +80,7 @@ const HotelDetails = () => {
   }, [selectedRoomId, nightCount, rooms]);
 
   const handleRoomSelect = (room) => {
+    // Toggle selection
     if (selectedRoomId === (room._id || room.id)) {
         setSelectedRoomId(null);
     } else {
@@ -85,7 +92,6 @@ const HotelDetails = () => {
   const handleReserve = async () => {
     if (!user) { alert("Please login to book this stay."); navigate('/auth'); return; }
     if (!selectedRoomId) { 
-        // Scroll to rooms if not selected
         roomsRef.current?.scrollIntoView({ behavior: 'smooth' });
         alert("Please select a room below."); 
         return; 
@@ -122,12 +128,31 @@ const HotelDetails = () => {
   )
   if (!hotel) return <div className="error-screen">Hotel not found</div>
 
-  // Image Logic
-  const images = hotel.photos?.length > 0 ? hotel.photos : [
-    hotel.image_url || 'https://images.unsplash.com/photo-1566073771259-6a8506099945',
-    'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b',
-    'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa'
-  ];
+  // --- DATA MAPPING HELPERS ---
+  
+  // 1. Images: Use DB photos array if available, else fallback
+  let images = [];
+  if (Array.isArray(hotel.photos) && hotel.photos.length > 0) {
+      images = hotel.photos;
+  } else if (hotel.image_url) {
+      images = [
+          hotel.image_url,
+          'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b', // Fallback interior
+          'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa'  // Fallback detail
+      ];
+  } else {
+      images = [
+          'https://images.unsplash.com/photo-1566073771259-6a8506099945',
+          'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b',
+          'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa'
+      ];
+  }
+
+  // 2. Location: Construct string
+  const locationDisplay = hotel.location || `${hotel.city || ''}, ${hotel.country || ''}`;
+
+  // 3. Rating: Use new average field
+  const ratingDisplay = hotel.rating_average || hotel.rating || 0;
 
   return (
     <div className="hotel-details-page">
@@ -143,16 +168,16 @@ const HotelDetails = () => {
                 <h1 className="hotel-title">{hotel.name}</h1>
                 <div className="hotel-location">
                     <MapPin size={18} className="text-primary" /> 
-                    {hotel.location} • <span className="link-text">Show on map</span>
+                    {locationDisplay} • <span className="link-text">Show on map</span>
                 </div>
             </div>
             <div className="header-right">
                  <div className="rating-box">
                      <div className="rating-info">
                          <span className="rating-status">Exceptional</span>
-                         <span className="rating-count">124 verified reviews</span>
+                         <span className="rating-count">{hotel.total_reviews || 124} verified reviews</span>
                      </div>
-                     <span className="rating-score">4.8</span>
+                     <span className="rating-score">{Number(ratingDisplay).toFixed(1)}</span>
                  </div>
             </div>
         </header>
@@ -164,10 +189,12 @@ const HotelDetails = () => {
                 <button className="view-all-btn">View all photos</button>
             </div>
             <div className="gallery-side">
-                <img src={images[1]} alt="Interior" />
-                <div className="img-overlay-wrapper">
-                    <img src={images[2]} alt="Detail" />
-                </div>
+                {images[1] && <img src={images[1]} alt="Interior" />}
+                {images[2] && (
+                    <div className="img-overlay-wrapper">
+                        <img src={images[2]} alt="Detail" />
+                    </div>
+                )}
             </div>
         </div>
 
@@ -187,6 +214,7 @@ const HotelDetails = () => {
                     </div>
 
                     <div className="amenities-grid">
+                         {/* Static Visual Icons for UI Consistency */}
                          <div className="amenity-item"><Wifi size={20}/> <span>High-speed WiFi</span></div>
                          <div className="amenity-item"><Car size={20}/> <span>Free Valet Parking</span></div>
                          <div className="amenity-item"><Utensils size={20}/> <span>Restaurant</span></div>
@@ -194,15 +222,25 @@ const HotelDetails = () => {
                          <div className="amenity-item"><ShieldCheck size={20}/> <span>24/7 Security</span></div>
                          <div className="amenity-item"><Coffee size={20}/> <span>Breakfast Inc.</span></div>
                     </div>
+                    
+                    {/* Dynamic DB Facilities List (if available) */}
+                    {Array.isArray(hotel.facilities) && hotel.facilities.length > 0 && (
+                        <div className="dynamic-tags">
+                            {hotel.facilities.map((fac, i) => (
+                                <span key={i} className="facility-tag">{fac}</span>
+                            ))}
+                        </div>
+                    )}
                 </section>
 
-                {/* 2. ROOM SELECTION (The Major Upgrade) */}
+                {/* 2. ROOM SELECTION */}
                 <section id="rooms-section" ref={roomsRef} className="rooms-section">
                     <h2 className="section-header">Select your accommodation</h2>
                     <div className="room-cards-list">
                         {rooms.map((room) => {
                             const isSelected = selectedRoomId === (room._id || room.id);
-                            const priceDisplay = room.price_per_night || room.price || 0;
+                            const priceDisplay = parseFloat(room.price_per_night || room.price || 0);
+                            const capacity = room.capacity || room.maxPeople || 2;
                             
                             return (
                                 <div 
@@ -213,13 +251,22 @@ const HotelDetails = () => {
                                     <div className="room-content">
                                         <div className="room-header-flex">
                                             <h3>{room.title || room.name}</h3>
-                                            <span className="room-capacity"><Users size={16}/> {room.maxPeople || 2} Guests</span>
+                                            <span className="room-capacity"><Users size={16}/> {capacity} Guests</span>
                                         </div>
-                                        <p className="room-desc">{room.desc || "A spacious room with king size bed and city view."}</p>
+                                        <p className="room-desc">{room.description || room.desc || "A spacious room with king size bed and city view."}</p>
                                         
                                         <div className="room-perks">
-                                            <span><Check size={14} className="text-green"/> Free Cancellation</span>
-                                            <span><Check size={14} className="text-green"/> Breakfast included</span>
+                                            {/* Map dynamic room amenities if available, else static */}
+                                            {Array.isArray(room.facilities) && room.facilities.length > 0 ? (
+                                                room.facilities.slice(0, 2).map((fac, i) => (
+                                                    <span key={i}><Check size={14} className="text-green"/> {fac}</span>
+                                                ))
+                                            ) : (
+                                                <>
+                                                    <span><Check size={14} className="text-green"/> Free Cancellation</span>
+                                                    <span><Check size={14} className="text-green"/> Breakfast included</span>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
 
@@ -248,14 +295,14 @@ const HotelDetails = () => {
                     <div className="booking-header-row">
                         <div>
                              <span className="price-large">
-                                ${totalPrice > 0 ? totalPrice.toFixed(0) : (hotel.cheapestPrice || 0)}
+                                ${totalPrice > 0 ? totalPrice.toFixed(0) : (parseFloat(hotel.price || 0))}
                             </span>
                             <span className="price-unit">
-                                 {nightCount > 0 ? ` total for ${nightCount} nights` : ' / night'}
+                                 {nightCount > 0 ? ` total for ${nightCount} nights` : ' starting price'}
                             </span>
                         </div>
                         <div className="rating-micro">
-                            <Star size={14} fill="#fbbf24" stroke="none" /> 4.8
+                            <Star size={14} fill="#fbbf24" stroke="none" /> {Number(ratingDisplay).toFixed(1)}
                         </div>
                     </div>
 

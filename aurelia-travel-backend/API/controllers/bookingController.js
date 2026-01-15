@@ -1,4 +1,5 @@
 const bookingModel = require('../models/bookingModel');
+const roomModel = require('../models/roomModel'); // Need this to find hotel_id
 
 exports.getAllBookings = async (req, res) => {
     try {
@@ -22,14 +23,32 @@ exports.getBookingById = async (req, res) => {
 exports.createBooking = async (req, res) => {
     try {
         const userId = req.user.userId || req.user.id;
+        const { room_id, check_in, check_out, adults, children, total_price } = req.body;
 
-        // Automatically assign the logged-in user's ID to the booking
-        const bookingData = { ...req.body, user_id: userId };
+        // 1. Fetch Room to get the correct Hotel ID
+        const room = await roomModel.findById(room_id);
+        if (!room) {
+            return res.status(404).json({ message: 'Room not found' });
+        }
 
-        // Note: Ensure req.body contains room_id, check_in, check_out, total_price
+        // 2. Construct Data
+        const bookingData = {
+            user_id: userId,
+            room_id: room_id,
+            hotel_id: room.hotel_id, // Auto-link hotel
+            check_in,
+            check_out,
+            adults: adults || 1,
+            children: children || 0,
+            total_price,
+            status: 'confirmed' // Default status
+        };
+
+        // 3. Insert
         const newBooking = await bookingModel.createBooking(bookingData);
         res.status(201).json(newBooking);
     } catch (err) {
+        console.error("Booking Error:", err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -54,6 +73,7 @@ exports.deleteBooking = async (req, res) => {
     }
 };
 
+// Admin use mostly
 exports.getBookingsByUserId = async (req, res) => {
     try {
         const bookings = await bookingModel.getBookingsByUserId(req.params.userId);
@@ -63,12 +83,39 @@ exports.getBookingsByUserId = async (req, res) => {
     }
 };
 
+// Client Profile use
 exports.getMyBookings = async (req, res) => {
     try {
         const userId = req.user.userId || req.user.id;
-        const bookings = await bookingModel.getBookingsByUserId(userId);
-        res.json(bookings);
+        
+        // Fetch detailed data (with joined Hotel/Room names)
+        const rawBookings = await bookingModel.getDetailedBookingsByUserId(userId);
+
+        // Transform flat SQL result into Nested JSON for Frontend
+        // Frontend expects: booking.hotel.name, booking.room.title
+        const formattedBookings = rawBookings.map(b => ({
+            id: b.id,
+            checkIn: b.check_in,
+            checkOut: b.check_out,
+            totalPrice: b.total_price,
+            status: b.status,
+            adults: b.adults,
+            hotel: {
+                id: b.hotel_id,
+                name: b.hotel_name,
+                image: b.hotel_image,
+                city: b.hotel_city
+            },
+            room: {
+                id: b.room_id,
+                title: b.room_title,
+                type: b.room_type
+            }
+        }));
+
+        res.json(formattedBookings);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 };

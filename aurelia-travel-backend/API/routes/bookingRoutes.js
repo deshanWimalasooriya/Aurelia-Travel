@@ -3,7 +3,7 @@ const router = express.Router();
 const bookingController = require('../controllers/bookingController');
 const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 
-// Get current user's bookings (Must be before /:id)
+// Get current user's bookings (Critical: Must be before /:id)
 router.get('/my-bookings', verifyToken, bookingController.getMyBookings);
 
 // Get bookings by user ID (Admin only)

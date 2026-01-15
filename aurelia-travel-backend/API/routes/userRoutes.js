@@ -16,5 +16,6 @@ router.post('/', userController.createUser);
 router.put('/:id', verifyToken, userController.updateUser);
 router.delete('/:id', verifyToken, checkRole('admin'), userController.deleteUser);
 
+router.put('/upgrade-to-manager', verifyToken, userController.upgradeToManager);
 
 module.exports = router;
