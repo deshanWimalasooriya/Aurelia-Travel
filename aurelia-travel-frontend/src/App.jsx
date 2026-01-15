@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
-import { UserProvider, useUser } from './context/UserContext'
+import { UserProvider, useUser } from './context/UserContext' // Added UserProvider
 import Layout from './components/layout/Layout'
 
 // --- Import Pages ---
@@ -15,37 +15,36 @@ import TripDashboard from './pages/TripDashboard'
 import AboutPage from './pages/About'
 import ContactPage from './pages/Contact'
 import HotelPage from './pages/HotelPage'
-import AdminDashboard from './pages/AdminDashboard' 
+import AdminDashboard from './pages/AdminDashboard' // Old admin dash (optional)
 import HotelSearch from './pages/HotelSearch'
 import HotelShowcase from './pages/HotelShowcase'
 
-// --- Import Admin/Manager Components ---
+// --- Import Admin Components ---
 import DashboardLayout from './pages/admin/DashboardLayout'
 import DashboardOverview from './pages/admin/DashboardOverview'
 import DashboardRooms from './pages/admin/DashboardRooms'
-import DashboardHotel from './pages/admin/DashboardHotels'
 
 import './index.css'
 
 // Helper component to access Context safely inside the Provider
 const AppRoutes = () => {
-  // ✅ Extract isManager from context
-  const { user, isAdmin, isManager, loading } = useUser(); 
+  const { user, isAdmin, loading } = useUser(); // Using useUser context we fixed earlier
 
   if (loading) return <div className="loading-screen">Loading Aurelia Travel...</div>;
 
   return (
     <Routes>
       
-      {/* --- HOTEL MANAGEMENT DASHBOARD ROUTES --- */}
-      {/* Guard: Allow if user is Admin OR HotelManager */}
-      <Route path="/admin" element={(isAdmin || isManager) ? <DashboardLayout /> : <Navigate to="/" />}>
+      {/* --- ADMIN DASHBOARD ROUTES (New System) --- */}
+      {/* These run outside the main Layout so they have their own Sidebar */}
+      <Route path="/admin" element={isAdmin ? <DashboardLayout /> : <Navigate to="/" />}>
           <Route index element={<DashboardOverview />} />
           <Route path="rooms" element={<DashboardRooms />} />
-          <Route path="hotels" element={<DashboardHotel />} />
+          {/* Add bookings, reviews, etc. here later */}
       </Route>
 
-      {/* --- MAIN APP ROUTES --- */}
+      {/* --- MAIN APP ROUTES (With Navbar/Footer) --- */}
+      {/* We wrap these in a wildcard route so they share the main Layout */}
       <Route path="/*" element={
         <Layout>
           <Routes>
@@ -67,7 +66,7 @@ const AppRoutes = () => {
             <Route path="/travel-itinerary" element={user ? <TravelPlanPage /> : <Navigate to="/auth" />} />
             <Route path="/trip-dashboard" element={user ? <TripDashboard /> : <Navigate to="/auth" />} />
 
-            {/* Old Legacy Admin Route */}
+            {/* Old Admin Route (Keep for backward compatibility if needed) */}
             <Route path="/adminDashboard" element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />
           </Routes>
         </Layout>
@@ -79,8 +78,10 @@ const AppRoutes = () => {
 
 function App() {
   return (
+    // 1. Wrap Providers
     <UserProvider>
       <AuthProvider>
+         {/* 2. Render Routes */}
          <AppRoutes />
       </AuthProvider>
     </UserProvider>
