@@ -1,189 +1,225 @@
-// aurelia-travel-backend/API/models/adminModel.js
 const knex = require('../../config/knex');
 
-// Dashboard Statistics
+// Get Dashboard Statistics
 exports.getStats = async () => {
-  const bookings = await knex('bookings').count('* as count').first();
-  const revenue = await knex('bookings').sum('total_price as total').first();
-  const users = await knex('users').count('* as count').first();
-  const hotels = await knex('hotels').count('* as count').first();
-  const rooms = await knex('rooms').count('* as count').first();
-  
-  // Recent growth (last 30 days)
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
-  const recentBookings = await knex('bookings')
-    .where('created_at', '>=', thirtyDaysAgo)
-    .count('* as count').first();
-  
-  const recentRevenue = await knex('bookings')
-    .where('created_at', '>=', thirtyDaysAgo)
-    .sum('total_price as total').first();
-  
-  return {
-    bookings: bookings.count,
-    revenue: revenue.total || 0,
-    users: users.count,
-    hotels: hotels.count,
-    rooms: rooms.count,
-    recentBookings: recentBookings.count,
-    recentRevenue: recentRevenue.total || 0
-  };
+  try {
+    // Total Bookings
+    const bookingsCount = await knex('bookings').count('* as count').first();
+    
+    // Total Revenue
+    const revenue = await knex('bookings')
+      .where('status', 'confirmed')
+      .orWhere('status', 'completed')
+      .sum('total_price as total')
+      .first();
+    
+    // Total Users
+    const usersCount = await knex('users')
+      .where('role', 'user')
+      .count('* as count')
+      .first();
+    
+    // Total Hotels
+    const hotelsCount = await knex('hotels').count('* as count').first();
+    
+    // Available Rooms
+    const availableRooms = await knex('rooms')
+      .where('is_available', true)
+      .count('* as count')
+      .first();
+    
+    // Pending Bookings
+    const pendingBookings = await knex('bookings')
+      .where('status', 'pending')
+      .count('* as count')
+      .first();
+
+    // Revenue This Month
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const monthlyRevenue = await knex('bookings')
+      .where('status', 'confirmed')
+      .andWhere('created_at', '>=', startOfMonth)
+      .sum('total_price as total')
+      .first();
+
+    // Last Month Revenue for comparison
+    const lastMonthStart = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1);
+    const lastMonthEnd = startOfMonth;
+    const lastMonthRevenue = await knex('bookings')
+      .where('status', 'confirmed')
+      .whereBetween('created_at', [lastMonthStart, lastMonthEnd])
+      .sum('total_price as total')
+      .first();
+
+    // Calculate percentage change
+    const revenueChange = lastMonthRevenue?.total 
+      ? (((monthlyRevenue?.total || 0) - lastMonthRevenue.total) / lastMonthRevenue.total * 100).toFixed(1)
+      : 0;
+
+    return {
+      bookings: parseInt(bookingsCount.count) || 0,
+      revenue: parseFloat(revenue?.total) || 0,
+      users: parseInt(usersCount.count) || 0,
+      hotels: parseInt(hotelsCount.count) || 0,
+      availableRooms: parseInt(availableRooms.count) || 0,
+      pendingBookings: parseInt(pendingBookings.count) || 0,
+      monthlyRevenue: parseFloat(monthlyRevenue?.total) || 0,
+      revenueChange: parseFloat(revenueChange)
+    };
+  } catch (err) {
+    console.error('Error fetching admin stats:', err);
+    throw err;
+  }
 };
 
-// Recent Bookings with Details
+// Get Recent Bookings with User and Room Details
 exports.getRecentBookings = async (limit = 10) => {
-  return await knex('bookings')
-    .select(
-      'bookings.*',
-      'users.username as user_name',
-      'users.email as user_email',
-      'rooms.room_type',
-      'hotels.name as hotel_name'
-    )
-    .leftJoin('users', 'bookings.user_id', 'users.id')
-    .leftJoin('rooms', 'bookings.room_id', 'rooms.id')
-    .leftJoin('hotels', 'rooms.hotel_id', 'hotels.id')
-    .orderBy('bookings.created_at', 'desc')
-    .limit(limit);
+  try {
+    return await knex('bookings')
+      .select(
+        'bookings.*',
+        'users.username as user_name',
+        'users.email as user_email',
+        'rooms.room_type',
+        'rooms.price_per_night',
+        'hotels.name as hotel_name'
+      )
+      .leftJoin('users', 'bookings.user_id', 'users.id')
+      .leftJoin('rooms', 'bookings.room_id', 'rooms.id')
+      .leftJoin('hotels', 'rooms.hotel_id', 'hotels.id')
+      .orderBy('bookings.created_at', 'desc')
+      .limit(limit);
+  } catch (err) {
+    console.error('Error fetching recent bookings:', err);
+    throw err;
+  }
 };
 
-// Revenue Analytics (Last 7 days)
-exports.getRevenueChart = async (days = 7) => {
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - days);
-  
-  return await knex('bookings')
-    .select(knex.raw('DATE(created_at) as date'))
-    .sum('total_price as revenue')
-    .count('* as bookings')
-    .where('created_at', '>=', startDate)
-    .groupBy(knex.raw('DATE(created_at)'))
-    .orderBy('date', 'asc');
+// Get Revenue by Month (Last 6 Months)
+exports.getMonthlyRevenue = async () => {
+  try {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const data = await knex('bookings')
+      .select(
+        knex.raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+        knex.raw('SUM(total_price) as revenue'),
+        knex.raw('COUNT(*) as booking_count')
+      )
+      .where('created_at', '>=', sixMonthsAgo)
+      .whereIn('status', ['confirmed', 'completed'])
+      .groupBy('month')
+      .orderBy('month', 'asc');
+
+    return data;
+  } catch (err) {
+    console.error('Error fetching monthly revenue:', err);
+    throw err;
+  }
 };
 
-// Top Hotels by Revenue
+// Get Top Hotels by Bookings
 exports.getTopHotels = async (limit = 5) => {
-  return await knex('hotels')
-    .select(
-      'hotels.id',
-      'hotels.name',
-      'hotels.location',
-      'hotels.image_url'
-    )
-    .sum('bookings.total_price as revenue')
-    .count('bookings.id as booking_count')
-    .leftJoin('rooms', 'hotels.id', 'rooms.hotel_id')
-    .leftJoin('bookings', 'rooms.id', 'bookings.room_id')
-    .groupBy('hotels.id')
-    .orderBy('revenue', 'desc')
-    .limit(limit);
-};
-
-// User Activity Analytics
-exports.getUserActivity = async () => {
-  const totalUsers = await knex('users').count('* as count').first();
-  const activeUsers = await knex('users')
-    .distinct('users.id')
-    .leftJoin('bookings', 'users.id', 'bookings.user_id')
-    .whereNotNull('bookings.id')
-    .count('* as count').first();
-  
-  return {
-    total: totalUsers.count,
-    active: activeUsers.count,
-    inactive: totalUsers.count - activeUsers.count
-  };
-};
-
-// Booking Status Distribution
-exports.getBookingStatus = async () => {
-  return await knex('bookings')
-    .select('status')
-    .count('* as count')
-    .groupBy('status');
-};
-
-// All Users with Pagination
-exports.getAllUsers = async (page = 1, limit = 10) => {
-  const offset = (page - 1) * limit;
-  
-  const users = await knex('users')
-    .select('*')
-    .orderBy('created_at', 'desc')
-    .limit(limit)
-    .offset(offset);
-  
-  const total = await knex('users').count('* as count').first();
-  
-  return {
-    users,
-    total: total.count,
-    page,
-    totalPages: Math.ceil(total.count / limit)
-  };
-};
-
-// Update User Role/Status
-exports.updateUserStatus = async (userId, updates) => {
-  return await knex('users')
-    .where({ id: userId })
-    .update(updates);
-};
-
-// Delete User
-exports.deleteUser = async (userId) => {
-  return await knex('users')
-    .where({ id: userId })
-    .del();
-};
-
-// All Bookings with Filters
-exports.getAllBookingsWithFilters = async (filters = {}, page = 1, limit = 10) => {
-  const offset = (page - 1) * limit;
-  
-  let query = knex('bookings')
-    .select(
-      'bookings.*',
-      'users.username as user_name',
-      'rooms.room_type',
-      'hotels.name as hotel_name'
-    )
-    .leftJoin('users', 'bookings.user_id', 'users.id')
-    .leftJoin('rooms', 'bookings.room_id', 'rooms.id')
-    .leftJoin('hotels', 'rooms.hotel_id', 'hotels.id');
-  
-  if (filters.status) {
-    query = query.where('bookings.status', filters.status);
+  try {
+    return await knex('hotels')
+      .select(
+        'hotels.id',
+        'hotels.name',
+        'hotels.location',
+        'hotels.rating',
+        knex.raw('COUNT(bookings.id) as booking_count'),
+        knex.raw('SUM(bookings.total_price) as total_revenue')
+      )
+      .leftJoin('rooms', 'hotels.id', 'rooms.hotel_id')
+      .leftJoin('bookings', 'rooms.id', 'bookings.room_id')
+      .groupBy('hotels.id', 'hotels.name', 'hotels.location', 'hotels.rating')
+      .orderBy('booking_count', 'desc')
+      .limit(limit);
+  } catch (err) {
+    console.error('Error fetching top hotels:', err);
+    throw err;
   }
-  
-  if (filters.startDate) {
-    query = query.where('bookings.check_in', '>=', filters.startDate);
-  }
-  
-  if (filters.endDate) {
-    query = query.where('bookings.check_out', '<=', filters.endDate);
-  }
-  
-  const bookings = await query
-    .orderBy('bookings.created_at', 'desc')
-    .limit(limit)
-    .offset(offset);
-  
-  const total = await knex('bookings').count('* as count').first();
-  
-  return {
-    bookings,
-    total: total.count,
-    page,
-    totalPages: Math.ceil(total.count / limit)
-  };
 };
 
-// Update Booking Status
-exports.updateBookingStatus = async (bookingId, status) => {
-  return await knex('bookings')
-    .where({ id: bookingId })
-    .update({ status, updated_at: knex.fn.now() });
+// Get User Growth Data
+exports.getUserGrowth = async () => {
+  try {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    return await knex('users')
+      .select(
+        knex.raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+        knex.raw('COUNT(*) as new_users')
+      )
+      .where('created_at', '>=', sixMonthsAgo)
+      .groupBy('month')
+      .orderBy('month', 'asc');
+  } catch (err) {
+    console.error('Error fetching user growth:', err);
+    throw err;
+  }
+};
+
+// Get Booking Status Distribution
+exports.getBookingStatusDistribution = async () => {
+  try {
+    return await knex('bookings')
+      .select('status')
+      .count('* as count')
+      .groupBy('status');
+  } catch (err) {
+    console.error('Error fetching booking status distribution:', err);
+    throw err;
+  }
+};
+
+// Get All Users with Pagination
+exports.getAllUsersWithPagination = async (page = 1, limit = 10, search = '') => {
+  try {
+    const offset = (page - 1) * limit;
+    
+    let query = knex('users')
+      .select('id', 'username', 'email', 'role', 'created_at')
+      .orderBy('created_at', 'desc');
+
+    if (search) {
+      query = query.where(function() {
+        this.where('username', 'like', `%${search}%`)
+          .orWhere('email', 'like', `%${search}%`);
+      });
+    }
+
+    const users = await query.limit(limit).offset(offset);
+    const totalCount = await knex('users').count('* as count').first();
+
+    return {
+      users,
+      total: parseInt(totalCount.count),
+      page,
+      totalPages: Math.ceil(parseInt(totalCount.count) / limit)
+    };
+  } catch (err) {
+    console.error('Error fetching users with pagination:', err);
+    throw err;
+  }
+};
+
+// Get All Hotels with Room Count
+exports.getAllHotelsWithRooms = async () => {
+  try {
+    return await knex('hotels')
+      .select(
+        'hotels.*',
+        knex.raw('COUNT(rooms.id) as room_count'),
+        knex.raw('SUM(CASE WHEN rooms.is_available = 1 THEN 1 ELSE 0 END) as available_rooms')
+      )
+      .leftJoin('rooms', 'hotels.id', 'rooms.hotel_id')
+      .groupBy('hotels.id')
+      .orderBy('hotels.created_at', 'desc');
+  } catch (err) {
+    console.error('Error fetching hotels with rooms:', err);
+    throw err;
+  }
 };

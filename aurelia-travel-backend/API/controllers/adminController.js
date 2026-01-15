@@ -1,72 +1,144 @@
-// aurelia-travel-backend/API/controllers/adminController.js
 const adminModel = require('../models/adminModel');
 
-// Dashboard Overview Statistics
+// Get Dashboard Statistics
 exports.getDashboardStats = async (req, res) => {
   try {
     const stats = await adminModel.getStats();
-    res.json({ success: true, data: stats });
+    
+    // Format data for the Frontend
+    const formattedStats = [
+      { 
+        label: 'Total Revenue', 
+        value: `$${stats.revenue.toLocaleString()}`, 
+        rawValue: stats.revenue,
+        icon: '💰', 
+        change: `${stats.revenueChange > 0 ? '+' : ''}${stats.revenueChange}%`,
+        trend: stats.revenueChange >= 0 ? 'up' : 'down',
+        type: 'success'
+      },
+      { 
+        label: 'Total Bookings', 
+        value: stats.bookings, 
+        icon: '📅', 
+        change: `${stats.pendingBookings} Pending`,
+        type: 'info'
+      },
+      { 
+        label: 'Registered Users', 
+        value: stats.users, 
+        icon: '👤', 
+        change: 'Active',
+        type: 'primary'
+      },
+      { 
+        label: 'Available Rooms', 
+        value: stats.availableRooms, 
+        icon: '🏨', 
+        change: `${stats.hotels} Hotels`,
+        type: 'warning'
+      }
+    ];
+
+    res.json({
+      success: true,
+      data: formattedStats,
+      raw: stats
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ 
+      success: false,
+      error: err.message 
+    });
   }
 };
 
-// Recent Bookings
+// Get Recent Bookings
 exports.getRecentBookings = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
     const bookings = await adminModel.getRecentBookings(limit);
-    res.json({ success: true, data: bookings });
+    
+    res.json({
+      success: true,
+      data: bookings
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ 
+      success: false,
+      error: err.message 
+    });
   }
 };
 
-// Revenue Chart Data
-exports.getRevenueChart = async (req, res) => {
+// Get Monthly Revenue Chart Data
+exports.getMonthlyRevenue = async (req, res) => {
   try {
-    const days = parseInt(req.query.days) || 7;
-    const data = await adminModel.getRevenueChart(days);
-    res.json({ success: true, data });
+    const data = await adminModel.getMonthlyRevenue();
+    res.json({
+      success: true,
+      data
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ 
+      success: false,
+      error: err.message 
+    });
   }
 };
 
-// Top Hotels
+// Get Top Hotels
 exports.getTopHotels = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 5;
     const hotels = await adminModel.getTopHotels(limit);
-    res.json({ success: true, data: hotels });
+    
+    res.json({
+      success: true,
+      data: hotels
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ 
+      success: false,
+      error: err.message 
+    });
   }
 };
 
-// User Activity
-exports.getUserActivity = async (req, res) => {
+// Get User Growth Data
+exports.getUserGrowth = async (req, res) => {
   try {
-    const activity = await adminModel.getUserActivity();
-    res.json({ success: true, data: activity });
+    const data = await adminModel.getUserGrowth();
+    res.json({
+      success: true,
+      data
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ 
+      success: false,
+      error: err.message 
+    });
   }
 };
 
-// Booking Status Distribution
-exports.getBookingStatus = async (req, res) => {
+// Get Booking Status Distribution
+exports.getBookingStatusDistribution = async (req, res) => {
   try {
-    const status = await adminModel.getBookingStatus();
-    res.json({ success: true, data: status });
+    const data = await adminModel.getBookingStatusDistribution();
+    res.json({
+      success: true,
+      data
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ 
+      success: false,
+      error: err.message 
+    });
   }
 };
 
@@ -75,65 +147,58 @@ exports.getAllUsers = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const result = await adminModel.getAllUsers(page, limit);
-    res.json({ success: true, data: result });
+    const search = req.query.search || '';
+    
+    const result = await adminModel.getAllUsersWithPagination(page, limit, search);
+    
+    res.json({
+      success: true,
+      ...result
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ 
+      success: false,
+      error: err.message 
+    });
   }
 };
 
-// Update User Status/Role
-exports.updateUserStatus = async (req, res) => {
+// Get All Hotels with Room Count
+exports.getAllHotels = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const updates = req.body;
-    await adminModel.updateUserStatus(userId, updates);
-    res.json({ success: true, message: 'User updated successfully' });
+    const hotels = await adminModel.getAllHotelsWithRooms();
+    
+    res.json({
+      success: true,
+      data: hotels
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-};
-
-// Delete User
-exports.deleteUser = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    await adminModel.deleteUser(userId);
-    res.json({ success: true, message: 'User deleted successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-};
-
-// Get All Bookings with Filters
-exports.getAllBookings = async (req, res) => {
-  try {
-    const { status, startDate, endDate, page = 1, limit = 10 } = req.query;
-    const filters = { status, startDate, endDate };
-    const result = await adminModel.getAllBookingsWithFilters(
-      filters,
-      parseInt(page),
-      parseInt(limit)
-    );
-    res.json({ success: true, data: result });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ 
+      success: false,
+      error: err.message 
+    });
   }
 };
 
 // Update Booking Status
 exports.updateBookingStatus = async (req, res) => {
   try {
-    const { bookingId } = req.params;
+    const { id } = req.params;
     const { status } = req.body;
-    await adminModel.updateBookingStatus(bookingId, status);
-    res.json({ success: true, message: 'Booking status updated' });
+    
+    await require('../models/bookingModel').updateBooking(id, { status });
+    
+    res.json({
+      success: true,
+      message: 'Booking status updated successfully'
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ 
+      success: false,
+      error: err.message 
+    });
   }
 };

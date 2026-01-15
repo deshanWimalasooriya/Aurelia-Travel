@@ -1,27 +1,36 @@
-// aurelia-travel-backend/API/routes/adminRoutes.js
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 
-// All routes require admin role
+// Apply middleware to all admin routes
 router.use(verifyToken, checkRole('admin'));
 
-// Dashboard Stats
-router.get('/dashboard/stats', adminController.getDashboardStats);
-router.get('/dashboard/revenue-chart', adminController.getRevenueChart);
-router.get('/dashboard/top-hotels', adminController.getTopHotels);
-router.get('/dashboard/user-activity', adminController.getUserActivity);
-router.get('/dashboard/booking-status', adminController.getBookingStatus);
+// Dashboard Statistics
+router.get('/stats', adminController.getDashboardStats);
 
-// Bookings Management
-router.get('/bookings', adminController.getAllBookings);
-router.get('/bookings/recent', adminController.getRecentBookings);
-router.put('/bookings/:bookingId/status', adminController.updateBookingStatus);
+// Recent Bookings
+router.get('/bookings', adminController.getRecentBookings);
+
+// Revenue Analytics
+router.get('/revenue/monthly', adminController.getMonthlyRevenue);
+
+// Top Hotels
+router.get('/hotels/top', adminController.getTopHotels);
+
+// User Growth
+router.get('/users/growth', adminController.getUserGrowth);
+
+// Booking Status Distribution
+router.get('/bookings/status-distribution', adminController.getBookingStatusDistribution);
 
 // User Management
 router.get('/users', adminController.getAllUsers);
-router.put('/users/:userId', adminController.updateUserStatus);
-router.delete('/users/:userId', adminController.deleteUser);
+
+// Hotel Management
+router.get('/hotels', adminController.getAllHotels);
+
+// Update Booking Status
+router.patch('/bookings/:id/status', adminController.updateBookingStatus);
 
 module.exports = router;
