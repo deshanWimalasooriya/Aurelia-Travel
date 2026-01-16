@@ -49,3 +49,5 @@ exports.getNewest = (limit = 4) =>
   withMinPrice(knex('hotels'))
     .orderBy('created_at', 'desc')
     .limit(limit);
+
+// Get hotels by manager ID

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useUser } from '../context/UserContext'
+import { useUser } from '../context/userContext'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion'; 
@@ -262,24 +262,25 @@ export default function Profile() {
   }
 
 
-  // --- HANDLER: BECOME HOTEL MANAGER ---
+ // ... inside your Profile component ...
+
   const handleBecomeManager = async () => {
-      // 1. Confirmation
+      // 1. Simple Confirmation
       if(!window.confirm("Confirm registration as a Hotel Manager? You will gain access to the Hotel Dashboard.")) return;
       
       setIsUpgrading(true);
       try {
-          // 2. API Call
-          const res = await axios.put('http://localhost:5000/api/users/upgrade-to-manager/', {}, {
-              withCredentials: true
-          });
+          // 2. API Call (No NIC data needed)
+          const res = await axios.put('http://localhost:5000/api/users/upgrade-to-manager', 
+            {}, // Empty body
+            { withCredentials: true }
+          );
           
-          // 3. Success Handling
           if(res.data.success) {
               await refreshUser(); // Update Context State
               alert("🎉 Congratulations! You are now a Partner.");
               
-              // Force reload to ensure all Admin Routes are accessible immediately
+              // Force reload/redirect to ensure admin routes work
               window.location.href = '/admin'; 
           }
       } catch (err) {
@@ -289,6 +290,8 @@ export default function Profile() {
           setIsUpgrading(false);
       }
   };
+
+// ... existing render code ...
 
 
   // --- RENDER ---

@@ -1,34 +1,39 @@
 // controllers/hotelController.js
 const hotelModel = require("../models/hotelModel");
 
-// Helper: MySQL often returns JSON columns as strings. We must parse them.
+// Helper: Parse JSON fields and formats
 const parseHotelData = (hotel) => {
   if (!hotel) return null;
   
-  // Ensure facilities is an array
   if (typeof hotel.facilities === 'string') {
     try { hotel.facilities = JSON.parse(hotel.facilities); } catch(e) { hotel.facilities = []; }
   }
   
-  // Combine address fields for simple display if needed
   if (!hotel.location) {
       hotel.location = `${hotel.city}, ${hotel.country}`;
   }
   
-  // Ensure Price is a number (aggregates return strings sometimes)
   if (hotel.price) {
       hotel.price = parseFloat(hotel.price);
   } else {
-      hotel.price = 0; // Fallback if no rooms
+      hotel.price = 0; 
   }
 
   return hotel;
 };
 
+
+
 exports.create = async (req, res) => {
   try {
-    // If facilities came as string from form-data, parse it, otherwise stringify for DB
     const data = { ...req.body };
+    
+    // ✅ 1. Assign Manager ID automatically from the logged-in user
+    // (req.user is set by the authMiddleware)
+    if (req.user && req.user.userId) {
+        data.manager_id = req.user.userId;
+    }
+
     if (Array.isArray(data.facilities)) data.facilities = JSON.stringify(data.facilities);
     
     const hotel = await hotelModel.create(data);
@@ -40,12 +45,37 @@ exports.create = async (req, res) => {
 
 exports.getAllHotels = async (req, res) => {
   try {
-    const hotels = await hotelModel.getAll();
+    // Optional: If you want an endpoint that returns ONLY the manager's hotels
+    // You can check a query param like ?mode=manager
+    let hotels;
+    if (req.query.mode === 'manager' && req.user) {
+        // This assumes you add a getByManagerId method to your model, 
+        // or filter here (less efficient). 
+        // For now, let's keep the standard public list behavior unless specifically requested.
+        hotels = await hotelModel.getAll(); 
+        // Filter in memory if needed, or add model support.
+        // Better approach: create a separate export 'getMyHotels'
+    } else {
+        hotels = await hotelModel.getAll();
+    }
+
     const parsed = hotels.map(parseHotelData);
-    res.json({ data: parsed }); // Consistent response format { data: [...] }
+    res.json({ data: parsed });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+};
+
+// ✅ NEW: Get only hotels managed by the current user
+exports.getMyHotels = async (req, res) => {
+    try {
+        const allHotels = await hotelModel.getAll();
+        // Filter by manager_id
+        const myHotels = allHotels.filter(h => h.manager_id === req.user.userId);
+        res.json({ data: myHotels.map(parseHotelData) });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 };
 
 exports.getHotelById = async (req, res) => {
@@ -62,13 +92,27 @@ exports.getHotelById = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
+    const hotelId = req.params.id;
+    const existingHotel = await hotelModel.getById(hotelId);
+
+    if (!existingHotel) {
+        return res.status(404).json({ message: "Hotel not found" });
+    }
+
+    // ✅ 2. Ownership Check: Only Admin or the Owner can update
+    if (req.user.role !== 'admin' && existingHotel.manager_id !== req.user.userId) {
+        return res.status(403).json({ message: "Access denied. You do not own this hotel." });
+    }
+
     const data = { ...req.body };
     if (Array.isArray(data.facilities)) data.facilities = JSON.stringify(data.facilities);
 
-    const hotel = await hotelModel.update(req.params.id, data);
-    if (!hotel) {
-      return res.status(404).json({ message: "Hotel not found" });
+    // Prevent changing the owner unless admin
+    if (req.user.role !== 'admin') {
+        delete data.manager_id;
     }
+
+    const hotel = await hotelModel.update(hotelId, data);
     res.json(parseHotelData(hotel));
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -77,10 +121,19 @@ exports.update = async (req, res) => {
 
 exports.delete = async (req, res) => {
   try {
-    const deleted = await hotelModel.delete(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ message: "Hotel not found" });
+    const hotelId = req.params.id;
+    const existingHotel = await hotelModel.getById(hotelId);
+
+    if (!existingHotel) {
+        return res.status(404).json({ message: "Hotel not found" });
     }
+
+    // ✅ 3. Ownership Check for Deletion
+    if (req.user.role !== 'admin' && existingHotel.manager_id !== req.user.userId) {
+        return res.status(403).json({ message: "Access denied. You do not own this hotel." });
+    }
+
+    await hotelModel.delete(hotelId);
     res.json({ message: "Hotel deleted successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });

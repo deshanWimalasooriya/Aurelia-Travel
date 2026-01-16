@@ -208,33 +208,38 @@ exports.getCurrentUser = async (req, res) => {
     }
 };
 
-//update the user role to manager
 exports.upgradeToManager = async (req, res) => {
     try {
-        const userId = req.user.userId;
-        const user = await userModel.findById(userId);
+        const userId = req.user.userId || req.user.id; // Handle both token formats
+
+        console.log(`[Upgrade Request] User: ${userId}`);
+
+        const user = await userModel.getUserById(userId);
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
-        if (user.role === 'manager') {
-            return res.status(400).json({
-                success: false,
-                message: 'User is already a manager'
-            });
+
+        // 1. Validate if already a manager
+        if (user.role === 'HotelManager') {
+            return res.status(400).json({ success: false, message: 'User is already a Manager' });
         }
-        const updatedUser = await userModel.updateUser(userId, { role: 'manager' });
+
+        // 2. Update User Role directly (No NIC required)
+        const updatedUser = await userModel.updateUser(userId, { 
+            role: 'HotelManager' 
+        });
+
         res.status(200).json({
             success: true,
-            message: 'User upgraded to manager successfully',
+            message: 'User upgraded successfully to Hotel Manager',
             data: updatedUser
         });
+
     } catch (err) {
-        console.error('Error upgrading user to manager:', err);
+        console.error('Upgrade Error:', err);
         res.status(500).json({
             success: false,
+            message: 'Server error during upgrade',
             error: err.message
         });
     }
