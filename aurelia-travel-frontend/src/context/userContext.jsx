@@ -7,14 +7,15 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // --- DERIVED STATE: Check if user is admin ---
-  // This automatically updates whenever 'user' changes.
-  // We check for both common patterns: 'role' string or 'isAdmin' boolean.
+  // --- DERIVED STATE ---
+  // 1. Check if user is Admin
   const isAdmin = user?.role === 'admin' || user?.isAdmin === true;
+  
+  // 2. Check if user is Hotel Manager (New Logic)
+  const isManager = user?.role === 'HotelManager' || user?.isManager === true;
 
   const fetchUser = async () => {
     try {
-      // Ensure this endpoint returns the 'role' field!
       const response = await axios.get('http://localhost:5000/api/auth/me', {
         withCredentials: true
       });
@@ -47,8 +48,8 @@ export const UserProvider = ({ children }) => {
   }, []);
 
   return (
-    // Pass 'isAdmin' down in the value object
-    <UserContext.Provider value={{ user, isAdmin, loading, refreshUser, clearUser }}>
+    // Pass 'isManager' down in the value object
+    <UserContext.Provider value={{ user, isAdmin, isManager, loading, refreshUser, clearUser }}>
       {children}
     </UserContext.Provider>
   );
