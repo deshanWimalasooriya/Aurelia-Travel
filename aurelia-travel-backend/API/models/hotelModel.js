@@ -51,3 +51,6 @@ exports.getNewest = (limit = 4) =>
     .limit(limit);
 
 // Get hotels by manager ID
+exports.getByManagerId = (managerId) => {
+  return withMinPrice(knex('hotels').where('manager_id', managerId));
+}
