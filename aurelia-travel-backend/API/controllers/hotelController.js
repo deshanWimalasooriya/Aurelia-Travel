@@ -48,6 +48,18 @@ exports.getAllHotels = async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
+// ✅ NEW: Get only hotels managed by the current user
+exports.getMyHotels = async (req, res) => {
+    try {
+        const allHotels = await hotelModel.getAll();
+        // Filter by manager_id
+        const myHotels = allHotels.filter(h => h.manager_id === req.user.userId);
+        res.json({ data: myHotels.map(parseHotelData) });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
 exports.getHotelById = async (req, res) => {
   try {
     const hotel = await hotelModel.getById(req.params.id);
