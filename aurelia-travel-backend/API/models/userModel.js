@@ -21,3 +21,25 @@ exports.findById = async (id) => {
     .where({ id })
     .first();
 };
+
+// ✅ NEW: Get Customers for a specific Manager (CRM Logic)
+exports.getCustomersByManagerId = (managerId) => {
+  return knex('users')
+    .join('bookings', 'users.id', 'bookings.user_id')
+    .join('hotels', 'bookings.hotel_id', 'hotels.id')
+    .select(
+      'users.id',
+      'users.username',
+      'users.email',
+      'users.profile_image',
+      // 'users.phone', // Uncomment if you have this column
+      'users.city',
+      'users.country'
+    )
+    .count('bookings.id as total_bookings')
+    .sum('bookings.total_price as total_spent')
+    .max('bookings.check_in as last_visit')
+    .where('hotels.manager_id', managerId)
+    .groupBy('users.id') // Group by user to aggregate stats
+    .orderBy('total_spent', 'desc'); // Show top spenders first
+};

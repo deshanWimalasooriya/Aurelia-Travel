@@ -24,6 +24,9 @@ import DashboardLayout from './pages/admin/DashboardLayout'
 import DashboardOverview from './pages/admin/DashboardOverview'
 import DashboardRooms from './pages/admin/DashboardRooms'
 import DashboardHotel from './pages/admin/DashboardHotels'
+import DashboardBookings from './pages/admin/DashboardBookings'
+import DashboardAnalytics from './pages/admin/DashboardAnalytics'
+import DashboardCustomers from './pages/admin/DashboardCustomers'
 
 import './index.css'
 
@@ -43,6 +46,9 @@ const AppRoutes = () => {
           <Route index element={<DashboardOverview />} />
           <Route path="rooms" element={<DashboardRooms />} />
           <Route path="hotels" element={<DashboardHotel />} />
+          <Route path="bookings" element={<DashboardBookings />} />
+          <Route path="analytics" element={<DashboardAnalytics />} />
+          <Route path="customers" element={<DashboardCustomers />} />
       </Route>
 
       {/* --- MAIN APP ROUTES --- */}

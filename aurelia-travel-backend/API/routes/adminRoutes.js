@@ -11,4 +11,7 @@ router.get('/stats', verifyToken, checkRole('admin'), adminController.getDashboa
 // Protected: Only 'admin' role can access
 router.get('/bookings', verifyToken, checkRole('admin'), adminController.getRecentBookings);
 
+// ✅ NEW: Analytics Route
+router.get('/analytics', verifyToken, checkRole('admin', 'HotelManager'), adminController.getAnalyticsData);
+
 module.exports = router;

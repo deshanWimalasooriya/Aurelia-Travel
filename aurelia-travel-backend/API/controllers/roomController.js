@@ -91,4 +91,4 @@ exports.getRoomsByHotelId = async (req, res) => {
         const rooms = await roomModel.getRoomsByHotelId(req.params.hotelId);
         res.json(rooms.map(parseRoom));
     } catch (err) { res.status(500).json({ error: err.message }); }
-};
+}; 

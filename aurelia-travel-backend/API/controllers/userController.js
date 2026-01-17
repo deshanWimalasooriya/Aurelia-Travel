@@ -245,4 +245,16 @@ exports.upgradeToManager = async (req, res) => {
     }
 };
 
+// ✅ NEW: Get My Customers
+exports.getMyCustomers = async (req, res) => {
+    try {
+        const managerId = req.user.userId || req.user.id;
+        const customers = await userModel.getCustomersByManagerId(managerId);
+        res.json(customers);
+    } catch (err) {
+        console.error("Customer Fetch Error:", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
 

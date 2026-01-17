@@ -119,3 +119,29 @@ exports.getMyBookings = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// ... existing code ...
+
+// ✅ NEW: Get bookings for the logged-in manager (All Hotels)
+exports.getManagerBookings = async (req, res) => {
+    try {
+        const userId = req.user.userId || req.user.id;
+        const bookings = await bookingModel.getBookingsByManagerId(userId);
+        res.json(bookings);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// ✅ NEW: Get bookings for a specific hotel ID
+exports.getBookingsByHotelId = async (req, res) => {
+    try {
+        const { hotelId } = req.params;
+        const bookings = await bookingModel.getBookingsByHotelId(hotelId);
+        res.json(bookings);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+

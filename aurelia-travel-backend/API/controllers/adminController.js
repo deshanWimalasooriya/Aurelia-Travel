@@ -28,3 +28,25 @@ exports.getRecentBookings = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// ✅ NEW: Get Detailed Analytics
+exports.getAnalyticsData = async (req, res) => {
+    try {
+        const managerId = req.user.userId || req.user.id;
+
+        const [revenueData, hotelData, statusData] = await Promise.all([
+            bookingModel.getMonthlyRevenue(managerId),
+            bookingModel.getBookingsPerHotel(managerId),
+            bookingModel.getBookingStatusStats(managerId)
+        ]);
+
+        res.json({
+            revenue: revenueData,
+            byHotel: hotelData,
+            byStatus: statusData
+        });
+    } catch (err) {
+        console.error("Analytics Error:", err);
+        res.status(500).json({ error: err.message });
+    }
+};

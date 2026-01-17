@@ -3,7 +3,6 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit3, Trash2, ArrowLeft, Save, Loader2, BedDouble } from 'lucide-react';
 import './styles/dashboard.css';
-import { use } from 'react';
 
 const DashboardRooms = () => {
   const [view, setView] = useState('list');
@@ -19,31 +18,54 @@ const DashboardRooms = () => {
     title: '', price: '', maxPeople: '', desc: '', hotelId: '', roomNumbers: ''
   });
   
-  // Fetch rooms and hotels on mount
-  useEffect(() => { fetchHotels(); }, []);
-  useEffect(() => { fetchRooms(); }, []);
+  // 1. Fetch hotels on mount
+  useEffect(() => { 
+    fetchHotels(); 
+  }, []);
+
+  // 2. Fetch rooms whenever the selectedHotelFilter changes
+  useEffect(() => {
+    fetchRooms(selectedHotelFilter);
+  }, [selectedHotelFilter]);
 
   const fetchHotels = async () => {
     try {
-      // ✅ Use /mine endpoint to get only manager's hotels
       const res = await axios.get('http://localhost:5000/api/hotels/mine', { withCredentials: true });
+      // Hotel controller returns { data: [...] }
       setHotels(Array.isArray(res.data.data) ? res.data.data : []);
     } catch (err) { console.error(err); }
   };
 
-  const fetchRooms = async () => {
+  const fetchRooms = async (filterId) => {
+    setLoading(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/rooms', { withCredentials: true });
-      setRooms(Array.isArray(res.data.data) ? res.data.data : []);
-    } catch (err) { console.error(err); }
+      let url;
+      // If 'all', fetch all manager's rooms. If ID, fetch specific hotel rooms.
+      if (filterId === 'all') {
+        url = 'http://localhost:5000/api/rooms/mine';
+      } else {
+        url = `http://localhost:5000/api/rooms/hotel/${filterId}`;
+      }
+
+      const res = await axios.get(url, { withCredentials: true });
+      
+      // Room controller usually returns a direct array, unlike hotels. 
+      // Checking both res.data and res.data.data to be safe.
+      const data = Array.isArray(res.data) ? res.data : (res.data.data || []);
+      setRooms(data);
+      
+    } catch (err) { 
+      console.error(err); 
+      setRooms([]); 
+    } finally {
+      setLoading(false);
+    }
   };
 
-
-
-
-  const filteredRooms = selectedHotelFilter === 'all' 
-    ? rooms 
-    : rooms.filter(r => r.hotel_id === parseInt(selectedHotelFilter));
+  // Helper to refresh data after submit
+  const fetchData = async () => {
+    await fetchRooms(selectedHotelFilter);
+  };
 
   const handleSwitchToForm = (room = null) => {
       setEditingRoom(room);
@@ -52,7 +74,8 @@ const DashboardRooms = () => {
           price: room?.price_per_night || '',
           maxPeople: room?.capacity || room?.max_people || '',
           desc: room?.description || '',
-          hotelId: room?.hotel_id || (hotels.length > 0 ? hotels[0].id : ''),
+          // If adding new room, default to the currently selected hotel filter (if it's not 'all')
+          hotelId: room?.hotel_id || (selectedHotelFilter !== 'all' ? selectedHotelFilter : (hotels.length > 0 ? hotels[0].id : '')),
           roomNumbers: ''
       });
       setView('form');
@@ -77,7 +100,7 @@ const DashboardRooms = () => {
         } else {
             await axios.post('http://localhost:5000/api/rooms', payload, config);
         }
-        fetchData();
+        await fetchData(); // Refresh list
         setView('list');
     } catch (err) {
         alert("Error: " + (err.response?.data?.message || err.message));
@@ -93,7 +116,6 @@ const DashboardRooms = () => {
         setRooms(prev => prev.filter(r => r.id !== id));
       } catch (err) { console.error(err); }
   };
-
   
   return (
     <div className="rooms-page">
@@ -107,6 +129,7 @@ const DashboardRooms = () => {
                 </div>
                 
                 <div style={{display:'flex', gap:'15px'}}>
+                    {/* FIXED: Removed onClick from options, logic is now in useEffect based on this value */}
                     <select 
                         className="form-input" 
                         style={{width: '200px', padding:'10px'}}
@@ -127,7 +150,9 @@ const DashboardRooms = () => {
                 <table className="dashboard-table">
                 <thead><tr><th>Room Type</th><th>Hotel</th><th>Price</th><th>Actions</th></tr></thead>
                 <tbody>
-                    {filteredRooms.length > 0 ? filteredRooms.map(room => (
+                    {loading ? (
+                       <tr><td colSpan="4" style={{textAlign:'center', padding:'20px'}}>Loading...</td></tr> 
+                    ) : rooms.length > 0 ? rooms.map(room => (
                     <tr key={room.id}>
                         <td style={{fontWeight: 700}}>{room.title}</td>
                         <td>{room.hotel_name || hotels.find(h => h.id === room.hotel_id)?.name || 'Unknown'}</td>
@@ -148,7 +173,6 @@ const DashboardRooms = () => {
           </motion.div>
         )}
 
-        {/* Form View (Kept same as provided context, mapped for logic) */}
         {view === 'form' && (
           <motion.div key="form" className="form-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="form-header-row">
@@ -169,7 +193,9 @@ const DashboardRooms = () => {
                       <div className="form-group"><label>Capacity</label><input type="number" className="form-input" required value={roomData.maxPeople} onChange={e=>setRoomData({...roomData, maxPeople: e.target.value})}/></div>
                   </div>
                   <div className="form-group"><label>Description</label><textarea className="form-input" rows="3" value={roomData.desc} onChange={e=>setRoomData({...roomData, desc: e.target.value})}/></div>
-                  <button type="submit" className="btn-primary">Save Room</button>
+                  <button type="submit" className="btn-primary" disabled={loading}>
+                      {loading ? <Loader2 className="animate-spin" /> : 'Save Room'}
+                  </button>
               </form>
           </motion.div>
         )}
