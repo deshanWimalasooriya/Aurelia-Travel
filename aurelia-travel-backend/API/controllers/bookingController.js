@@ -140,6 +140,7 @@ exports.getBookingsByHotelId = async (req, res) => {
         const bookings = await bookingModel.getBookingsByHotelId(hotelId);
         res.json(bookings);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 };
