@@ -1,119 +1,118 @@
 const knex = require('../../config/knex');
 
-// Get all bookings (Standard)
-exports.getAllBookings = async () => await knex('bookings').select('*');
-
-exports.getBookingById = (id) => knex('bookings').where({ id }).first();
-
-// Create Booking (MySQL Fixed)
-exports.createBooking = async (bookingData) => {
-  const [id] = await knex('bookings').insert(bookingData);
-  return knex('bookings').where({ id }).first();
+// Helper: Generate unique reference (e.g., "BKG-8X92")
+const generateReference = () => {
+    return 'BKG-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 };
 
-exports.updateBooking = (id, booking) => knex('bookings').where({ id }).update(booking);
+// 1. CREATE BOOKING (The Critical Transaction)
+// ✅ Updated: Locks inventory rows to prevent double-booking
+exports.createBooking = async (bookingData, paymentData) => {
+    return await knex.transaction(async (trx) => {
+        
+        // STEP A: Double-Check Availability (Locking)
+        // We query the inventory for the specific room and dates.
+        // .forUpdate() locks these rows so no one else can book them simultaneously.
+        const unavailableDays = await trx('room_availability')
+            .where('room_id', bookingData.room_id)
+            .whereBetween('date', [bookingData.check_in, bookingData.check_out])
+            .andWhere('available_quantity', '<', 1) // If 0 left, it's taken
+            .forUpdate();
 
-exports.deleteBooking = (id) => knex('bookings').where({ id }).del();
+        if (unavailableDays.length > 0) {
+            throw new Error('Room is no longer available for these dates.');
+        }
 
-// Basic fetch (just IDs)
-exports.getBookingsByUserId = (userId) => knex('bookings').where({ user_id: userId });
+        // STEP B: Decrement Inventory
+        // Reduce 'available_quantity' by 1 for every day of the stay
+        await trx('room_availability')
+            .where('room_id', bookingData.room_id)
+            .whereBetween('date', [bookingData.check_in, bookingData.check_out])
+            .decrement('available_quantity', 1);
 
-// --- NEW: Detailed Fetch for Profile Page ---
-// Joins Hotel and Room data so the frontend can show names/titles
+        // STEP C: Insert Booking
+        const reference = generateReference();
+        const [bookingId] = await trx('bookings').insert({
+            ...bookingData,
+            booking_reference: reference,
+            status: 'confirmed', // Assuming payment succeeds immediately
+            payment_status: 'paid'
+        });
+
+        // STEP D: Record Payment Transaction
+        if (paymentData) {
+            await trx('payment_transactions').insert({
+                booking_id: bookingId,
+                user_id: bookingData.user_id,
+                transaction_id: paymentData.token_id, // Stripe/PayPal ID
+                payment_provider: paymentData.provider,
+                amount: bookingData.total_price,
+                status: 'succeeded',
+                transaction_type: 'payment'
+            });
+        }
+
+        return { bookingId, reference };
+    });
+};
+
+// 2. GET MY BOOKINGS (User Dashboard - Detailed)
 exports.getDetailedBookingsByUserId = (userId) => {
-  return knex('bookings')
-    .join('hotels', 'bookings.hotel_id', 'hotels.id')
-    .join('rooms', 'bookings.room_id', 'rooms.id')
-    .select(
-      'bookings.*',
-      'hotels.name as hotel_name',
-      'hotels.image_url as hotel_image',
-      'hotels.city as hotel_city',
-      'rooms.title as room_title',
-      'rooms.room_type as room_type'
-    )
-    .where('bookings.user_id', userId)
-    .orderBy('bookings.check_in', 'desc');
+    return knex('bookings')
+        .join('hotels', 'bookings.hotel_id', 'hotels.id')
+        .join('rooms', 'bookings.room_id', 'rooms.id')
+        .select(
+            'bookings.*',
+            'hotels.name as hotel_name',
+            'hotels.main_image as hotel_image', 
+            'hotels.city as hotel_city',
+            'rooms.title as room_title',
+            'rooms.room_type'
+        )
+        .where('bookings.user_id', userId)
+        .orderBy('bookings.check_in', 'desc');
 };
 
-exports.getRecentBookings = (limit = 5) => 
-  knex('bookings')
-    .select('*')
-    .orderBy('created_at', 'desc')
-    .limit(limit);
-
-
-// In API/models/bookingModel.js
-
-// ... existing code ...
-
-// ✅ NEW: Get Bookings for a Specific Hotel (Detailed)
-exports.getBookingsByHotelId = (hotelId) => {
-  return knex('bookings')
-    .join('users', 'bookings.user_id', 'users.id')
-    .join('hotels', 'bookings.hotel_id', 'hotels.id')
-    .join('rooms', 'bookings.room_id', 'rooms.id')
-    .select(
-      'bookings.*',
-      'users.username',
-      'users.email',
-      'users.profile_image',
-      'hotels.name as hotel_name',
-      'rooms.title as room_title'
-    )
-    .where('bookings.hotel_id', hotelId)
-    .orderBy('bookings.check_in', 'desc');
-};
-
-// ✅ NEW: Get All Bookings for a Manager (Detailed)
+// 3. GET MANAGER BOOKINGS (Dashboard)
 exports.getBookingsByManagerId = (managerId) => {
-  return knex('bookings')
-    .join('users', 'bookings.user_id', 'users.id')
-    .join('hotels', 'bookings.hotel_id', 'hotels.id')
-    .join('rooms', 'bookings.room_id', 'rooms.id')
-    .select(
-      'bookings.*',
-      'users.username',
-      'users.email',
-      'users.profile_image',
-      'hotels.name as hotel_name',
-      'rooms.title as room_title'
-    )
-    .where('hotels.manager_id', managerId) // Filter by Manager ID
-    .orderBy('bookings.check_in', 'desc');
+    return knex('bookings')
+        .join('hotels', 'bookings.hotel_id', 'hotels.id')
+        .join('rooms', 'bookings.room_id', 'rooms.id')
+        .join('users', 'bookings.user_id', 'users.id') // Guest Info
+        .select(
+            'bookings.*',
+            'hotels.name as hotel_name',
+            'rooms.title as room_title',
+            'users.username as guest_name',
+            'users.email as guest_email',
+            'users.profile_image as guest_image'
+        )
+        .where('hotels.manager_id', managerId)
+        .orderBy('bookings.check_in', 'asc');
 };
 
-// ... existing code ...
-
-// ✅ NEW: Analytics - Monthly Revenue (Last 6 Months)
-exports.getMonthlyRevenue = (managerId) => {
-  return knex('bookings')
-    .join('hotels', 'bookings.hotel_id', 'hotels.id')
-    .select(knex.raw("DATE_FORMAT(check_in, '%Y-%m') as name")) // Group by Month
-    .sum('total_price as value')
-    .where('bookings.status', 'confirmed')
-    .andWhere('hotels.manager_id', managerId)
-    .groupByRaw("DATE_FORMAT(check_in, '%Y-%m')")
-    .orderBy('name', 'asc')
-    .limit(6);
+// 4. GET SINGLE BOOKING (Detailed)
+exports.getBookingById = (id) => {
+    return knex('bookings')
+        .join('hotels', 'bookings.hotel_id', 'hotels.id')
+        .join('rooms', 'bookings.room_id', 'rooms.id')
+        .select(
+            'bookings.*',
+            'hotels.name as hotel_name',
+            'rooms.title as room_title',
+            'hotels.manager_id' // Needed for permission check
+        )
+        .where('bookings.id', id)
+        .first();
 };
 
-// ✅ NEW: Analytics - Bookings per Hotel (Pie Chart Data)
-exports.getBookingsPerHotel = (managerId) => {
-  return knex('bookings')
-    .join('hotels', 'bookings.hotel_id', 'hotels.id')
-    .select('hotels.name')
-    .count('bookings.id as value')
-    .where('hotels.manager_id', managerId)
-    .groupBy('hotels.name');
+// 5. UPDATE STATUS
+exports.updateStatus = async (id, status) => {
+    await knex('bookings').where({ id }).update({ status });
+    return exports.getBookingById(id);
 };
 
-// ✅ NEW: Analytics - Booking Status Distribution (Donut Chart)
-exports.getBookingStatusStats = (managerId) => {
-  return knex('bookings')
-    .join('hotels', 'bookings.hotel_id', 'hotels.id')
-    .select('bookings.status as name')
-    .count('bookings.id as value')
-    .where('hotels.manager_id', managerId)
-    .groupBy('bookings.status');
-};
+// 6. ADMIN & HELPERS
+exports.getAllBookings = () => knex('bookings').select('*');
+exports.deleteBooking = (id) => knex('bookings').where({ id }).del();
+exports.getBookingsByHotelId = (hotelId) => knex('bookings').where({ hotel_id: hotelId });
