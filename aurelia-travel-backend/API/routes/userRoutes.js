@@ -28,4 +28,8 @@ router.get('/:id', verifyToken, userController.getUserById);
 router.put('/:id', verifyToken, userController.updateUser);
 router.delete('/:id', verifyToken, checkRole('admin'), userController.deleteUser);
 
+
+// ✅ NEW: Customer Management Route
+router.get('/my-customers', verifyToken, checkRole('admin', 'HotelManager'), userController.getMyCustomers);
+
 module.exports = router;

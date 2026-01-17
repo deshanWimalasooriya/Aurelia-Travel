@@ -24,4 +24,11 @@ router.put('/:id', verifyToken, bookingController.updateBooking);
 // Delete a booking
 router.delete('/:id', verifyToken, bookingController.deleteBooking);
 
+
+// 2. ✅ Manager Routes (MUST BE BEFORE /:id)
+router.get('/mine', verifyToken, checkRole('admin', 'HotelManager'), bookingController.getManagerBookings);
+router.get('/hotel/:hotelId', verifyToken, checkRole('admin', 'HotelManager'), bookingController.getBookingsByHotelId);
+
+module.exports = router;
+
 module.exports = router;
