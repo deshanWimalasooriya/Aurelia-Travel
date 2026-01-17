@@ -1,177 +1,120 @@
-// controllers/authController.js
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const userModel = require('../models/userModel');
+const userModel = require('../models/userModel'); // Uses the new Phase 1 Model
 
-
-// User Registration
+// 1. REGISTER
 exports.register = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, role, first_name, last_name } = req.body;
 
-    // Validate required fields
     if (!username || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Username, email, and password are required'
-      });
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    // Check if user already exists
-    const existingUser = await userModel.getUserByEmail(email);
+    // Check existing
+    const existingUser = await userModel.findByEmail(email);
     if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: 'User with this email already exists'
-      });
+      return res.status(409).json({ success: false, message: 'Email already exists' });
     }
 
-    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
-    const newUser = {
+    // Create User (PCI Compliant: No card data here)
+    const newUser = await userModel.create({
       username,
       email,
-      password: hashedPassword
-    };
-
-    const createdUser = await userModel.createUser(newUser);
+      password: hashedPassword,
+      role: role || 'user', // Default to user
+      first_name,
+      last_name,
+      is_active: true
+    });
 
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
-      data: {
-        id: createdUser.id,
-        username: createdUser.username,
-        email: createdUser.email
-      }
+      user: { id: newUser.id, email: newUser.email, role: newUser.role }
     });
+
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error("Register Error:", err);
+    res.status(500).json({ success: false, error: err.message });
   }
-}
-// Login user
+};
+
+// 2. LOGIN
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate required fields
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and password are required'
-      });
-    }
-
-    // Find user by email
-    const user = await userModel.getUserByEmail(email);
-
+    // A. Find User
+    const user = await userModel.findByEmail(email);
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
+        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+    
+    // B. Check Password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+        return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    // Compare password with hashed password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
+    // C. Check Active
+    if (!user.is_active) {
+        return res.status(403).json({ success: false, message: 'Account is deactivated' });
     }
 
-    // Generate JWT token
+    // D. Generate Token
     const token = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email,
-        username: user.username,
-        role: user.role 
-      },
-      process.env.JWT_SECRET || 'your_secret_key_change_this',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+      { userId: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || 'secret',
+      { expiresIn: '24h' }
     );
 
-     // ✅ Set token in HTTP-only cookie
+    // E. Set Cookie (HttpOnly)
     res.cookie('token', token, {
-      httpOnly: true,  // Prevents JavaScript access (XSS protection)
-      secure: false,  // HTTPS only in production
-      sameSite: 'lax',  // CSRF protection
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-      path: '/', // Cookie valid for entire site
-      domain: 'localhost' // Adjust domain as needed
+      httpOnly: true, // Frontend JS cannot read this (Security)
+      secure: false, // Set 'true' in production (HTTPS)
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 1 Day
     });
 
-    // Return success response with token
-    res.status(200).json({
+    // F. Send Response (Frontend uses 'role' to redirect)
+    res.json({
       success: true,
       message: 'Login successful',
-      data: {
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role: user.role
-        },
-        token: token
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        image: user.profile_image
       }
     });
 
   } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({
-      success: false,
-      error: err.message
-    });
+    console.error("Login Error:", err);
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
-// Logout user
-exports.logout = async (req, res) => {
-  try {
-    // ✅ Clear the cookie
-    res.clearCookie('token');
-    // For JWT, logout is handled on client side by removing token
-    res.status(200).json({
-      success: true,
-      message: 'Logout successful'
-    });
-  } catch (err) {
-    console.error('Logout error:', err);
-    res.status(500).json({
-      success: false,
-      error: err.message
-    });
-  }
+// 3. LOGOUT
+exports.logout = (req, res) => {
+  res.clearCookie('token');
+  res.json({ success: true, message: 'Logged out successfully' });
 };
 
+// 4. GET CURRENT USER (Persistent Session)
 exports.getCurrentUser = async (req, res) => {
   try {
-    // 🔍 DEBUG: Print the decoded token to the console
-    console.log("Decoded User from Token:", req.user);
-
-    // Handle both 'id' (new standard) and 'userId' (old standard) to be safe
-    const userId = req.user.id || req.user.userId;
-
-    if (!userId) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Token is missing ID. Please logout and login again." 
-      });
-    }
-
-    const user = await userModel.findById(userId);
-    
+    // req.user comes from verifyToken middleware
+    const user = await userModel.findById(req.user.userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const { password, ...others } = user;
-    res.status(200).json({ success: true, data: others });
+    const { password, ...safeUser } = user; // Remove password
+    res.json({ success: true, data: safeUser });
+
   } catch (err) {
-    console.error("GetCurrentUser Error:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 };

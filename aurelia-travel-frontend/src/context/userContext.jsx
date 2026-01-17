@@ -12,7 +12,7 @@ export const UserProvider = ({ children }) => {
   const isAdmin = user?.role === 'admin' || user?.isAdmin === true;
   
   // 2. Check if user is Hotel Manager (New Logic)
-  const isManager = user?.role === 'HotelManager' || user?.isManager === true;
+  const isManager = user?.role === 'hotel_manager' || user?.isManager === true;
 
   const fetchUser = async () => {
     try {

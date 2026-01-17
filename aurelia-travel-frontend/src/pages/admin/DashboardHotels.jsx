@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api'; // ✅ Use secure API client
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit3, Trash2, MapPin, Image as ImageIcon, ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { Plus, Edit3, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import './styles/dashboard.css';
 
 const DashboardHotels = () => {
@@ -19,10 +19,14 @@ const DashboardHotels = () => {
 
   const fetchHotels = async () => {
     try {
-      // ✅ Use /mine endpoint to get only manager's hotels
-      const res = await axios.get('http://localhost:5000/api/hotels/mine', { withCredentials: true });
-      setHotels(Array.isArray(res.data.data) ? res.data.data : []);
-    } catch (err) { console.error(err); }
+      // ✅ Endpoint matches your backend route for managers
+      const res = await api.get('/hotels/mine'); 
+      // ✅ Robust extraction: Handle { data: [...] } or direct array
+      const hotelList = Array.isArray(res.data) ? res.data : (res.data.data || []);
+      setHotels(hotelList);
+    } catch (err) { 
+      console.error("Fetch hotels failed", err); 
+    }
   };
 
   const handleSwitchToForm = (hotel = null) => {
@@ -32,12 +36,12 @@ const DashboardHotels = () => {
             name: hotel.name || '',
             address: hotel.address_line_1 || '',
             city: hotel.city || '',
-            province: hotel.province || '',
+            province: hotel.state || '', // Changed from 'province' to match DB 'state'
             postalCode: hotel.postal_code || '',
             country: hotel.country || '',
             description: hotel.description || '',
-            imageUrl: hotel.image_url || '',
-            facilities: Array.isArray(hotel.facilities) ? hotel.facilities.join(', ') : ''
+            imageUrl: hotel.main_image || '', // Changed from image_url to main_image
+            facilities: Array.isArray(hotel.amenities) ? hotel.amenities.map(a => a.name).join(', ') : ''
         });
     } else {
         setFormData({ name: '', address: '', city: '', province: '', postalCode: '', country: '', description: '', imageUrl: '', facilities: '' });
@@ -49,26 +53,28 @@ const DashboardHotels = () => {
     e.preventDefault();
     setLoading(true);
     
+    // Construct payload matching backend expectations
     const payload = {
       name: formData.name,
       address_line_1: formData.address,
       city: formData.city,
-      province: formData.province || formData.city,
+      state: formData.province,
       postal_code: formData.postalCode || '00000',
       country: formData.country,
       description: formData.description,
-      image_url: formData.imageUrl,
+      main_image: formData.imageUrl,
+      // Parse comma-separated facilities if your backend accepts array of strings
+      // Note: Your complex backend might expect amenity IDs, but for simple updates:
       facilities: formData.facilities.split(',').map(f => f.trim()).filter(Boolean)
     };
 
     try {
-      const config = { withCredentials: true };
       if (editingHotel) {
-        await axios.put(`http://localhost:5000/api/hotels/${editingHotel.id}`, payload, config);
+        await api.put(`/hotels/${editingHotel.id}`, payload);
       } else {
-        await axios.post('http://localhost:5000/api/hotels', payload, config);
+        await api.post('/hotels', payload);
       }
-      fetchHotels();
+      await fetchHotels();
       setView('list');
     } catch (err) {
       alert("Error: " + (err.response?.data?.message || err.message));
@@ -78,14 +84,16 @@ const DashboardHotels = () => {
   };
 
   const handleDelete = async (id) => {
-    if(!window.confirm("Are you sure?")) return;
+    if(!window.confirm("Are you sure? This will delete all rooms and bookings for this hotel.")) return;
     try {
-        await axios.delete(`http://localhost:5000/api/hotels/${id}`, { withCredentials: true });
+        await api.delete(`/hotels/${id}`);
         setHotels(prev => prev.filter(h => h.id !== id));
-    } catch(err) { console.error(err); }
+    } catch(err) { 
+        alert("Failed to delete hotel."); 
+        console.error(err); 
+    }
   };
 
-  console.log('Rendered with hotels:', hotels);
   return (
     <div className="hotels-page">
       <AnimatePresence mode="wait">
@@ -102,20 +110,20 @@ const DashboardHotels = () => {
             </div>
             <div className="table-card">
               <table className="dashboard-table">
-                <thead><tr><th>Property</th><th>Location</th><th>Price</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Property</th><th>Location</th><th>Rating</th><th>Actions</th></tr></thead>
                 <tbody>
-                  {hotels.map(hotel => (
+                  {hotels.length > 0 ? hotels.map(hotel => (
                     <tr key={hotel.id}>
                       <td>
                           <div style={{display:'flex', alignItems:'center', gap:'15px'}}>
                               <div className="table-img">
-                                 {hotel.image_url ? <img src={hotel.image_url} alt=""/> : <ImageIcon size={20}/>}
+                                 {hotel.main_image ? <img src={hotel.main_image} alt=""/> : <ImageIcon size={20}/>}
                               </div>
                               <span style={{fontWeight: 700}}>{hotel.name}</span>
                           </div>
                       </td>
                       <td>{hotel.city}, {hotel.country}</td>
-                      <td>${hotel.price}</td>
+                      <td>{hotel.rating_average || 'N/A'} ⭐</td>
                       <td>
                         <div className="action-buttons">
                           <button className="btn-icon" onClick={() => handleSwitchToForm(hotel)}><Edit3 size={16}/></button>
@@ -123,7 +131,9 @@ const DashboardHotels = () => {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  )) : (
+                    <tr><td colSpan="4" className="text-center p-8 text-gray-500">No hotels found. Add one to get started!</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -131,10 +141,9 @@ const DashboardHotels = () => {
         )}
         {view === 'form' && (
           <motion.div key="form" className="form-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {/* Form is same as logic above */}
             <div className="form-header-row">
                 <h2>{editingHotel ? 'Update Hotel' : 'Add New Hotel'}</h2>
-                <button className="btn-secondary" onClick={() => setView('list')}>Cancel</button>
+                <button type="button" className="btn-secondary" onClick={() => setView('list')}>Cancel</button>
             </div>
             <form onSubmit={handleSubmit}>
                 <div className="form-group"><label>Hotel Name</label><input className="form-input" required value={formData.name} onChange={e=>setFormData({...formData, name:e.target.value})}/></div>
@@ -143,14 +152,16 @@ const DashboardHotels = () => {
                     <div className="form-group"><label>City</label><input className="form-input" required value={formData.city} onChange={e=>setFormData({...formData, city:e.target.value})}/></div>
                 </div>
                 <div className="form-grid-row">
-                    <div className="form-group"><label>Province</label><input className="form-input" required value={formData.province} onChange={e=>setFormData({...formData, province:e.target.value})}/></div>
+                    <div className="form-group"><label>Province/State</label><input className="form-input" required value={formData.province} onChange={e=>setFormData({...formData, province:e.target.value})}/></div>
                     <div className="form-group"><label>Postal Code</label><input className="form-input" required value={formData.postalCode} onChange={e=>setFormData({...formData, postalCode:e.target.value})}/></div>
                 </div>
                 <div className="form-group"><label>Country</label><input className="form-input" required value={formData.country} onChange={e=>setFormData({...formData, country:e.target.value})}/></div>
                 <div className="form-group"><label>Description</label><textarea className="form-input" rows="3" value={formData.description} onChange={e=>setFormData({...formData, description:e.target.value})}/></div>
                 <div className="form-group"><label>Image URL</label><input className="form-input" value={formData.imageUrl} onChange={e=>setFormData({...formData, imageUrl:e.target.value})}/></div>
-                <div className="form-group"><label>Facilities</label><input className="form-input" value={formData.facilities} onChange={e=>setFormData({...formData, facilities:e.target.value})}/></div>
-                <button type="submit" className="btn-primary">Save Hotel</button>
+                <div className="form-group"><label>Facilities (Comma separated)</label><input className="form-input" value={formData.facilities} onChange={e=>setFormData({...formData, facilities:e.target.value})}/></div>
+                <button type="submit" className="btn-primary" disabled={loading}>
+                    {loading ? <Loader2 className="animate-spin" /> : 'Save Hotel'}
+                </button>
             </form>
           </motion.div>
         )}

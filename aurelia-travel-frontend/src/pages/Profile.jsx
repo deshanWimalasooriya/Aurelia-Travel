@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useUser } from '../context/userContext'
+import { useUser } from '../context/userContext' // ✅ Fixed import casing
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios';
+import api from '../services/api' // ✅ Use configured API for cookies
 import { motion, AnimatePresence } from 'framer-motion'; 
-import { CreditCard, MapPin, User, Calendar, Trash2, Edit2, Save, X, Camera, ShieldCheck, Clock, Plane, AlertCircle, Briefcase, CheckCircle2 } from 'lucide-react'; 
+import { CreditCard, MapPin, Calendar, Trash2, Edit2, Save, X, Camera, ShieldCheck, Clock, Plane, AlertCircle, Briefcase } from 'lucide-react'; 
 import './styles/profile.css'
 
 export default function Profile() {
@@ -17,7 +17,7 @@ export default function Profile() {
   const [profileSuccess, setProfileSuccess] = useState(false);
 
   // --- BOOKINGS STATE ---
-  const [bookings, setBookings] = useState([]);
+  const [bookings, setBookings] = useState([]); // ✅ Init as empty array
   const [loadingBookings, setLoadingBookings] = useState(true);
   
   // --- MANAGER UPGRADE STATE ---
@@ -53,7 +53,7 @@ export default function Profile() {
     expiry_date: ''
   });
 
-  // --- 1. CRITICAL FIX: SYNC STATE WHEN USER LOADS ---
+  // --- 1. SYNC STATE WHEN USER LOADS ---
   useEffect(() => {
     if (user) {
         setProfileData({
@@ -71,18 +71,27 @@ export default function Profile() {
     }
   }, [user]);
 
-  // --- 2. FETCH BOOKINGS ---
+  // --- 2. FETCH BOOKINGS (FIXED) ---
   useEffect(() => {
     const fetchBookings = async () => {
       if (!user) return;
       try {
         setLoadingBookings(true);
-        const response = await axios.get('http://localhost:5000/api/bookings/my-bookings', {
-          withCredentials: true
-        });
-        setBookings(response.data);
+        // ✅ Use 'api' client (handles base URL + credentials)
+        const response = await api.get('/bookings/my-bookings');
+        
+        // ✅ CRITICAL FIX: Extract array from response object
+        let data = [];
+        if (Array.isArray(response.data)) {
+            data = response.data;
+        } else if (response.data && Array.isArray(response.data.data)) {
+            data = response.data.data;
+        }
+        
+        setBookings(data);
       } catch (err) {
         console.error("Failed to fetch bookings:", err);
+        setBookings([]); 
       } finally {
         setLoadingBookings(false);
       }
@@ -111,6 +120,7 @@ export default function Profile() {
 
   const handleEditToggle = () => {
     if (editingProfile) {
+        // Reset if cancelling
         setProfileData({
             username: user.username || '',
             email: user.email || '',
@@ -143,42 +153,31 @@ export default function Profile() {
         imageFormData.append('profile_image', profileImageFile);
         
         try {
-            const imageResponse = await axios.post(
-              `http://localhost:5000/api/users/${user.id}/upload-image`,
+            // ✅ Use api client
+            const imageResponse = await api.post(
+              `/users/${user.id}/upload-image`,
               imageFormData,
-              { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } }
+              { headers: { 'Content-Type': 'multipart/form-data' } }
             );
             
             if (imageResponse.data.imageUrl) {
                 imageUrlToSave = imageResponse.data.imageUrl;
             }
         } catch (uploadErr) {
-            console.error("Image upload failed", uploadErr);
-            setProfileError("Image upload failed, but saving text data...");
+            console.warn("Image upload skipped:", uploadErr);
         }
       }
 
       const payload = {
-          username: profileData.username,
-          email: profileData.email,
-          address_line_1: profileData.address_line_1,
-          address_line_2: profileData.address_line_2,
-          address_line_3: profileData.address_line_3,
-          city: profileData.city,
-          postal_code: profileData.postal_code,
-          country: profileData.country,
+          ...profileData,
           profile_image: imageUrlToSave
       };
+      
+      // Remove empty password so it doesn't overwrite
+      if (!payload.password) delete payload.password;
 
-      if (profileData.password && profileData.password.trim() !== "") {
-          payload.password = profileData.password;
-      }
-
-      const response = await axios.put(
-        `http://localhost:5000/api/users/${user.id}`,
-        payload, 
-        { withCredentials: true }
-      );
+      // ✅ Use api client
+      const response = await api.put(`/users/${user.id}`, payload);
 
       if (response.status === 200 || response.data.success) {
         setProfileSuccess(true);
@@ -212,11 +211,13 @@ export default function Profile() {
     setPaymentError(null);
     try {
         const cleanNumber = paymentData.card_number.replace(/\s/g, '');
-        await axios.put(
-            `http://localhost:5000/api/users/${user.id}`,
-            { card_type: paymentData.card_type, card_number: cleanNumber, cvv: null, expiry_date: paymentData.expiry_date },
-            { withCredentials: true }
-        );
+        // ✅ Use api client
+        await api.put(`/users/${user.id}`, { 
+            card_type: paymentData.card_type, 
+            card_number: cleanNumber, 
+            cvv: paymentData.cvv, 
+            expiry_date: paymentData.expiry_date 
+        });
         setPaymentSuccess(true);
         await refreshUser();
         setTimeout(() => setShowPaymentModal(false), 1500);
@@ -230,11 +231,13 @@ export default function Profile() {
   const handleRemovePayment = async () => {
     if(!window.confirm("Remove this card?")) return;
     try {
-        await axios.put(
-            `http://localhost:5000/api/users/${user.id}`,
-            { card_type: null, card_number: null, cvv: null, expiry_date: null },
-            { withCredentials: true }
-        );
+        // ✅ Use api client
+        await api.put(`/users/${user.id}`, { 
+            card_type: null, 
+            card_number: null, 
+            cvv: null, 
+            expiry_date: null 
+        });
         await refreshUser();
     } catch(err) {
         alert("Could not remove card");
@@ -261,26 +264,17 @@ export default function Profile() {
       return 'Good evening';
   }
 
-
- // ... inside your Profile component ...
-
   const handleBecomeManager = async () => {
-      // 1. Simple Confirmation
-      if(!window.confirm("Confirm registration as a Hotel Manager? You will gain access to the Hotel Dashboard.")) return;
+      if(!window.confirm("Confirm registration as a Hotel Manager?")) return;
       
       setIsUpgrading(true);
       try {
-          // 2. API Call (No NIC data needed)
-          const res = await axios.put('http://localhost:5000/api/users/upgrade-to-manager', 
-            {}, // Empty body
-            { withCredentials: true }
-          );
+          // ✅ Use api client
+          const res = await api.put('/users/upgrade-to-manager', {});
           
           if(res.data.success) {
-              await refreshUser(); // Update Context State
+              await refreshUser(); 
               alert("🎉 Congratulations! You are now a Partner.");
-              
-              // Force reload/redirect to ensure admin routes work
               window.location.href = '/admin'; 
           }
       } catch (err) {
@@ -290,9 +284,6 @@ export default function Profile() {
           setIsUpgrading(false);
       }
   };
-
-// ... existing render code ...
-
 
   // --- RENDER ---
   return (
@@ -381,7 +372,7 @@ export default function Profile() {
                   {picPreview ? (
                       <img src={picPreview} alt="Avatar" className="profile-avatar-img" />
                   ) : (
-                      <div className="profile-avatar-placeholder-pic">{user.username?.charAt(0)}</div>
+                      <div className="profile-avatar-placeholder-pic">{user.username?.charAt(0).toUpperCase()}</div>
                   )}
                   {editingProfile && (
                       <label className="avatar-upload-btn">
@@ -398,7 +389,7 @@ export default function Profile() {
               
               <div className="member-stats">
                   <div className="stat-item">
-                      <span className="stat-val">{bookings.length}</span>
+                      <span className="stat-val">{bookings ? bookings.length : 0}</span>
                       <span className="stat-label">Trips</span>
                   </div>
                   <div className="stat-line"></div>
@@ -431,7 +422,7 @@ export default function Profile() {
               </button>
           </div>
 
-          {/* --- NEW: BECOME A MANAGER SECTION --- */}
+          {/* --- PARTNER SECTION --- */}
           {user.role !== 'HotelManager' && user.role !== 'admin' && (
               <div className="card partner-card">
                   <div className="partner-content">
@@ -538,13 +529,14 @@ export default function Profile() {
               <div className="orders-list">
                   {loadingBookings ? (
                     <div className="empty-state">Loading your trips...</div>
-                  ) : (!bookings || bookings.length === 0) ? (
+                  ) : (!Array.isArray(bookings) || bookings.length === 0) ? (
                       <div className="empty-state">
                           <Calendar size={40} className="empty-icon"/>
                           <p>You haven't booked any trips yet.</p>
                           <span className="sub-empty">Your next adventure is just a click away.</span>
                       </div>
                   ) : (
+                      // ✅ Safe Map
                       bookings.map(booking => (
                           <div key={booking._id || booking.id} className="booking-ticket">
                               <div className="ticket-left">
@@ -554,10 +546,10 @@ export default function Profile() {
                                   </div>
                               </div>
                               <div className="ticket-center">
-                                  <h4 className="booking-hotel-name">{booking.hotel?.name || "Hotel Reservation"}</h4>
+                                  <h4 className="booking-hotel-name">{booking.hotel?.name || booking.hotel_name || "Hotel Reservation"}</h4>
                                   <div className="booking-meta">
-                                      <span className="meta-item"><Clock size={14}/> {calculateNights(booking.checkIn, booking.checkOut)} Nights</span>
-                                      <span className="meta-item">• {booking.room?.title || booking.room?.name || "Standard Room"}</span>
+                                      <span className="meta-item"><Clock size={14}/> {calculateNights(booking.checkIn || booking.check_in, booking.checkOut || booking.check_out)} Nights</span>
+                                      <span className="meta-item">• {booking.room?.title || booking.room_title || "Standard Room"}</span>
                                   </div>
                                   <div className="booking-dates-text">
                                       {formatDate(booking.checkIn || booking.check_in)} — {formatDate(booking.checkOut || booking.check_out)}

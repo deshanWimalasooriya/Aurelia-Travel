@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../services/api' // ✅ Use api client
 import HotelCard from '../components/ui/HotelCard'
-import SearchForm from '../components/ui/SearchForm' // Ensure this navigates to /search on submit
+import SearchForm from '../components/ui/SearchForm'
 import { Star, Zap } from 'lucide-react'
-import './styles/HotelPage.css' // We can reuse the same CSS file
+import './styles/HotelPage.css'
 
 const HotelShowcase = () => {
   const [topHotels, setTopHotels] = useState([])
@@ -14,14 +14,15 @@ const HotelShowcase = () => {
     const fetchData = async () => {
       try {
         setLoading(true)
+        // ✅ Use configured api client
         const [topRes, newRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/hotels/top-rated'),
-          axios.get('http://localhost:5000/api/hotels/newest')
+          api.get('/hotels/top-rated'),
+          api.get('/hotels/newest')
         ])
 
-        // Extract data and slice to get only 5 items
-        const topData = Array.isArray(topRes.data) ? topRes.data : topRes.data.data || []
-        const newData = Array.isArray(newRes.data) ? newRes.data : newRes.data.data || []
+        // ✅ Robust Data Extraction: Handle both array and { data: [...] } formats
+        const topData = Array.isArray(topRes.data) ? topRes.data : (topRes.data.data || []);
+        const newData = Array.isArray(newRes.data) ? newRes.data : (newRes.data.data || []);
 
         setTopHotels(topData.slice(0, 5))
         setNewHotels(newData.slice(0, 5))
@@ -46,7 +47,6 @@ const HotelShowcase = () => {
           <h1>Find your sanctuary</h1>
           <p>Discover luxury, comfort, and adventure.</p>
           
-          {/* This SearchForm should navigate to /search?location=... */}
           <div className="floating-search-bar">
             <SearchForm /> 
           </div>

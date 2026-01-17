@@ -5,7 +5,7 @@ import {
   MapPin, Wifi, Car, Coffee, Star, Check, Users, Info, 
   ArrowRight, ShieldCheck, Utensils, Monitor, Calendar 
 } from 'lucide-react'
-import { useUser } from '../context/UserContext'
+import { useUser } from '../context/userContext'
 import './styles/hotelDetails.css'
 
 const HotelDetails = () => {
