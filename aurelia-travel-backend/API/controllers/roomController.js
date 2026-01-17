@@ -23,40 +23,6 @@ exports.getMyRooms = async (req, res) => {
 
 // ... (Keep existing createRoom, updateRoom, deleteRoom, etc.) ...
 
-// --- HELPER: Parse JSON fields from MySQL ---
-const parseRoom = (room) => {
-    if (!room) return null;
-    const jsonFields = ['facilities', 'bathroom_amenities', 'photos'];
-    
-    jsonFields.forEach(field => {
-        if (typeof room[field] === 'string') {
-            try {
-                room[field] = JSON.parse(room[field]);
-            } catch (e) {
-                room[field] = [];
-            }
-        }
-    });
-    
-    // Ensure numbers are numbers (MySQL decimals come as strings sometimes)
-    if (room.price_per_night) room.price_per_night = parseFloat(room.price_per_night);
-    
-    return room;
-};
-
-// --- HELPER: Stringify JSON fields for MySQL ---
-const prepareForDb = (data) => {
-    const dbData = { ...data };
-    const jsonFields = ['facilities', 'bathroom_amenities', 'photos'];
-    
-    jsonFields.forEach(field => {
-        if (Array.isArray(dbData[field])) {
-            dbData[field] = JSON.stringify(dbData[field]);
-        }
-    });
-    return dbData;
-}
-
 exports.getAllRooms = async (req, res) => {
     try { const rooms = await roomModel.getAllRooms(); res.json(rooms.map(parseRoom)); } 
     catch (err) { res.status(500).json({ error: err.message }); }
