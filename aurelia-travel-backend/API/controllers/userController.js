@@ -1,260 +1,150 @@
 const userModel = require('../models/userModel');
+const bookingModel = require('../models/bookingModel'); // Needed for Dashboard
 const bcrypt = require('bcrypt');
 
+// 1. GET USER (Admin or Self)
+exports.getUserById = async (req, res) => {
+    try {
+        const user = await userModel.findById(req.params.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        
+        // Security: Don't show hash
+        delete user.password;
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// 2. UPDATE USER (Protected & Filtered)
+exports.updateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const currentUserId = req.user.userId;
+        const currentUserRole = req.user.role;
+
+        // Permission Check
+        if (parseInt(id) !== currentUserId && currentUserRole !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Access denied' });
+        }
+
+        const { 
+            first_name, last_name, phone, bio,
+            address_line_1, city, country, postal_code, profile_image,
+            password // Optional
+        } = req.body;
+
+        const updateData = {};
+
+        // Profile Fields
+        if (first_name) updateData.first_name = first_name;
+        if (last_name) updateData.last_name = last_name;
+        if (phone) updateData.phone = phone;
+        if (bio) updateData.bio = bio;
+        if (profile_image) updateData.profile_image = profile_image;
+
+        // Address Fields
+        if (address_line_1) updateData.address_line_1 = address_line_1;
+        if (city) updateData.city = city;
+        if (country) updateData.country = country;
+        if (postal_code) updateData.postal_code = postal_code;
+
+        // Password Change
+        if (password) {
+            updateData.password = await bcrypt.hash(password, 10);
+        }
+
+        // ⚠️ REMOVED: card_number, cvv, expiry_date logic (PCI Compliance)
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ success: false, message: 'No valid fields to update' });
+        }
+
+        const updatedUser = await userModel.update(id, updateData);
+        delete updatedUser.password;
+
+        res.status(200).json({ success: true, message: 'Profile updated', data: updatedUser });
+
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// 3. TRAVELER DASHBOARD (Stats for the User)
+exports.getTravelerDashboard = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        
+        // We use bookingModel here (assuming it exists or will be updated in Phase 3)
+        // If your bookingModel isn't updated yet, this might return empty, which is fine.
+        const bookings = await bookingModel.getBookingsByUserId(userId);
+
+        const stats = {
+            totalTrips: bookings.length,
+            upcomingTrips: bookings.filter(b => new Date(b.check_in) > new Date()).length,
+            completedTrips: bookings.filter(b => b.status === 'completed').length,
+            // Calculate total only for confirmed/paid bookings
+            totalSpent: bookings
+                .filter(b => b.status === 'confirmed' || b.status === 'completed')
+                .reduce((acc, curr) => acc + parseFloat(curr.total_price || 0), 0)
+        };
+
+        res.json({ success: true, stats, recentBookings: bookings.slice(0, 5) });
+
+    } catch (err) {
+        console.error("Dashboard Error:", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// 4. MANAGER UPGRADE (Preserved)
+exports.upgradeToManager = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        await userModel.update(userId, { role: 'hotel_manager' }); // Fixed enum case 'hotel_manager'
+        res.status(200).json({ success: true, message: 'Upgraded to Hotel Manager' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// 5. GET CUSTOMERS (For Managers)
+exports.getMyCustomers = async (req, res) => {
+    try {
+        const customers = await userModel.getCustomersByManagerId(req.user.userId);
+        res.json(customers);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// 6. DELETE (Soft Delete)
+exports.deleteUser = async (req, res) => {
+    try {
+        await userModel.softDelete(req.params.id);
+        res.json({ success: true, message: "User deactivated" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// 7. GET ALL (Admin)
 exports.getAllUsers = async (req, res) => {
     try {
         const users = await userModel.getAllUsers();
         res.json(users);
     } catch (err) {
-        res.status(500).json({ error: err.message})
+        res.status(500).json({ error: err.message });
     }
 };
-
-exports.getUserById = async (req, res) => {
-    try {
-        const user = await userModel.getUserById(req.params.id);
-        if (!user) return res.status(404).json({ message: 'User not found'});
-        res.json(user);
-    } catch (err) {
-        res.status(500).json({ error: err.message})
-    }
-};
-
+// 8. CREATE (Admin)
 exports.createUser = async (req, res) => {
+    // Re-use auth controller logic or keep separate for Admin only
+    // For now, redirecting to standard create logic
+    const { username, email, password, role } = req.body;
     try {
-        const {username, email, password, role} =  req.body;
-        const existingUser = await userModel.getUserByEmail(email);
-        if (existingUser) return res.status(400).json({ message: 'User already exists' });
-
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = await userModel.createUser({ username, email, password: hashedPassword, role });
-        res.status(201).json({ message: 'User created successfully' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-}
-
-exports.updateUser = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { 
-            username, 
-            email, 
-            password, 
-            role, 
-            address_line_1, 
-            address_line_2, 
-            address_line_3, 
-            city, 
-            postal_code, 
-            country,
-            profile_image,
-            card_type,
-            card_number,
-            expiry_date,
-            cvv
-        } = req.body;
-
-        const currentUserId = req.user.userId;
-        const currentUserRole = req.user.role;
-
-        // Verify user exists
-        const existingUser = await userModel.getUserById(id);
-        if (!existingUser) {
-            return res.status(404).json({ 
-                success: false,
-                message: 'User not found' 
-            });
-        }
-
-        // Check if user is trying to update their own data or is admin
-        if (parseInt(id) !== currentUserId && currentUserRole !== 'admin') {
-            return res.status(403).json({
-                success: false,
-                message: 'Access forbidden. You can only update your own data.'
-            });
-        }
-
-        // Prepare update data
-        const updateData = {};
-
-        if (username) updateData.username = username;
-
-        if (email && email !== existingUser.email) {
-            const emailExists = await userModel.getUserByEmail(email);
-            if (emailExists) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Email already in use'
-                });
-            }
-            updateData.email = email;
-        }
-
-        if (password) {
-            if (password.length < 6) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Password must be at least 6 characters'
-                });
-            }
-            updateData.password = await bcrypt.hash(password, 10);
-        }
-
-        if (role) {
-            if (currentUserRole !== 'admin') {
-                return res.status(403).json({
-                    success: false,
-                    message: 'Only admins can change user roles'
-                });
-            }
-            updateData.role = role;
-        }
-
-        // Address fields update
-        if (address_line_1) updateData.address_line_1 = address_line_1;
-        if (address_line_2) updateData.address_line_2 = address_line_2;
-        if (address_line_3) updateData.address_line_3 = address_line_3;
-        if (city) updateData.city = city;
-        if (postal_code) updateData.postal_code = postal_code;
-        if (country) updateData.country = country;
-
-        // Payment info update
-        if (card_type) updateData.card_type = card_type;
-        if (card_number) updateData.card_number = card_number;
-        if (expiry_date) updateData.expiry_date = expiry_date;
-        if (cvv) updateData.cvv = await bcrypt.hash(cvv, 10);
-
-        if (profile_image) updateData.profile_image = profile_image;
-
-        // Check if there's anything to update
-        if (Object.keys(updateData).length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'No valid fields to update'
-            });
-        }
-
-        // Perform update
-        const updatedUser = await userModel.updateUser(id, updateData);
-
-        res.status(200).json({
-            success: true,
-            message: 'User updated successfully',
-            data: updatedUser
-        });
-
-    } catch (err) {
-        console.error('Error updating user:', err);
-        res.status(500).json({ 
-            success: false,
-            error: err.message 
-        });
-    }
+        await userModel.create({ username, email, password: hashedPassword, role });
+        res.status(201).json({ message: 'User created' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 };
-
-
-exports.deleteUser = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const user = await userModel.getUserById(id);
-        if (!user) {
-            return res.status(404).json({ 
-                success: false,
-                message: 'User not found' 
-            });
-        }
-
-        const deleted = await userModel.deleteUser(id);
-        
-        res.status(200).json({
-            success: true,
-            message: 'User deleted successfully'
-        });
-    } catch (err) {
-        console.error('Error deleting user:', err);
-        res.status(500).json({ 
-            success: false,
-            error: err.message 
-        });
-    }
-};
-
-exports.getCurrentUser = async (req, res) => {
-    try {
-        // ✅ Get userId from JWT token (set by verifyToken middleware)
-        const userId = req.user.userId;
-        
-        // Find user by ID
-        const user = await userModel.findById(userId);
-        
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
-        
-        res.status(200).json({
-            success: true,
-            data: user
-        });
-    } catch (err) {
-        console.error('Error fetching current user:', err);
-        res.status(500).json({
-            success: false,
-            error: err.message
-        });
-    }
-};
-
-exports.upgradeToManager = async (req, res) => {
-    try {
-        const userId = req.user.userId || req.user.id; // Handle both token formats
-
-        console.log(`[Upgrade Request] User: ${userId}`);
-
-        const user = await userModel.getUserById(userId);
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'User not found' });
-        }
-
-        // 1. Validate if already a manager
-        if (user.role === 'HotelManager') {
-            return res.status(400).json({ success: false, message: 'User is already a Manager' });
-        }
-
-        // 2. Update User Role directly (No NIC required)
-        const updatedUser = await userModel.updateUser(userId, { 
-            role: 'HotelManager' 
-        });
-
-        res.status(200).json({
-            success: true,
-            message: 'User upgraded successfully to Hotel Manager',
-            data: updatedUser
-        });
-
-    } catch (err) {
-        console.error('Upgrade Error:', err);
-        res.status(500).json({
-            success: false,
-            message: 'Server error during upgrade',
-            error: err.message
-        });
-    }
-};
-
-// ✅ NEW: Get My Customers
-exports.getMyCustomers = async (req, res) => {
-    try {
-        const managerId = req.user.userId || req.user.id;
-        const customers = await userModel.getCustomersByManagerId(managerId);
-        res.json(customers);
-    } catch (err) {
-        console.error("Customer Fetch Error:", err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-

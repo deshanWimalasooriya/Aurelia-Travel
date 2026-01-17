@@ -3,19 +3,13 @@ const router = express.Router();
 const roomController = require('../controllers/roomController');
 const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 
-// ==========================================
-// 1. STATIC ROUTES
-// ==========================================
+// Public
 router.get('/', roomController.getAllRooms);
-
-// ✅ MANAGER ROUTE (Must be before /:id)
-router.get('/mine', verifyToken, checkRole('admin', 'HotelManager'), roomController.getMyRooms);
-
-// ==========================================
-// 2. DYNAMIC ROUTES
-// ==========================================
 router.get('/:id', roomController.getRoomById);
 router.get('/hotel/:hotelId', roomController.getRoomsByHotelId);
+
+// Manager
+router.get('/mine', verifyToken, checkRole('admin', 'HotelManager'), roomController.getMyRooms);
 
 // Protected CRUD
 router.post('/', verifyToken, checkRole('admin', 'HotelManager'), roomController.createRoom);

@@ -3,32 +3,18 @@ const router = express.Router();
 const bookingController = require('../controllers/bookingController');
 const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 
-// Get current user's bookings (Critical: Must be before /:id)
+// 1. CONSUMER ROUTES
 router.get('/my-bookings', verifyToken, bookingController.getMyBookings);
-
-// Get bookings by user ID (Admin only)
-router.get('/user/:userId', verifyToken, checkRole('admin'), bookingController.getBookingsByUserId);
-
-// Get all bookings (Admin only)
-router.get('/', verifyToken, checkRole('admin'), bookingController.getAllBookings);
-
-// Get specific booking
-router.get('/:id', verifyToken, bookingController.getBookingById);
-
-// Create a booking
 router.post('/', verifyToken, bookingController.createBooking);
 
-// Update a booking
-router.put('/:id', verifyToken, bookingController.updateBooking);
+// 2. MANAGER ROUTES
+router.get('/manager/all', verifyToken, checkRole('admin', 'HotelManager'), bookingController.getManagerBookings);
+router.put('/:id/status', verifyToken, checkRole('admin', 'HotelManager'), bookingController.updateBookingStatus);
 
-// Delete a booking
-router.delete('/:id', verifyToken, bookingController.deleteBooking);
-
-
-// 2. ✅ Manager Routes (MUST BE BEFORE /:id)
-router.get('/mine', verifyToken, checkRole('admin', 'HotelManager'), bookingController.getManagerBookings);
+// 3. ADMIN / GENERIC
+router.get('/', verifyToken, checkRole('admin'), bookingController.getAllBookings);
+router.get('/:id', verifyToken, bookingController.getBookingById);
+router.delete('/:id', verifyToken, checkRole('admin'), bookingController.deleteBooking);
 router.get('/hotel/:hotelId', verifyToken, checkRole('admin', 'HotelManager'), bookingController.getBookingsByHotelId);
-
-module.exports = router;
 
 module.exports = router;
