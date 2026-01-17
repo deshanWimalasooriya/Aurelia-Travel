@@ -1,20 +1,24 @@
-// routes/hotelRoutes.js
 const express = require("express");
 const router = express.Router();
 const hotelController = require("../controllers/hotelController");
 const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 
-// Public Routes
+// ==========================================
+// 1. STATIC ROUTES (MUST BE FIRST)
+// ==========================================
 router.get("/", hotelController.getAllHotels);
 router.get("/newest", hotelController.getNewest);
 router.get("/top-rated", hotelController.getTopRated);
-router.get("/:id", hotelController.getHotelById);
 
-// ✅ NEW: Manager's Route (Must be before /:id)
+// ✅ MANAGER ROUTE (Filters by Logged-in User ID)
 router.get("/mine", verifyToken, checkRole('admin', 'HotelManager'), hotelController.getMyHotels);
 
-// ✅ Protected Routes (Managers & Admins)
-// Note: We use checkRole to allow both admin and HotelManager
+// ==========================================
+// 2. DYNAMIC ROUTES (MUST BE LAST)
+// ==========================================
+router.get("/:id", hotelController.getHotelById);
+
+// Protected CRUD
 router.post("/", verifyToken, checkRole('admin', 'HotelManager'), hotelController.create); 
 router.put("/:id", verifyToken, checkRole('admin', 'HotelManager'), hotelController.update); 
 router.delete("/:id", verifyToken, checkRole('admin', 'HotelManager'), hotelController.delete); 
