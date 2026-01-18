@@ -16,7 +16,7 @@ const HotelCard = ({ hotel }) => {
     <div className="hotel-card">
       <div className="hotel-image-container">
         <img 
-          src={hotel.image_url} 
+          src={hotel.main_image} 
           alt={hotel.name}
           className="hotel-image"
         />

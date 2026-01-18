@@ -26,6 +26,9 @@ const HotelShowcase = () => {
 
         setTopHotels(topData.slice(0, 5))
         setNewHotels(newData.slice(0, 5))
+
+        console.log('Top Hotels:', topData)
+        console.log('New Hotels:', newData)
       } catch (err) {
         console.error('Fetch error:', err)
       } finally {
