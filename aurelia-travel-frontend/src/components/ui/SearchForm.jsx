@@ -73,7 +73,6 @@ const SearchForm = () => {
             name="checkIn"
             value={searchData.checkIn}
             onChange={handleInputChange}
-            required
             className="date-input-field"
           />
         </div>
@@ -91,7 +90,6 @@ const SearchForm = () => {
             name="checkOut"
             value={searchData.checkOut}
             onChange={handleInputChange}
-            required
             className="date-input-field"
           />
         </div>

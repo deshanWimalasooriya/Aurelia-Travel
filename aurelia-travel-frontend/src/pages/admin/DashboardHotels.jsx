@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import api from '../../services/api'; // ✅ Use secure API client
+import { useState, useEffect, useCallback } from 'react'; // Added useCallback
+import api from '../../services/api'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit3, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import './styles/dashboard.css';
@@ -15,19 +15,28 @@ const DashboardHotels = () => {
     country: '', description: '', imageUrl: '', facilities: ''
   });
 
-  useEffect(() => { fetchHotels(); }, []);
-
-  const fetchHotels = async () => {
+  // ✅ FIX: Define this outside useEffect so handleSubmit can call it too
+  // Wrapped in useCallback to prevent infinite loops if added to dependencies later
+  const fetchHotels = useCallback(async () => {
     try {
-      // ✅ Endpoint matches your backend route for managers
-      const res = await api.get('/hotels/mine'); 
-      // ✅ Robust extraction: Handle { data: [...] } or direct array
-      const hotelList = Array.isArray(res.data) ? res.data : (res.data.data || []);
+      const res = await api.get('/hotels/mine');
+      
+      const hotelList = Array.isArray(res.data) 
+        ? res.data 
+        : (res.data.data || []);
+
       setHotels(hotelList);
-    } catch (err) { 
-      console.error("Fetch hotels failed", err); 
+      console.log("Fetched hotels:", hotelList);
+
+    } catch (err) {
+      console.error("Fetch hotels failed", err);
     }
-  };
+  }, []);
+
+  // ✅ FIX: Now we just call the external function here
+  useEffect(() => {
+    fetchHotels();
+  }, [fetchHotels]);
 
   const handleSwitchToForm = (hotel = null) => {
     setEditingHotel(hotel);
@@ -36,11 +45,11 @@ const DashboardHotels = () => {
             name: hotel.name || '',
             address: hotel.address_line_1 || '',
             city: hotel.city || '',
-            province: hotel.state || '', // Changed from 'province' to match DB 'state'
+            province: hotel.state || '', 
             postalCode: hotel.postal_code || '',
             country: hotel.country || '',
             description: hotel.description || '',
-            imageUrl: hotel.main_image || '', // Changed from image_url to main_image
+            imageUrl: hotel.main_image || '', 
             facilities: Array.isArray(hotel.amenities) ? hotel.amenities.map(a => a.name).join(', ') : ''
         });
     } else {
@@ -53,7 +62,6 @@ const DashboardHotels = () => {
     e.preventDefault();
     setLoading(true);
     
-    // Construct payload matching backend expectations
     const payload = {
       name: formData.name,
       address_line_1: formData.address,
@@ -63,8 +71,6 @@ const DashboardHotels = () => {
       country: formData.country,
       description: formData.description,
       main_image: formData.imageUrl,
-      // Parse comma-separated facilities if your backend accepts array of strings
-      // Note: Your complex backend might expect amenity IDs, but for simple updates:
       facilities: formData.facilities.split(',').map(f => f.trim()).filter(Boolean)
     };
 
@@ -74,7 +80,10 @@ const DashboardHotels = () => {
       } else {
         await api.post('/hotels', payload);
       }
-      await fetchHotels();
+      
+      // ✅ FIX: This now works because fetchHotels is defined in the component scope
+      await fetchHotels(); 
+      
       setView('list');
     } catch (err) {
       alert("Error: " + (err.response?.data?.message || err.message));

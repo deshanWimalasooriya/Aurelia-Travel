@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, BedDouble, CalendarDays, BarChart3, 
@@ -11,7 +11,12 @@ import './styles/dashboard.css';
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
-  const { user, logout } = useAuth(); 
+  const { checkAuth } = useAuth(); 
+  const user = checkAuth();
+
+  const logout = () => {
+    useNavigate('/profile');
+  }
 
   const menuItems = [
     { path: '/admin', label: 'Overview', icon: LayoutDashboard },
