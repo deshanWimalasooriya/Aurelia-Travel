@@ -26,7 +26,7 @@ const HotelPage = () => {
   // Mobile Filter Toggle State
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
 
-  // --- 1. FETCH DATA (Untouched) ---
+  // --- 1. FETCH DATA (Fixed) ---
   useEffect(() => {
     const fetchHotels = async () => {
       try {
@@ -46,10 +46,20 @@ const HotelPage = () => {
         let highestPrice = 0;
 
         uniqueHotels.forEach(h => {
-             if (h.price > highestPrice) highestPrice = h.price;
+             // Price Calculation
+             const price = parseFloat(h.price || 0);
+             if (price > highestPrice) highestPrice = price;
+
+             // ✅ FIX: Safely handle Amenities (Object vs String)
              const list = Array.isArray(h.amenities) ? h.amenities : (h.amenities || '').split(',');
+             
              list.forEach(rawA => {
-                 const a = rawA.trim();
+                 // Check if it's an object (new backend) or string (old backend)
+                 const name = (typeof rawA === 'object' && rawA !== null) ? rawA.name : String(rawA);
+                 
+                 // Safely trim
+                 const a = name ? name.trim() : '';
+                 
                  if(a) {
                      allAmenities.add(a);
                      counts[a] = (counts[a] || 0) + 1;
@@ -81,20 +91,31 @@ const HotelPage = () => {
     )
   }
 
-  // --- 3. FILTERING LOGIC (Untouched) ---
+  // --- 3. FILTERING LOGIC (Fixed) ---
   const filteredHotels = hotels.filter(hotel => {
     const locationParam = searchParams.get('location')?.toLowerCase() || '';
-    const matchesLocation = !locationParam || hotel.location.toLowerCase().includes(locationParam) || hotel.name.toLowerCase().includes(locationParam);
+    const matchesLocation = !locationParam || (hotel.location || '').toLowerCase().includes(locationParam) || (hotel.name || '').toLowerCase().includes(locationParam);
     
     let matchesAmenities = true;
     if (selectedFilters.length > 0) {
-        const hotelAmenities = Array.isArray(hotel.amenities) 
-            ? hotel.amenities.map(a => a.toLowerCase().trim())
-            : (hotel.amenities || '').toLowerCase().split(',').map(a => a.trim());
+        // ✅ FIX: Safely map amenities for filtering
+        let hotelAmenities = [];
+        
+        if (Array.isArray(hotel.amenities)) {
+            // Handle array of Objects OR Strings
+            hotelAmenities = hotel.amenities.map(a => {
+                const name = (typeof a === 'object' && a !== null) ? a.name : String(a);
+                return name.toLowerCase().trim();
+            });
+        } else if (typeof hotel.amenities === 'string') {
+            // Handle CSV String
+            hotelAmenities = hotel.amenities.toLowerCase().split(',').map(a => a.trim());
+        }
+
         matchesAmenities = selectedFilters.every(filter => hotelAmenities.includes(filter.toLowerCase()));
     }
 
-    const matchesPrice = (hotel.price || 0) <= priceRange;
+    const matchesPrice = (parseFloat(hotel.price) || 0) <= priceRange;
     return matchesLocation && matchesAmenities && matchesPrice;
   });
 
@@ -143,7 +164,7 @@ const HotelPage = () => {
             <div className="filter-card">
                <div className="card-header">
                    <h4>Price Range</h4>
-                   <span className="price-tag">Up to LKR {priceRange}</span>
+                   <span className="price-tag">Up to LKR {priceRange.toLocaleString()}</span>
                </div>
                
                <div className="histogram-wrapper">

@@ -23,6 +23,7 @@ const HotelDetails = () => {
   
   // Selection State
   const [selectedRoomId, setSelectedRoomId] = useState(null);
+  const [roomQty, setRoomQty] = useState(1); // ✅ New: Track Room Quantity
   const [totalPrice, setTotalPrice] = useState(0);
   
   // Booking Data
@@ -75,15 +76,24 @@ const HotelDetails = () => {
         if (room) {
             const pricePerNight = parseFloat(room.base_price_per_night || room.price_per_night || 0);
             const effectiveNights = nightCount > 0 ? nightCount : 1;
-            setTotalPrice(pricePerNight * effectiveNights);
+            // ✅ Updated Calculation: Price * Nights * Quantity
+            setTotalPrice(pricePerNight * effectiveNights * roomQty);
         }
     } else {
         setTotalPrice(0);
     }
-  }, [selectedRoomId, nightCount, rooms]);
+  }, [selectedRoomId, nightCount, rooms, roomQty]); // Added roomQty dependency
 
   const handleRoomSelect = (roomId) => {
-    setSelectedRoomId(prev => prev === roomId ? null : roomId);
+    if (selectedRoomId !== roomId) {
+        setSelectedRoomId(roomId);
+        // Reset qty to 1 when switching rooms, unless we want to persist
+        if (selectedRoomId !== roomId) setRoomQty(1); 
+    } else {
+        // Deselect
+        setSelectedRoomId(null);
+        setRoomQty(1);
+    }
   };
 
   // --- 4. HANDLE RESERVATION ---
@@ -115,6 +125,8 @@ const HotelDetails = () => {
             check_out: dates.checkOut,
             adults: guests.adults,
             children: guests.children,
+            room_count: roomQty, // ✅ Send Quantity to backend
+            total_price: totalPrice, // Explicitly sending calculated total
             payment_token: paymentToken,
             payment_provider: 'stripe'
         };
@@ -126,7 +138,12 @@ const HotelDetails = () => {
             navigate('/profile');
         }
     } catch (err) {
-        alert(err.response?.data?.message || "Booking Failed.");
+        if (err.response && err.response.status === 401) {
+            alert("Session expired. Please login again.");
+            navigate('/auth');
+        } else {
+            alert(err.response?.data?.message || "Booking Failed.");
+        }
     }
   };
 
@@ -158,7 +175,7 @@ const HotelDetails = () => {
                 <div>
                     <h1 className="hotel-title">{hotel.name}</h1>
                     <div className="hotel-meta">
-                        <span className="meta-item"><MapPin size={16}/> {hotel.city}, {hotel.country}</span>
+                        <span className="meta-item"><MapPin size={16} className="icon-blue"/> {hotel.address_line_1}, {hotel.city}, {hotel.country}</span>
                         <div className="rating-pill">
                             <Star size={14} fill="currentColor" /> {hotel.rating_average || 4.8} ({hotel.total_reviews || 0} reviews)
                         </div>
@@ -179,13 +196,13 @@ const HotelDetails = () => {
                 <div className="sub-images">
                     <div className="sub-img" style={{backgroundImage: `url(${images[1]})`}}></div>
                     <div className="sub-img" style={{backgroundImage: `url(${images[2]})`}}></div>
-                    <div className="sub-img" style={{backgroundImage: `url(${images[3]})`}}>
-                        <div className="view-more">View All Photos</div>
+                    <div className="sub-img more-photos" style={{backgroundImage: `url(${images[3]})`}}>
+                        <div className="view-more"><span>+ View All Photos</span></div>
                     </div>
                 </div>
             </div>
             <div className="map-container">
-                <iframe title="Location" width="100%" height="100%" frameBorder="0" scrolling="no" marginHeight="0" marginWidth="0" src={mapUrl}></iframe>
+                <iframe title="Location" width="100%" height="100%" frameBorder="0" scrolling="no" src={mapUrl}></iframe>
             </div>
         </section>
 
@@ -199,7 +216,7 @@ const HotelDetails = () => {
                 <div className="section-card">
                     <h2 className="section-title">Experience the Stay</h2>
                     <p className="description-text">{hotel.description}</p>
-                    <h3 className="sub-title">Popular Amenities</h3>
+                    <h3 className="section-title" style={{fontSize: '18px', marginTop: '30px'}}>Popular Amenities</h3>
                     <div className="amenities-container">
                          <div className="amenity-pill"><Wifi size={18}/> Free WiFi</div>
                          <div className="amenity-pill"><ShieldCheck size={18}/> 24/7 Security</div>
@@ -221,6 +238,7 @@ const HotelDetails = () => {
                                     <th>Room Type</th>
                                     <th>Capacity</th>
                                     <th>Details</th>
+                                    <th style={{textAlign:'center'}}>Nr. Rooms</th> {/* ✅ New Column */}
                                     <th>Price</th>
                                     <th>Action</th>
                                 </tr>
@@ -231,7 +249,7 @@ const HotelDetails = () => {
                                     const price = parseFloat(room.base_price_per_night || room.price_per_night || 0);
                                     
                                     return (
-                                        <tr key={room.id} className={isSelected ? 'selected-row' : ''} onClick={() => handleRoomSelect(room.id)}>
+                                        <tr key={room.id} className={isSelected ? 'selected-row' : ''}>
                                             <td>
                                                 <div className="room-cell-title">
                                                     <strong>{room.title}</strong>
@@ -243,14 +261,36 @@ const HotelDetails = () => {
                                                 <div className="features-cell">
                                                     <span className="feature"><Maximize size={14}/> {room.size_sqm || 30}m²</span>
                                                     <span className="feature"><Mountain size={14}/> {room.view_type || 'View'}</span>
-                                                    {/* ✅ Correct usage of Bed icon inside loop */}
                                                     {room.bed_type && <span className="feature"><Bed size={14}/> {room.bed_type}</span>}
                                                     {room.is_refundable && <span className="feature highlight">Refundable</span>}
                                                 </div>
                                             </td>
+                                            {/* ✅ Room Quantity Selector */}
+                                            <td style={{textAlign:'center'}}>
+                                                <select 
+                                                    className="qty-select"
+                                                    value={isSelected ? roomQty : 1}
+                                                    onChange={(e) => {
+                                                        setSelectedRoomId(room.id); // Auto-select row
+                                                        setRoomQty(parseInt(e.target.value)); // Update qty
+                                                    }}
+                                                    style={{
+                                                        padding: '8px', 
+                                                        borderRadius: '6px', 
+                                                        border: '1px solid #cbd5e1',
+                                                        fontWeight: '600',
+                                                        color: '#0f172a'
+                                                    }}
+                                                >
+                                                    {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
+                                                </select>
+                                            </td>
                                             <td><div className="price-cell"><strong>${price}</strong></div></td>
                                             <td>
-                                                <button className={`table-select-btn ${isSelected ? 'active' : ''}`}>
+                                                <button 
+                                                    className={`table-select-btn ${isSelected ? 'active' : ''}`}
+                                                    onClick={() => handleRoomSelect(room.id)}
+                                                >
                                                     {isSelected ? <Check size={16}/> : 'Select'}
                                                 </button>
                                             </td>
@@ -333,8 +373,8 @@ const HotelDetails = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className="no-reviews">
-                            <Info size={24} />
+                        <div className="no-reviews" style={{textAlign:'center', padding:'40px', color:'#666'}}>
+                            <Info size={24} style={{marginBottom:'10px'}}/>
                             <p>No reviews yet. Be the first to share your experience!</p>
                         </div>
                     )}
@@ -376,7 +416,9 @@ const HotelDetails = () => {
                     </div>
 
                     {selectedRoomId ? (
-                        <div className="notification success"><Check size={16}/> Room selected</div>
+                        <div className="notification success">
+                            <Check size={16}/> {roomQty} Room{roomQty > 1 ? 's' : ''} Selected
+                        </div>
                     ) : (
                         <div className="notification warning"><Info size={16}/> Select a room from the table</div>
                     )}
