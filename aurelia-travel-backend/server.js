@@ -24,6 +24,7 @@ const bookingRoutes = require('./API/routes/bookingRoutes');
 const reviewRoutes = require('./API/routes/reviewRoutes');
 const walletRoutes = require('./API/routes/walletRoutes');
 const crmRoutes = require('./API/routes/crmRoutes');
+const amenityRoutes = require('./API/routes/amenityRoutes');
 
 
 const cors = require('cors');
@@ -48,6 +49,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/support', crmRoutes);
+app.use('/api/amenities', amenityRoutes);
 
 
 //Database Establish

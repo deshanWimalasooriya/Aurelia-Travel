@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { 
   MapPin, Star, Check, Wifi, Car, Coffee, Info, ArrowRight, 
-  ShieldCheck, Utensils, Monitor, Calendar, Users, TrendingUp, 
-  Maximize, Bed, Mountain, User
+  ShieldCheck, Utensils, Calendar, Users, TrendingUp, 
+  Maximize, Mountain, User, Clock, AlertCircle, Ban, Dog, 
+  Bed // ✅ Added missing import
 } from 'lucide-react';
 import { useUser } from '../context/userContext';
 import './styles/hotelDetails.css';
@@ -22,6 +23,7 @@ const HotelDetails = () => {
   
   // Selection State
   const [selectedRoomId, setSelectedRoomId] = useState(null);
+  const [roomQty, setRoomQty] = useState(1); // ✅ New: Track Room Quantity
   const [totalPrice, setTotalPrice] = useState(0);
   
   // Booking Data
@@ -36,16 +38,12 @@ const HotelDetails = () => {
         const [hotelRes, roomRes, reviewRes] = await Promise.all([
           api.get(`/hotels/${id}`),
           api.get(`/rooms/hotel/${id}`),
-          api.get(`/reviews/hotel/${id}`).catch(() => ({ data: { data: [] } })) // Soft fail for reviews
+          api.get(`/reviews/hotel/${id}`).catch(() => ({ data: { data: [] } }))
         ]);
         
         const hotelData = hotelRes.data.data || hotelRes.data;
-        const roomsData = Array.isArray(roomRes.data) 
-            ? roomRes.data 
-            : (roomRes.data.data || []);
-        const reviewsData = Array.isArray(reviewRes.data.data) 
-            ? reviewRes.data.data 
-            : [];
+        const roomsData = Array.isArray(roomRes.data) ? roomRes.data : (roomRes.data.data || []);
+        const reviewsData = Array.isArray(reviewRes.data.data) ? reviewRes.data.data : [];
         
         setHotel(hotelData);
         setRooms(roomsData);
@@ -78,18 +76,23 @@ const HotelDetails = () => {
         if (room) {
             const pricePerNight = parseFloat(room.base_price_per_night || room.price_per_night || 0);
             const effectiveNights = nightCount > 0 ? nightCount : 1;
-            setTotalPrice(pricePerNight * effectiveNights);
+            // ✅ Updated Calculation: Price * Nights * Quantity
+            setTotalPrice(pricePerNight * effectiveNights * roomQty);
         }
     } else {
         setTotalPrice(0);
     }
-  }, [selectedRoomId, nightCount, rooms]);
+  }, [selectedRoomId, nightCount, rooms, roomQty]); // Added roomQty dependency
 
   const handleRoomSelect = (roomId) => {
-    if (selectedRoomId === roomId) {
-        setSelectedRoomId(null);
-    } else {
+    if (selectedRoomId !== roomId) {
         setSelectedRoomId(roomId);
+        // Reset qty to 1 when switching rooms, unless we want to persist
+        if (selectedRoomId !== roomId) setRoomQty(1); 
+    } else {
+        // Deselect
+        setSelectedRoomId(null);
+        setRoomQty(1);
     }
   };
 
@@ -122,6 +125,8 @@ const HotelDetails = () => {
             check_out: dates.checkOut,
             adults: guests.adults,
             children: guests.children,
+            room_count: roomQty, // ✅ Send Quantity to backend
+            total_price: totalPrice, // Explicitly sending calculated total
             payment_token: paymentToken,
             payment_provider: 'stripe'
         };
@@ -133,7 +138,12 @@ const HotelDetails = () => {
             navigate('/profile');
         }
     } catch (err) {
-        alert(err.response?.data?.message || "Booking Failed.");
+        if (err.response && err.response.status === 401) {
+            alert("Session expired. Please login again.");
+            navigate('/auth');
+        } else {
+            alert(err.response?.data?.message || "Booking Failed.");
+        }
     }
   };
 
@@ -151,7 +161,6 @@ const HotelDetails = () => {
   }
   while(images.length < 4) images.push(images[0]); 
 
-  // Use lat/long if available, otherwise search query
   const mapUrl = hotel.latitude && hotel.longitude 
     ? `https://maps.google.com/maps?q=${hotel.latitude},${hotel.longitude}&z=15&output=embed`
     : `https://maps.google.com/maps?q=${encodeURIComponent(hotel.name + ' ' + hotel.city)}&z=15&output=embed`;
@@ -160,13 +169,13 @@ const HotelDetails = () => {
     <div className="hotel-details-page">
       <div className="container">
         
-        {/* 1. HEADER INFO */}
+        {/* HEADER */}
         <section className="header-section">
             <div className="hotel-headline">
                 <div>
                     <h1 className="hotel-title">{hotel.name}</h1>
                     <div className="hotel-meta">
-                        <span className="meta-item"><MapPin size={16}/> {hotel.city}, {hotel.country}</span>
+                        <span className="meta-item"><MapPin size={16} className="icon-blue"/> {hotel.address_line_1}, {hotel.city}, {hotel.country}</span>
                         <div className="rating-pill">
                             <Star size={14} fill="currentColor" /> {hotel.rating_average || 4.8} ({hotel.total_reviews || 0} reviews)
                         </div>
@@ -180,39 +189,24 @@ const HotelDetails = () => {
             </div>
         </section>
 
-        {/* 2. SPLIT HERO: GALLERY + MAP */}
+        {/* HERO: GALLERY + MAP */}
         <section className="hero-split-section">
-            {/* Left: Gallery */}
             <div className="gallery-container">
                 <div className="main-image" style={{backgroundImage: `url(${images[0]})`}}></div>
                 <div className="sub-images">
                     <div className="sub-img" style={{backgroundImage: `url(${images[1]})`}}></div>
                     <div className="sub-img" style={{backgroundImage: `url(${images[2]})`}}></div>
-                    <div className="sub-img" style={{backgroundImage: `url(${images[3]})`}}>
-                        <div className="view-more">View All Photos</div>
+                    <div className="sub-img more-photos" style={{backgroundImage: `url(${images[3]})`}}>
+                        <div className="view-more"><span>+ View All Photos</span></div>
                     </div>
                 </div>
             </div>
-
-            {/* Right: Map */}
             <div className="map-container">
-                <iframe 
-                    title="Hotel Location"
-                    width="100%" 
-                    height="100%" 
-                    frameBorder="0" 
-                    scrolling="no" 
-                    marginHeight="0" 
-                    marginWidth="0" 
-                    src={mapUrl}
-                ></iframe>
-                <div className="map-overlay-label">
-                    <MapPin size={16} /> {hotel.address_line_1 || hotel.city}
-                </div>
+                <iframe title="Location" width="100%" height="100%" frameBorder="0" scrolling="no" src={mapUrl}></iframe>
             </div>
         </section>
 
-        {/* 3. MAIN CONTENT GRID */}
+        {/* MAIN CONTENT GRID */}
         <div className="content-grid">
             
             {/* LEFT COLUMN */}
@@ -222,10 +216,9 @@ const HotelDetails = () => {
                 <div className="section-card">
                     <h2 className="section-title">Experience the Stay</h2>
                     <p className="description-text">{hotel.description}</p>
-                    
-                    <h3 className="sub-title">Popular Amenities</h3>
+                    <h3 className="section-title" style={{fontSize: '18px', marginTop: '30px'}}>Popular Amenities</h3>
                     <div className="amenities-container">
-                         <div className="amenity-pill"><Wifi size={18}/> Fast WiFi</div>
+                         <div className="amenity-pill"><Wifi size={18}/> Free WiFi</div>
                          <div className="amenity-pill"><ShieldCheck size={18}/> 24/7 Security</div>
                          <div className="amenity-pill"><Utensils size={18}/> Restaurant</div>
                          <div className="amenity-pill"><Car size={18}/> Free Parking</div>
@@ -243,10 +236,11 @@ const HotelDetails = () => {
                             <thead>
                                 <tr>
                                     <th>Room Type</th>
-                                    <th>Sleeps</th>
-                                    <th>Features</th>
+                                    <th>Capacity</th>
+                                    <th>Details</th>
+                                    <th style={{textAlign:'center'}}>Nr. Rooms</th> {/* ✅ New Column */}
                                     <th>Price</th>
-                                    <th>Select</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -255,33 +249,49 @@ const HotelDetails = () => {
                                     const price = parseFloat(room.base_price_per_night || room.price_per_night || 0);
                                     
                                     return (
-                                        <tr key={room.id} className={isSelected ? 'selected-row' : ''} onClick={() => handleRoomSelect(room.id)}>
+                                        <tr key={room.id} className={isSelected ? 'selected-row' : ''}>
                                             <td>
                                                 <div className="room-cell-title">
                                                     <strong>{room.title}</strong>
                                                     <span className="room-sub-text">{room.bed_type || 'Double Bed'}</span>
                                                 </div>
                                             </td>
-                                            <td>
-                                                <div className="capacity-cell">
-                                                    <Users size={16} /> x {room.capacity || 2}
-                                                </div>
-                                            </td>
+                                            <td><div className="capacity-cell"><Users size={16} /> x {room.capacity || 2}</div></td>
                                             <td>
                                                 <div className="features-cell">
                                                     <span className="feature"><Maximize size={14}/> {room.size_sqm || 30}m²</span>
-                                                    <span className="feature"><Mountain size={14}/> {room.view_type || 'City View'}</span>
-                                                    {room.has_breakfast && <span className="feature highlight">Breakfast</span>}
+                                                    <span className="feature"><Mountain size={14}/> {room.view_type || 'View'}</span>
+                                                    {room.bed_type && <span className="feature"><Bed size={14}/> {room.bed_type}</span>}
+                                                    {room.is_refundable && <span className="feature highlight">Refundable</span>}
                                                 </div>
                                             </td>
-                                            <td>
-                                                <div className="price-cell">
-                                                    <strong>${price}</strong>
-                                                </div>
+                                            {/* ✅ Room Quantity Selector */}
+                                            <td style={{textAlign:'center'}}>
+                                                <select 
+                                                    className="qty-select"
+                                                    value={isSelected ? roomQty : 1}
+                                                    onChange={(e) => {
+                                                        setSelectedRoomId(room.id); // Auto-select row
+                                                        setRoomQty(parseInt(e.target.value)); // Update qty
+                                                    }}
+                                                    style={{
+                                                        padding: '8px', 
+                                                        borderRadius: '6px', 
+                                                        border: '1px solid #cbd5e1',
+                                                        fontWeight: '600',
+                                                        color: '#0f172a'
+                                                    }}
+                                                >
+                                                    {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
+                                                </select>
                                             </td>
+                                            <td><div className="price-cell"><strong>${price}</strong></div></td>
                                             <td>
-                                                <button className={`table-select-btn ${isSelected ? 'active' : ''}`}>
-                                                    {isSelected ? <Check size={16}/> : 'Add'}
+                                                <button 
+                                                    className={`table-select-btn ${isSelected ? 'active' : ''}`}
+                                                    onClick={() => handleRoomSelect(room.id)}
+                                                >
+                                                    {isSelected ? <Check size={16}/> : 'Select'}
                                                 </button>
                                             </td>
                                         </tr>
@@ -292,35 +302,79 @@ const HotelDetails = () => {
                     </div>
                 </div>
 
-                {/* CUSTOMER REVIEWS */}
+                {/* HOUSE RULES */}
+                <div className="section-card policy-card">
+                    <h2 className="section-title">House Rules</h2>
+                    <div className="policy-list">
+                        <div className="policy-row">
+                            <div className="policy-icon"><Clock size={20}/></div>
+                            <div className="policy-content">
+                                <div className="policy-header">Check-in</div>
+                                <div className="policy-text">From {hotel.check_in_time || '14:00'}</div>
+                            </div>
+                        </div>
+                        <div className="policy-row">
+                            <div className="policy-icon"><Clock size={20}/></div>
+                            <div className="policy-content">
+                                <div className="policy-header">Check-out</div>
+                                <div className="policy-text">Until {hotel.check_out_time || '11:00'}</div>
+                            </div>
+                        </div>
+                        <div className="policy-row">
+                            <div className="policy-icon"><AlertCircle size={20}/></div>
+                            <div className="policy-content">
+                                <div className="policy-header">Cancellation/Prepayment</div>
+                                <div className="policy-text">Cancellation and prepayment policies vary according to accommodation type.</div>
+                            </div>
+                        </div>
+                        <div className="policy-row">
+                            <div className="policy-icon"><Dog size={20}/></div>
+                            <div className="policy-content">
+                                <div className="policy-header">Pets</div>
+                                <div className="policy-text">Pets are not allowed.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* REVIEWS */}
                 <div className="section-card reviews-section">
-                    <h2 className="section-title">Guest Reviews</h2>
+                    <div className="reviews-header-bar">
+                        <h2 className="section-title">Guest Reviews</h2>
+                        <div className="rating-summary-box">
+                            <div className="score-box">{hotel.rating_average || 4.8}</div>
+                            <div className="score-text">
+                                <span className="score-word">Exceptional</span>
+                                <span className="review-count-text">{hotel.total_reviews || 0} reviews</span>
+                            </div>
+                        </div>
+                    </div>
+                    
                     {reviews.length > 0 ? (
-                        <div className="reviews-list">
+                        <div className="reviews-grid">
                             {reviews.map((rev) => (
-                                <div key={rev.id} className="review-item">
-                                    <div className="review-header">
-                                        <div className="reviewer-info">
-                                            <div className="avatar-circle">
-                                                {rev.user_name ? rev.user_name.charAt(0) : <User size={16}/>}
-                                            </div>
-                                            <div>
-                                                <strong>{rev.user_name || "Verified Guest"}</strong>
-                                                <span className="review-date">{new Date(rev.created_at).toLocaleDateString()}</span>
-                                            </div>
-                                        </div>
-                                        <div className="review-rating">
-                                            {rev.rating} <Star size={12} fill="currentColor" />
+                                <div key={rev.id} className="review-card">
+                                    <div className="review-user-row">
+                                        <div className="user-avatar">{rev.user_name ? rev.user_name.charAt(0) : "G"}</div>
+                                        <div className="user-meta">
+                                            <span className="user-name">{rev.user_name || "Verified Guest"}</span>
+                                            <span className="user-country">Sri Lanka</span>
                                         </div>
                                     </div>
-                                    <h4 className="review-title">{rev.title}</h4>
-                                    <p className="review-body">{rev.comment}</p>
+                                    <div className="review-content-block">
+                                        <div className="review-date-row">
+                                            <span className="review-date">Reviewed on {new Date(rev.created_at).toLocaleDateString()}</span>
+                                            <span className="review-score-small">{rev.rating}</span>
+                                        </div>
+                                        <h4 className="review-subject">{rev.title}</h4>
+                                        <p className="review-body">{rev.comment}</p>
+                                    </div>
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <div className="no-reviews">
-                            <Info size={24} />
+                        <div className="no-reviews" style={{textAlign:'center', padding:'40px', color:'#666'}}>
+                            <Info size={24} style={{marginBottom:'10px'}}/>
                             <p>No reviews yet. Be the first to share your experience!</p>
                         </div>
                     )}
@@ -328,23 +382,16 @@ const HotelDetails = () => {
 
             </div>
 
-            {/* RIGHT: STICKY BOOKING WIDGET */}
+            {/* RIGHT: STICKY WIDGET */}
             <div className="sidebar-column">
                 <div className="booking-widget">
-                    
                     <div className="price-header">
                         <div className="price-display">
                             <span className="currency">$</span>
-                            <span className="amount">
-                                {totalPrice > 0 ? totalPrice.toLocaleString() : (parseFloat(hotel.price_per_night_from || 0))}
-                            </span>
-                            <span className="text">
-                                {nightCount > 0 ? ` total` : ' / night'}
-                            </span>
+                            <span className="amount">{totalPrice > 0 ? totalPrice.toLocaleString() : (parseFloat(hotel.price_per_night_from || 0))}</span>
+                            <span className="text">{nightCount > 0 ? ` total` : ' / night'}</span>
                         </div>
-                        <div className="demand-badge">
-                            <TrendingUp size={14}/> Popular
-                        </div>
+                        <div className="demand-badge"><TrendingUp size={14}/> High Demand</div>
                     </div>
 
                     <div className="picker-grid">
@@ -368,32 +415,21 @@ const HotelDetails = () => {
                         </select>
                     </div>
 
-                    {/* UX Messages */}
                     {selectedRoomId ? (
                         <div className="notification success">
-                            <Check size={16}/> Room selected
+                            <Check size={16}/> {roomQty} Room{roomQty > 1 ? 's' : ''} Selected
                         </div>
                     ) : (
-                        <div className="notification warning">
-                            <Info size={16}/> Select a room from the table
-                        </div>
+                        <div className="notification warning"><Info size={16}/> Select a room from the table</div>
                     )}
 
-                    <button className="book-btn" onClick={handleReserve}>
-                        {selectedRoomId ? 'Reserve Securely' : 'Check Availability'}
-                    </button>
-
+                    <button className="book-btn" onClick={handleReserve}>{selectedRoomId ? 'Reserve Securely' : 'Check Availability'}</button>
                     <p className="no-charge-text">You won't be charged yet</p>
-
                     {totalPrice > 0 && (
-                        <div className="total-row">
-                            <span>Total (Tax incl.)</span>
-                            <span>${(totalPrice * 1.1).toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
-                        </div>
+                        <div className="total-row"><span>Total (Tax incl.)</span><span>${(totalPrice * 1.1).toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
                     )}
                 </div>
             </div>
-
         </div>
       </div>
     </div>
