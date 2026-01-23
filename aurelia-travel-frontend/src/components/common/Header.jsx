@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Search, Heart, User, LogOut, Settings, LayoutDashboard, Building2 } from 'lucide-react' 
+import { Heart, User, LogOut, Settings, LayoutDashboard, Building2 } from 'lucide-react'
 import { useUser } from '../../context/userContext'
 import axios from 'axios'
 import './styles/header.css'
@@ -8,11 +8,11 @@ import './styles/header.css'
 const Header = () => {
   const location = useLocation()
   const navigate = useNavigate()
-  
+
   // ✅ Extract isManager and isAdmin
   const { user, clearUser, isAdmin, isManager } = useUser()
-  
-  // State for Dropdown
+
+  // Dropdown
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
 
@@ -23,62 +23,75 @@ const Header = () => {
         setDropdownOpen(false)
       }
     }
+
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning!';
-    if (hour < 18) return 'Good Afternoon!';
-    return 'Good Evening!';
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good Morning!'
+    if (hour < 18) return 'Good Afternoon!'
+    return 'Good Evening!'
   }
 
   const getFirstName = () => {
-    if (!user) return '';
-    const name = user.username || user.name || 'Traveler';
-    return name.split(' ')[0]; 
+    if (!user) return ''
+    const name = user.username || user.name || 'Traveler'
+    return name.split(' ')[0]
   }
 
   const handleLogout = async () => {
-    setDropdownOpen(false);
+    setDropdownOpen(false)
+
     try {
-      await axios.post('http://localhost:5000/api/auth/logout', {}, {
-        withCredentials: true
-      });
-      // Clear all storage just in case
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
-      clearUser();
-      navigate('/auth');
+      await axios.post(
+        'http://localhost:5000/api/auth/logout',
+        {},
+        { withCredentials: true }
+      )
+
+      localStorage.removeItem('token')
+      sessionStorage.removeItem('token')
+      clearUser()
+      navigate('/auth')
     } catch (err) {
-      console.error('Logout error:', err);
-      clearUser();
-      navigate('/auth');
+      console.error('Logout error:', err)
+      clearUser()
+      navigate('/auth')
     }
-  };
+  }
 
   return (
     <header className="header">
       <div className="header-container">
         <Link to="/" className="header-logo">Aurelia Travel</Link>
+
         <nav className="header-nav">
-          <Link to="/" className={`header-nav-link ${location.pathname === '/' ? 'active' : ''}`}>Home</Link>
-          <Link 
-            to="/travel-plan" 
+          <Link
+            to="/"
+            className={`header-nav-link ${location.pathname === '/' ? 'active' : ''}`}
+          >
+            Home
+          </Link>
+
+          <Link
+            to="/travel-plan"
             className={`header-nav-link ${location.pathname === '/travel-plan' ? 'active' : ''}`}
           >
             Travel Plan
           </Link>
+
           <Link to="/hotel-showcase" className="header-nav-link">Hotels</Link>
           <Link to="/about" className="header-nav-link">About</Link>
           <Link to="/contact" className="header-nav-link">Contact</Link>
         </nav>
+
         <div className="header-actions">
-          <button className="header-action">
+          <button className="header-action" type="button">
             <Heart className="header-icon" />
           </button>
-          
+
           {user ? (
             <>
               <div className="header-greeting-wrapper">
@@ -87,15 +100,16 @@ const Header = () => {
               </div>
 
               <div className="header-profile-container" ref={dropdownRef}>
-                <button 
-                  className="header-profile-btn" 
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                <button
+                  type="button"
+                  className="header-profile-btn"
+                  onClick={() => setDropdownOpen((prev) => !prev)}
                 >
                   {user.profile_image ? (
-                    <img 
-                      src={user.profile_image} 
-                      alt="Profile" 
-                      className="header-profile-img" 
+                    <img
+                      src={user.profile_image}
+                      alt="Profile"
+                      className="header-profile-img"
                     />
                   ) : (
                     <div className="header-profile-placeholder">
@@ -107,18 +121,20 @@ const Header = () => {
                 {dropdownOpen && (
                   <div className="header-dropdown">
                     <div className="dropdown-user-details">
-                      <span className="dropdown-username">{user.name || user.username || 'User'}</span>
+                      <span className="dropdown-username">
+                        {user.name || user.username || 'User'}
+                      </span>
                       <span className="dropdown-email">{user.email}</span>
                       <span className="dropdown-role-badge">
                         {isManager ? 'Hotel Partner' : (isAdmin ? 'Admin' : 'Traveler')}
                       </span>
                     </div>
-                    
+
                     <div className="dropdown-divider"></div>
-                    
+
                     {/* --- HOTEL MANAGER DASHBOARD LINK --- */}
                     {(isManager || isAdmin) && (
-                      <Link 
+                      <Link
                         to="/admin"
                         className="dropdown-item highlight-item"
                         onClick={() => setDropdownOpen(false)}
@@ -127,11 +143,11 @@ const Header = () => {
                         Manager Dashboard
                       </Link>
                     )}
-                    
-                    {/* --- SYSTEM ADMIN LINK (Superuser only) --- */}
+
+                    {/* --- SYSTEM ADMIN LINK --- */}
                     {isAdmin && (
-                      <Link 
-                        to="/adminDashboard" 
+                      <Link
+                        to="/adminDashboard"
                         className="dropdown-item"
                         onClick={() => setDropdownOpen(false)}
                       >
@@ -140,17 +156,31 @@ const Header = () => {
                       </Link>
                     )}
 
-                    <Link 
-                      to="/profile" 
+                    {/* ✅ MASTER ADMIN LINK (NEW) */}
+                    {isAdmin && (
+                      <Link
+                        to="/master-admin"
+                        className="dropdown-item"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <LayoutDashboard size={16} />
+                        Master Admin
+                      </Link>
+                    )}
+
+
+                    <Link
+                      to="/profile"
                       className="dropdown-item"
                       onClick={() => setDropdownOpen(false)}
                     >
                       <Settings size={16} />
                       Profile Settings
                     </Link>
-                    
-                    <button 
-                      onClick={handleLogout} 
+
+                    <button
+                      type="button"
+                      onClick={handleLogout}
                       className="dropdown-item dropdown-logout"
                     >
                       <LogOut size={16} />
@@ -163,7 +193,6 @@ const Header = () => {
           ) : (
             <Link to="/auth" className="btn btn-primary">Login</Link>
           )}
-          
         </div>
       </div>
     </header>
