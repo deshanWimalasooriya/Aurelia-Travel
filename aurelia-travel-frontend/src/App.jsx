@@ -29,7 +29,7 @@ import DashboardAnalytics from './pages/admin/DashboardAnalytics'
 import DashboardCustomers from './pages/admin/DashboardCustomers'
 
 // ✅ Master Admin Page
-import MasterAdmin from './pages/MasterAdmin'
+import MasterAdmin from './pages/admin/MasterAdminLayout'
 
 import './index.css'
 
@@ -73,12 +73,6 @@ const AppRoutes = () => {
               <Route path="/hotels" element={<HotelPage />} />
               <Route path="/hotel-search" element={<HotelSearch />} />
               <Route path="/hotel-showcase" element={<HotelShowcase />} />
-
-              {/* ✅ ADD THIS (Master Admin inside Layout routes too) */}
-              <Route
-                path="/master-admin"
-                element={isAdmin ? <MasterAdmin /> : <Navigate to="/" replace />}
-              />
 
               {/* Auth Routes */}
               <Route

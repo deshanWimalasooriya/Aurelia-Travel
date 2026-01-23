@@ -156,7 +156,7 @@ const Header = () => {
                       </Link>
                     )}
 
-                    {/* ✅ MASTER ADMIN LINK (NEW) */}
+                    {/* --- MASTER ADMIN LINK --- */}
                     {isAdmin && (
                       <Link
                         to="/master-admin"
@@ -166,9 +166,7 @@ const Header = () => {
                         <LayoutDashboard size={16} />
                         Master Admin
                       </Link>
-                    )}
-
-
+              )}  
                     <Link
                       to="/profile"
                       className="dropdown-item"
