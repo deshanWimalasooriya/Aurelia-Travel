@@ -29,7 +29,8 @@ import DashboardAnalytics from './pages/admin/DashboardAnalytics'
 import DashboardCustomers from './pages/admin/DashboardCustomers'
 
 // ✅ Master Admin Page
-import MasterAdmin from './pages/admin/MasterAdminLayout'
+import MasterAdmin from './pages/MasterAdmin'
+import MasterDashboardOverview from './pages/admin/MasterDashboardOverview'
 
 import './index.css'
 
@@ -44,7 +45,10 @@ const AppRoutes = () => {
       <Route
         path="/master-admin"
         element={isAdmin ? <MasterAdmin /> : <Navigate to="/" replace />}
-      />
+        
+      >
+        <Route index element={<MasterDashboardOverview/>} />
+      </Route>
 
       {/* --- HOTEL MANAGEMENT DASHBOARD ROUTES --- */}
       <Route
@@ -97,6 +101,13 @@ const AppRoutes = () => {
                 path="/trip-dashboard"
                 element={user ? <TripDashboard /> : <Navigate to="/auth" replace />}
               />
+
+              {/* ✅ MASTER ADMIN (with nested routes support) */}
+              <Route
+                path="/master-admin/*"
+                element={isAdmin ? <MasterAdmin /> : <Navigate to="/" replace />}
+              />
+
 
               {/* Old Legacy Admin Route */}
               <Route

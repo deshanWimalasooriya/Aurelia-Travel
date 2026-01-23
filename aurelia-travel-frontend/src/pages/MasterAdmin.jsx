@@ -1,59 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import MasterAdminLayout from './admin/MasterAdminLayout';
-import MasterDashboardOverview from './admin/MasterDashboardOverview';
-import { Toaster, toast } from 'react-hot-toast';
+import React from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import MasterAdminLayout from './admin/MasterAdminLayout'
+import MasterDashboardOverview from './admin/MasterDashboardOverview'
+import { Toaster } from 'react-hot-toast'
 
 const MasterAdmin = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const navigate = useNavigate();
-
-  // Check if user is admin
-  useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user.role !== 'admin') {
-      toast.error('Access denied! Admin only.');
-      navigate('/');
-    }
-  }, [navigate]);
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'overview':
-        return <MasterDashboardOverview />;
-      case 'analytics':
-        return <div style={{ color: 'white', padding: '2rem' }}>Analytics Coming Soon...</div>;
-      case 'bookings':
-        return <div style={{ color: 'white', padding: '2rem' }}>Booking Management Coming Soon...</div>;
-      case 'users':
-        return <div style={{ color: 'white', padding: '2rem' }}>User Management Coming Soon...</div>;
-      case 'hotels':
-        return <div style={{ color: 'white', padding: '2rem' }}>Hotel Management Coming Soon...</div>;
-      case 'finance':
-        return <div style={{ color: 'white', padding: '2rem' }}>Financial Control Coming Soon...</div>;
-      case 'reviews':
-        return <div style={{ color: 'white', padding: '2rem' }}>Review Management Coming Soon...</div>;
-      case 'support':
-        return <div style={{ color: 'white', padding: '2rem' }}>Support Tickets Coming Soon...</div>;
-      case 'security':
-        return <div style={{ color: 'white', padding: '2rem' }}>Security Hub Coming Soon...</div>;
-      case 'reports':
-        return <div style={{ color: 'white', padding: '2rem' }}>Reports & Export Coming Soon...</div>;
-      case 'settings':
-        return <div style={{ color: 'white', padding: '2rem' }}>System Settings Coming Soon...</div>;
-      default:
-        return <MasterDashboardOverview />;
-    }
-  };
-
   return (
     <>
       <Toaster position="top-right" />
-      <MasterAdminLayout activeTab={activeTab} onTabChange={setActiveTab}>
-        {renderContent()}
-      </MasterAdminLayout>
+      <Routes>
+        <Route path="/" element={<MasterAdminLayout />}>
+          <Route index element={<MasterDashboardOverview />} />
+          <Route path="analytics" element={<ComingSoon title="Analytics" />} />
+          <Route path="bookings" element={<ComingSoon title="Bookings Management" />} />
+          <Route path="users" element={<ComingSoon title="User Management" />} />
+          <Route path="hotels" element={<ComingSoon title="Hotel Management" />} />
+          <Route path="finance" element={<ComingSoon title="Financial Control" />} />
+          <Route path="reviews" element={<ComingSoon title="Review Management" />} />
+          <Route path="support" element={<ComingSoon title="Support Tickets" />} />
+          <Route path="security" element={<ComingSoon title="Security Hub" />} />
+          <Route path="reports" element={<ComingSoon title="Reports & Export" />} />
+          <Route path="settings" element={<ComingSoon title="System Settings" />} />
+        </Route>
+      </Routes>
     </>
-  );
-};
+  )
+}
 
-export default MasterAdmin;
+// Placeholder component for unbuilt sections
+const ComingSoon = ({ title }) => {
+  return (
+    <div className="fade-in" style={{ color: 'white', padding: '2rem' }}>
+      <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>{title}</h1>
+      <p style={{ color: '#94a3b8' }}>This section is under development. Check back soon!</p>
+    </div>
+  )
+}
+
+export default MasterAdmin
