@@ -1,4 +1,5 @@
 const knex = require('../../config/knex');
+const hotelModel = require('../models/hotelModel');
 
 // Helper: Include starting price from rooms
 const withMinPrice = (query) => {
@@ -59,38 +60,18 @@ exports.getById = async (id) => {
     return hotel;
 };
 
-// 3. CREATE
-exports.create = async (hotelData, amenitiesIds, images) => {
-    return await knex.transaction(async (trx) => {
-        const [hotelId] = await trx('hotels').insert(hotelData);
 
-        if (amenitiesIds && amenitiesIds.length > 0) {
-            const amenityRows = amenitiesIds.map(id => ({
-                hotel_id: hotelId,
-                amenity_id: id
-            }));
-            await trx('hotel_amenities').insert(amenityRows);
-        }
-
-        if (images && images.length > 0) {
-            const imageRows = images.map((url, index) => ({
-                hotel_id: hotelId,
-                image_url: url,
-                is_primary: index === 0
-            }));
-            await trx('hotel_images').insert(imageRows);
-        }
-
-        return hotelId;
-    });
+// --- CREATE HOTEL ---
+exports.create = async (hotelData) => {
+    // We insert directly. If this fails, the error message in terminal will tell us exactly why.
+    const [id] = await knex('hotels').insert(hotelData);
+    return id;
 };
 
-// 4. UPDATE
-exports.update = async (id, hotelData) => {
-    await knex('hotels').where({ id }).update(hotelData);
-    return exports.getById(id);
+// 5. UPDATE
+exports.update = async (id, updateData) => {
+    return await knex('hotels').where({ id }).update(updateData);
 };
-
 // 5. DELETE
 exports.delete = (id) => knex('hotels').where({ id }).del();
 
