@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   LayoutDashboard, BedDouble, CalendarDays, BarChart3, 
-  Users, MessageSquare, LogOut, Menu, X, Building 
+  Users, LogOut, Menu, X, Building, ChevronRight 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext'; 
-import './styles/dashboard.css';
+import './styles/dashboard-layout.css';
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -16,32 +16,30 @@ const DashboardLayout = () => {
   const user = checkAuth();
 
   const logout = () => {
+    // Perform logout logic (clear tokens) here
     navigate('/profile');
   }
 
   const menuItems = [
     { path: '/admin', label: 'Overview', icon: LayoutDashboard },
-    { path: '/admin/hotels', label: 'My Hotels', icon: Building },
-    { path: '/admin/rooms', label: 'Room Management', icon: BedDouble },
-    { path: '/admin/bookings', label: 'Bookings', icon: CalendarDays },
-    { path: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
-    { path: '/admin/customers', label: 'Customers', icon: Users },
+    { path: '/admin/hotels', label: 'My Properties', icon: Building },
+    { path: '/admin/rooms', label: 'Room Manager', icon: BedDouble },
+    { path: '/admin/bookings', label: 'Reservations', icon: CalendarDays },
+    { path: '/admin/customers', label: 'Guest List', icon: Users },
+    { path: '/admin/analytics', label: 'Financials', icon: BarChart3 },
   ];
 
   return (
     <div className="dashboard-wrapper">
       {/* SIDEBAR */}
       <motion.aside 
-        className="dashboard-sidebar"
-        initial={{ x: -280 }}
-        animate={{ x: sidebarOpen ? 0 : -280 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className={`dashboard-sidebar ${!sidebarOpen ? 'closed' : ''}`}
+        animate={{ width: sidebarOpen ? 280 : 0, opacity: sidebarOpen ? 1 : 0 }}
+        transition={{ duration: 0.3 }}
+        style={{ overflow: 'hidden' }}
       >
         <div className="sidebar-header">
           <div className="brand-logo">Aurelia<span>Manager</span></div>
-          <button className="mobile-close" onClick={() => setSidebarOpen(false)}>
-             <X size={20} color="white"/>
-          </button>
         </div>
 
         <nav className="sidebar-nav">
@@ -54,16 +52,9 @@ const DashboardLayout = () => {
                 to={item.path} 
                 className={`nav-item ${isActive ? 'active' : ''}`}
               >
-                <Icon size={20} />
+                <Icon size={20} strokeWidth={isActive ? 2 : 1.5} />
                 <span>{item.label}</span>
-                {isActive && (
-                  <motion.div 
-                    layoutId="active-pill" 
-                    className="active-indicator"
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                )}
+                {isActive && <ChevronRight size={16} style={{marginLeft: 'auto', opacity: 0.8}} />}
               </Link>
             )
           })}
@@ -78,11 +69,7 @@ const DashboardLayout = () => {
       </motion.aside>
 
       {/* MAIN CONTENT */}
-      <motion.main 
-        className="dashboard-main"
-        animate={{ marginLeft: sidebarOpen ? "280px" : "0px" }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      >
+      <main className="dashboard-main">
         <header className="dashboard-topbar">
           <div className="flex-align">
              {!sidebarOpen && (
@@ -92,7 +79,7 @@ const DashboardLayout = () => {
              )}
              <div className="page-title-box" style={{marginLeft: !sidebarOpen ? '20px' : '0'}}>
                  <h2>Dashboard</h2>
-                 <p>Welcome back, {user?.username}</p>
+                 <p>Welcome back, {user?.username || 'Partner'}</p>
              </div>
           </div>
           
@@ -100,14 +87,16 @@ const DashboardLayout = () => {
             <div className="admin-avatar">
                {user?.username ? user.username.charAt(0).toUpperCase() : 'A'}
             </div>
-            <span style={{fontWeight: 600, fontSize: '0.9rem'}}>{user?.username}</span>
+            <span style={{fontWeight: 600, fontSize: '0.9rem', color: '#0f172a'}}>
+                {user?.username || 'Admin'}
+            </span>
           </div>
         </header>
 
         <div className="dashboard-content-area">
           <Outlet />
         </div>
-      </motion.main>
+      </main>
     </div>
   );
 };
