@@ -11,11 +11,12 @@ import './styles/dashboard.css';
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
   const { checkAuth } = useAuth(); 
   const user = checkAuth();
 
   const logout = () => {
-    useNavigate('/profile');
+    navigate('/profile');
   }
 
   const menuItems = [
