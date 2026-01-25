@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, Eye, User, Mail, Phone, MapPin } from 'lucide-react';
-import './styles/dashboard.css';
+import { Check, X, Eye, User, Mail, Calendar, MapPin, Filter } from 'lucide-react';
+import './styles/dashboard-bookings.css';
 
 const DashboardBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -18,24 +18,18 @@ const DashboardBookings = () => {
   const fetchHotels = async () => {
     try {
       const res = await api.get('/hotels/mine');
-      setHotels(Array.isArray(res.data.data) ? res.data.data : []);
-    } catch (err) { console.error("Error fetching hotels", err); }
+      setHotels(Array.isArray(res.data) ? res.data : (res.data.data || []));
+    } catch (err) { console.error(err); }
   };
 
   const fetchBookings = async (hotelId) => {
     setLoading(true);
     try {
-      // ✅ Correct endpoint: /bookings/manager/all (from bookingRoutes.js Phase 3)
-      // Note: If you want specific hotel filtering on backend, the route was /bookings/hotel/:id
       let url = hotelId === 'all' ? '/bookings/manager/all' : `/bookings/hotel/${hotelId}`;
       const res = await api.get(url);
-      setBookings(Array.isArray(res.data.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []));
-    } catch (err) {
-      console.error("Failed to fetch bookings", err);
-      setBookings([]);
-    } finally {
-      setLoading(false);
-    }
+      setBookings(Array.isArray(res.data) ? res.data : (res.data.data || []));
+    } catch (err) { setBookings([]); } 
+    finally { setLoading(false); }
   };
 
   const handleStatusUpdate = async (id, newStatus) => {
@@ -44,73 +38,73 @@ const DashboardBookings = () => {
       await api.put(`/bookings/${id}/status`, { status: newStatus });
       setBookings(prev => prev.map(b => b.id === id ? { ...b, status: newStatus } : b));
       if (selectedBooking?.id === id) setSelectedBooking({ ...selectedBooking, status: newStatus });
-    } catch (err) {
-      alert("Failed to update status");
-    }
+    } catch (err) { alert("Failed to update status"); }
   };
 
-  const filteredBookings = bookings.filter(b => 
-    filterStatus === 'all' ? true : b.status === filterStatus
-  );
+  const filteredBookings = bookings.filter(b => filterStatus === 'all' ? true : b.status === filterStatus);
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'confirmed': return 'bg-green-100 text-green-700';
-      case 'pending': return 'bg-yellow-100 text-yellow-700';
-      case 'cancelled': return 'bg-red-100 text-red-700';
-      default: return 'bg-gray-100 text-gray-700';
-    }
+  const getStatusBadge = (status) => {
+    const styles = {
+      confirmed: { bg: '#dcfce7', color: '#15803d' },
+      pending: { bg: '#fef9c3', color: '#a16207' },
+      cancelled: { bg: '#fee2e2', color: '#b91c1c' }
+    };
+    const style = styles[status] || styles.pending;
+    return (
+        <span style={{
+            background: style.bg, color: style.color, 
+            padding:'6px 12px', borderRadius:'20px', 
+            fontSize:'0.75rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.5px'
+        }}>
+            {status}
+        </span>
+    );
   };
 
   return (
     <div className="bookings-page">
-      <div className="table-header-action table-card" style={{marginBottom: '30px', flexDirection: 'column', alignItems: 'flex-start', gap:'20px'}}>
-        <div style={{width: '100%', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-           <div>
-               <h1 style={{fontSize: '1.5rem', fontWeight: 800}}>Booking Management</h1>
-               <p style={{color: '#64748b'}}>Approve requests to reveal customer details</p>
-           </div>
-           <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-               <label style={{fontWeight:600, color:'#64748b'}}>Filter by Hotel:</label>
-               <select 
-                  className="form-input" 
-                  style={{width: '200px', padding:'8px'}}
-                  value={selectedHotelFilter}
-                  onChange={(e) => setSelectedHotelFilter(e.target.value)}
-               >
-                   <option value="all">All My Hotels</option>
-                   {hotels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-               </select>
-           </div>
-        </div>
-
-        <div className="tabs-container" style={{display:'flex', gap:'10px', borderBottom:'1px solid #e2e8f0', width:'100%', paddingBottom:'10px'}}>
-           {['all', 'pending', 'confirmed', 'cancelled'].map(status => (
-             <button 
-               key={status}
-               onClick={() => setFilterStatus(status)}
-               style={{
-                 padding: '8px 16px',
-                 borderRadius: '20px',
-                 border: 'none',
-                 background: filterStatus === status ? '#3b82f6' : 'transparent',
-                 color: filterStatus === status ? 'white' : '#64748b',
-                 fontWeight: 600,
-                 textTransform: 'capitalize',
-                 cursor: 'pointer',
-                 transition: 'all 0.2s'
-               }}
-             >
-               {status}
-             </button>
-           ))}
-        </div>
-      </div>
-
       <div className="table-card">
+        <div className="table-header-action" style={{flexDirection:'column', alignItems:'stretch', gap:'20px'}}>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                <div>
+                    <h1 style={{fontSize: '1.5rem', fontWeight: 800, margin:0, color:'#0f172a'}}>Reservations</h1>
+                    <p style={{color: '#64748b', margin:'5px 0 0'}}>Manage guest bookings and requests</p>
+                </div>
+                <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
+                    <Filter size={16} color="#64748b"/>
+                    <select 
+                        className="form-input" 
+                        style={{width: '200px', padding:'10px'}}
+                        value={selectedHotelFilter}
+                        onChange={(e) => setSelectedHotelFilter(e.target.value)}
+                    >
+                        <option value="all">All Properties</option>
+                        {hotels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                    </select>
+                </div>
+            </div>
+
+            <div style={{display:'flex', gap:'10px', borderBottom:'1px solid #f1f5f9', paddingBottom:'15px'}}>
+               {['all', 'pending', 'confirmed', 'cancelled'].map(status => (
+                 <button 
+                   key={status}
+                   onClick={() => setFilterStatus(status)}
+                   style={{
+                     padding: '8px 16px', borderRadius: '8px', border: 'none',
+                     background: filterStatus === status ? '#0f172a' : 'transparent',
+                     color: filterStatus === status ? '#fff' : '#64748b',
+                     fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize', transition:'all 0.2s'
+                   }}
+                 >
+                   {status}
+                 </button>
+               ))}
+            </div>
+        </div>
+
         <table className="dashboard-table">
           <thead>
-            <tr><th>Guest</th><th>Room & Hotel</th><th>Dates</th><th>Status</th><th>Total</th><th>Actions</th></tr>
+            <tr><th>Guest</th><th>Room Info</th><th>Stay Dates</th><th>Status</th><th>Total</th><th>Action</th></tr>
           </thead>
           <tbody>
             {loading ? (
@@ -119,37 +113,32 @@ const DashboardBookings = () => {
               filteredBookings.map(booking => (
                 <tr key={booking.id}>
                   <td>
-                    <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+                    <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
                       <div className="table-img" style={{borderRadius:'50%'}}>
-                        {booking.profile_image ? <img src={booking.profile_image} alt="user" /> : <User size={20}/>}
+                        {booking.profile_image ? <img src={booking.profile_image} alt="" /> : <User size={20} color="#94a3b8"/>}
                       </div>
-                      <span style={{fontWeight: 600}}>{booking.guest_name || booking.username || 'Guest'}</span>
+                      <span style={{fontWeight: 600, color:'#0f172a'}}>{booking.guest_name || booking.username || 'Guest'}</span>
                     </div>
                   </td>
                   <td>
-                    <div style={{fontSize:'0.9rem', fontWeight:600}}>{booking.room_title || 'Room'}</div>
-                    <div style={{fontSize:'0.8rem', color:'#64748b'}}>{booking.hotel_name || 'Hotel'}</div>
+                    <div style={{fontWeight:600, fontSize:'0.9rem'}}>{booking.room_title || 'Standard Room'}</div>
+                    <div style={{fontSize:'0.8rem', color:'#64748b'}}>{booking.hotel_name}</div>
                   </td>
                   <td>
                     <div style={{display:'flex', flexDirection:'column', fontSize:'0.85rem'}}>
-                       <span>In: {new Date(booking.check_in).toLocaleDateString()}</span>
-                       <span style={{color:'#64748b'}}>Out: {new Date(booking.check_out).toLocaleDateString()}</span>
+                       <span style={{color:'#0f172a'}}>{new Date(booking.check_in).toLocaleDateString()}</span>
+                       <span style={{color:'#64748b', fontSize:'0.75rem'}}>to {new Date(booking.check_out).toLocaleDateString()}</span>
                     </div>
                   </td>
-                  <td>
-                    <span className={`status-badge ${getStatusColor(booking.status)}`} 
-                          style={{padding:'4px 12px', borderRadius:'12px', fontSize:'0.8rem', fontWeight:700, textTransform:'uppercase'}}>
-                      {booking.status}
-                    </span>
-                  </td>
-                  <td style={{fontWeight:700}}>${booking.total_price}</td>
+                  <td>{getStatusBadge(booking.status)}</td>
+                  <td style={{fontWeight:700, color:'#0f172a'}}>${booking.total_price}</td>
                   <td>
                     <div className="action-buttons">
-                      <button className="btn-icon" onClick={() => setSelectedBooking(booking)} title="View Details"><Eye size={18} /></button>
+                      <button className="btn-icon" onClick={() => setSelectedBooking(booking)} title="Details"><Eye size={18}/></button>
                       {booking.status === 'pending' && (
                         <>
-                          <button className="btn-icon" style={{color:'#16a34a', background:'#dcfce7'}} onClick={() => handleStatusUpdate(booking.id, 'confirmed')}><Check size={18} /></button>
-                          <button className="btn-icon" style={{color:'#dc2626', background:'#fee2e2'}} onClick={() => handleStatusUpdate(booking.id, 'cancelled')}><X size={18} /></button>
+                          <button className="btn-icon" style={{color:'#16a34a', background:'#f0fdf4', borderColor:'#bbf7d0'}} onClick={() => handleStatusUpdate(booking.id, 'confirmed')}><Check size={18} /></button>
+                          <button className="btn-icon" style={{color:'#dc2626', background:'#fef2f2', borderColor:'#fecaca'}} onClick={() => handleStatusUpdate(booking.id, 'cancelled')}><X size={18} /></button>
                         </>
                       )}
                     </div>
@@ -157,7 +146,7 @@ const DashboardBookings = () => {
                 </tr>
               ))
             ) : (
-               <tr><td colSpan="6" className="text-center p-8 text-gray-500">No bookings found for this filter.</td></tr>
+               <tr><td colSpan="6" className="text-center p-8 text-gray-500">No bookings found.</td></tr>
             )}
           </tbody>
         </table>
@@ -166,39 +155,49 @@ const DashboardBookings = () => {
       <AnimatePresence>
         {selectedBooking && (
           <motion.div 
-            className="modal-overlay"
+            className="modal-overlay" style={{position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.5)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center'}}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setSelectedBooking(null)}
           >
             <motion.div 
-               className="modal-content"
-               initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
+               className="form-container" style={{width:'500px', margin:0, position:'relative'}}
+               initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
                onClick={e => e.stopPropagation()}
             >
-               <button className="modal-close" onClick={() => setSelectedBooking(null)}><X size={24}/></button>
-               <h2>Booking #{selectedBooking.booking_reference || selectedBooking.id}</h2>
+               <button onClick={() => setSelectedBooking(null)} style={{position:'absolute', top:20, right:20, border:'none', background:'none', cursor:'pointer'}}><X size={20} color="#64748b"/></button>
                
-               <div style={{marginTop:'20px', padding:'15px', background:'#f8fafc', borderRadius:'10px'}}>
-                   <h3><User size={18}/> Guest Details</h3>
-                   <div style={{marginTop:'10px'}}>
-                       <p><strong>Name:</strong> {selectedBooking.guest_name || selectedBooking.username}</p>
-                       <p><strong>Email:</strong> {selectedBooking.guest_email || selectedBooking.email}</p>
+               <h2 style={{marginTop:0, color:'#0f172a'}}>Booking Details</h2>
+               <p style={{color:'#64748b', marginBottom:'20px'}}>Reference: #{selectedBooking.booking_reference || selectedBooking.id}</p>
+               
+               <div style={{background:'#f8fafc', padding:'20px', borderRadius:'12px', marginBottom:'20px'}}>
+                   <h3 style={{fontSize:'0.9rem', color:'#64748b', textTransform:'uppercase', marginTop:0}}>Guest Information</h3>
+                   <div style={{display:'flex', alignItems:'center', gap:'15px', marginTop:'15px'}}>
+                        <div className="table-img" style={{width:60, height:60, borderRadius:'50%'}}>
+                             {selectedBooking.profile_image ? <img src={selectedBooking.profile_image} /> : <User size={24}/>}
+                        </div>
+                        <div>
+                            <div style={{fontWeight:700, fontSize:'1.1rem', color:'#0f172a'}}>{selectedBooking.guest_name || selectedBooking.username}</div>
+                            <div style={{color:'#64748b', fontSize:'0.9rem', display:'flex', alignItems:'center', gap:'5px'}}><Mail size={14}/> {selectedBooking.guest_email || selectedBooking.email}</div>
+                        </div>
                    </div>
                </div>
 
-               <div style={{marginTop:'15px', padding:'15px', background:'#f8fafc', borderRadius:'10px'}}>
-                   <h3><MapPin size={18}/> Stay Details</h3>
-                   <p><strong>Hotel:</strong> {selectedBooking.hotel_name}</p>
-                   <p><strong>Room:</strong> {selectedBooking.room_title}</p>
-                   <p><strong>Check-In:</strong> {new Date(selectedBooking.check_in).toDateString()}</p>
-                   <p><strong>Check-Out:</strong> {new Date(selectedBooking.check_out).toDateString()}</p>
+               <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'15px'}}>
+                   <div style={{background:'#f8fafc', padding:'15px', borderRadius:'12px'}}>
+                       <div style={{color:'#64748b', fontSize:'0.8rem', fontWeight:600}}>CHECK-IN</div>
+                       <div style={{color:'#0f172a', fontWeight:700, marginTop:'5px'}}>{new Date(selectedBooking.check_in).toDateString()}</div>
+                   </div>
+                   <div style={{background:'#f8fafc', padding:'15px', borderRadius:'12px'}}>
+                       <div style={{color:'#64748b', fontSize:'0.8rem', fontWeight:600}}>CHECK-OUT</div>
+                       <div style={{color:'#0f172a', fontWeight:700, marginTop:'5px'}}>{new Date(selectedBooking.check_out).toDateString()}</div>
+                   </div>
                </div>
 
-               <div style={{marginTop:'20px', display:'flex', justifyContent:'flex-end', gap:'10px'}}>
+               <div style={{marginTop:'30px', display:'flex', gap:'10px'}}>
                    {selectedBooking.status === 'pending' && (
-                       <button className="btn-primary" onClick={() => handleStatusUpdate(selectedBooking.id, 'confirmed')}>Approve</button>
+                       <button className="btn-primary" style={{flex:1, justifyContent:'center'}} onClick={() => handleStatusUpdate(selectedBooking.id, 'confirmed')}>Approve Request</button>
                    )}
-                   <button className="btn-secondary" onClick={() => setSelectedBooking(null)}>Close</button>
+                   <button className="btn-secondary" style={{flex:1, justifyContent:'center'}} onClick={() => setSelectedBooking(null)}>Close</button>
                </div>
             </motion.div>
           </motion.div>

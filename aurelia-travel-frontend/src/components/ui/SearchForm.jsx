@@ -25,7 +25,6 @@ const SearchForm = () => {
     e.preventDefault()
     setIsSearching(true)
 
-    // Simulate small delay for UX
     setTimeout(() => {
         // Construct Query Params
         const params = new URLSearchParams({
@@ -36,8 +35,7 @@ const SearchForm = () => {
             children: searchData.children
         }).toString();
 
-        // Navigate to HotelPage with these params
-        navigate(`/hotels?${params}`) // Assuming /hotels is your HotelPage route
+        navigate(`/hotels?${params}`) 
         setIsSearching(false)
     }, 600)
   }
@@ -53,7 +51,7 @@ const SearchForm = () => {
           <input 
             type="text" 
             name="destination"
-            placeholder="Search destination..." 
+            placeholder="Hotel, City, or Province..." 
             value={searchData.destination}
             onChange={handleInputChange}
             required
