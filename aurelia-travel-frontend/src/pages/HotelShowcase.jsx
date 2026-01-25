@@ -215,7 +215,7 @@ const HotelShowcase = () => {
                ) : (
                    <div className="empty-state text-center py-20 bg-gray-50 rounded-xl">
                        <MapPin size={40} className="mx-auto text-gray-400 mb-4"/>
-                       <h3 className="text-lg font-semibold text-gray-700">No hotels found</h3>
+                       <h3 className="text-lg font-semibold text-gray-700">No hotel found</h3>
                        <p className="text-gray-500">Try checking the spelling (e.g. "Colombo") or adjusting your filters.</p>
                        <button onClick={handleClearFilters} className="mt-4 text-blue-600 underline">View all hotels</button>
                    </div>
