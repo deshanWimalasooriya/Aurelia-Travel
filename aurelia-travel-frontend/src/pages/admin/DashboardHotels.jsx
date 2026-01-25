@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'; 
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/api'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Plus, Edit2, Trash2, Image as ImageIcon, Loader2, 
-  MapPin, Clock, Phone, Globe, Mail, Search, X, 
+  Plus, Edit2, Trash2, Eye, Image as ImageIcon, Loader2, // Added Eye
+  MapPin, Clock, Phone, Globe, Mail, Search, X,
   Building, Star, CheckCircle2, AlertCircle,
   Bold, Italic, Underline, List, ListOrdered
 } from 'lucide-react';
@@ -20,7 +21,6 @@ const SimpleEditor = ({ value, onChange }) => {
     };
 
     // Sync external value changes to the editor (e.g. initial load)
-    // But DO NOT sync if the user is currently typing (isLocked is true)
     useEffect(() => {
         if (editorRef.current) {
             const currentHTML = editorRef.current.innerHTML;
@@ -37,9 +37,6 @@ const SimpleEditor = ({ value, onChange }) => {
         // 2. Send data to parent
         const html = e.currentTarget.innerHTML;
         onChange(html);
-        
-        // 3. We stay locked. The lock is only released when the component
-        //    receives a new value that matches what we just typed, or on blur.
     };
 
     // Ensure we unlock if the user clicks away
@@ -77,6 +74,7 @@ const DashboardHotels = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingHotel, setEditingHotel] = useState(null);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate(); // Hook for navigation
   
   const [formData, setFormData] = useState({
     name: '', description: '', address: '', city: '', province: '', 
@@ -139,7 +137,7 @@ const DashboardHotels = () => {
     
     const payload = {
       name: formData.name, 
-      description: formData.description, // Now contains HTML
+      description: formData.description, 
       address_line_1: formData.address,
       city: formData.city, 
       state: formData.province, 
@@ -239,7 +237,14 @@ const DashboardHotels = () => {
                                         }
                                     </div>
                                     <div className="hotel-meta">
-                                        <span className="hotel-name">{hotel.name}</span>
+                                        {/* Added Clickable Name for Navigation */}
+                                        <span 
+                                            className="hotel-name clickable-name" 
+                                            onClick={() => navigate(`/hotel/${hotel.id}`)}
+                                            title="View Property Details"
+                                        >
+                                            {hotel.name}
+                                        </span>
                                         <span className="hotel-id">ID: #{hotel.id}</span>
                                     </div>
                                 </div>
@@ -264,6 +269,11 @@ const DashboardHotels = () => {
                             </td>
                             <td className="text-right">
                                 <div className="action-row">
+                                    {/* Added View Button */}
+                                    <button className="icon-btn" onClick={() => navigate(`/hotel/${hotel.id}`)} title="View Details">
+                                        <Eye size={16}/>
+                                    </button>
+                                    
                                     <button className="icon-btn" onClick={() => handleSwitchToForm(hotel)} title="Edit">
                                         <Edit2 size={16}/>
                                     </button>
@@ -332,7 +342,7 @@ const DashboardHotels = () => {
                                     </div>
                                 </div>
                                 
-                                {/* --- NEW: Rich Text Editor Replacement --- */}
+                                {/* Rich Text Editor */}
                                 <div className="form-group">
                                     <label>Description</label>
                                     <SimpleEditor 
