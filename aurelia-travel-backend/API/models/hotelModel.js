@@ -42,7 +42,7 @@ const attachDetails = async (hotels) => {
 
 // 1. GET ALL
 exports.getAll = async () => {
-    const hotels = await withMinPrice(knex('hotels').where('is_active', true));
+    const hotels = await withMinPrice(knex('hotels'));
     return await attachDetails(hotels);
 };
 
