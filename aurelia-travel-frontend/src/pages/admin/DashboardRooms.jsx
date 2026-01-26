@@ -3,9 +3,9 @@ import api from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Edit2, Trash2, Image as ImageIcon, Loader2, 
-  Search, X, DollarSign, Users, Building, Maximize, 
+  Search, X, Users, Building, Maximize, 
   BedDouble, Mountain, Bold, Italic, Underline, List, 
-  ListOrdered, Coffee, Cigarette, RefreshCw, MinusCircle
+  ListOrdered, Coffee, Cigarette, RefreshCw, MinusCircle, Star
 } from 'lucide-react';
 import './styles/dashboard-rooms.css';
 
@@ -67,12 +67,13 @@ const DashboardRooms = () => {
   const [selectedHotelFilter, setSelectedHotelFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Form Data
+  // Form Data (Includes viewType and bedType)
   const [formData, setFormData] = useState({
     title: '', hotelId: '', price: '', description: '', roomType: 'Standard',
-    maxAdults: 2, maxChildren: 0, sizeSqm: '', viewType: '', bedType: '', 
+    maxAdults: 2, maxChildren: 0, sizeSqm: '', 
+    viewType: '', bedType: '', // ✅ New Fields
     totalQuantity: 1, 
-    images: [''], // Array for multiple images
+    images: [], // Array of {url, isPrimary}
     hasBreakfast: false, isRefundable: true, smokingAllowed: false
   });
 
@@ -114,10 +115,14 @@ const DashboardRooms = () => {
   const handleSwitchToForm = (room = null) => {
       setEditingRoom(room);
       if (room) {
-          // If editing, map backend data
-          const existingImages = room.images && room.images.length > 0 
-            ? room.images.map(img => typeof img === 'string' ? img : img.image_url) 
-            : [room.main_image || ''];
+          // Map backend data
+          const processedImages = (room.images_meta && room.images_meta.length > 0)
+            ? room.images_meta.map(img => ({ url: img.url, isPrimary: img.isPrimary }))
+            : (room.images && room.images.length > 0
+                ? room.images.map(url => ({ url, isPrimary: url === room.main_image }))
+                : [{ url: room.main_image || '', isPrimary: true }]);
+            
+          if (processedImages.length && !processedImages.some(i => i.isPrimary)) processedImages[0].isPrimary = true;
 
           setFormData({
               title: room.title || '',
@@ -128,10 +133,10 @@ const DashboardRooms = () => {
               maxAdults: room.max_adults || 2,
               maxChildren: room.max_children || 0,
               sizeSqm: room.size_sqm || '',
-              viewType: room.view_type || '',
-              bedType: room.bed_type || '',
+              viewType: room.view_type || '', // ✅ Map View Type
+              bedType: room.bed_type || '',   // ✅ Map Bed Type
               totalQuantity: room.total_quantity || 1,
-              images: existingImages, 
+              images: processedImages, 
               hasBreakfast: !!room.has_breakfast,
               isRefundable: !!room.is_refundable,
               smokingAllowed: !!room.smoking_allowed
@@ -142,9 +147,10 @@ const DashboardRooms = () => {
               title: '', 
               hotelId: (selectedHotelFilter !== 'all' ? selectedHotelFilter : ''), 
               price: '', description: '', roomType: 'Standard',
-              maxAdults: 2, maxChildren: 0, sizeSqm: '', viewType: '', bedType: '', 
+              maxAdults: 2, maxChildren: 0, sizeSqm: '', 
+              viewType: '', bedType: '', // ✅ Defaults
               totalQuantity: 1, 
-              images: [''], // Start with one empty slot
+              images: [{ url: '', isPrimary: true }], 
               hasBreakfast: false, isRefundable: true, smokingAllowed: false
           });
       }
@@ -154,25 +160,25 @@ const DashboardRooms = () => {
   // Multiple Image Handlers
   const handleImageChange = (index, value) => {
       const newImages = [...formData.images];
-      newImages[index] = value;
+      newImages[index].url = value;
       setFormData({ ...formData, images: newImages });
   };
-
-  const addImageField = () => {
-      setFormData({ ...formData, images: [...formData.images, ''] });
-  };
-
+  const addImageField = () => setFormData({ ...formData, images: [...formData.images, { url: '', isPrimary: false }] });
   const removeImageField = (index) => {
       const newImages = formData.images.filter((_, i) => i !== index);
-      setFormData({ ...formData, images: newImages.length ? newImages : [''] });
+      if (newImages.length && !newImages.some(i => i.isPrimary)) newImages[0].isPrimary = true;
+      setFormData({ ...formData, images: newImages.length ? newImages : [{url:'', isPrimary:true}] });
+  };
+  const setPrimaryImage = (index) => {
+      const newImages = formData.images.map((img, i) => ({ ...img, isPrimary: i === index }));
+      setFormData({ ...formData, images: newImages });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // Clean up images array (remove empty strings)
-    const validImages = formData.images.filter(img => img.trim() !== '');
+    const validImages = formData.images.filter(img => img.url.trim() !== '');
 
     const payload = {
         hotel_id: formData.hotelId,
@@ -183,13 +189,13 @@ const DashboardRooms = () => {
         max_adults: Number(formData.maxAdults),
         max_children: Number(formData.maxChildren),
         size_sqm: formData.sizeSqm ? Number(formData.sizeSqm) : null,
-        view_type: formData.viewType,
-        bed_type: formData.bedType,
+        view_type: formData.viewType, // ✅ Send View Type
+        bed_type: formData.bedType,   // ✅ Send Bed Type
         total_quantity: Number(formData.totalQuantity),
         has_breakfast: formData.hasBreakfast ? 1 : 0,
         is_refundable: formData.isRefundable ? 1 : 0,
         smoking_allowed: formData.smokingAllowed ? 1 : 0,
-        images: validImages, // Send array of strings
+        images: validImages, 
     };
 
     try {
@@ -230,15 +236,10 @@ const DashboardRooms = () => {
                     <p className="page-subtitle">Manage availability and pricing</p>
                 </div>
                 <div className="header-actions">
-                    <select 
-                        className="header-select"
-                        value={selectedHotelFilter}
-                        onChange={(e) => setSelectedHotelFilter(e.target.value)}
-                    >
+                    <select className="header-select" value={selectedHotelFilter} onChange={(e) => setSelectedHotelFilter(e.target.value)}>
                         <option value="all">All Properties</option>
                         {hotels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
                     </select>
-
                     <div className="search-bar">
                         <Search size={16} className="search-icon"/>
                         <input placeholder="Search rooms..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}/>
@@ -273,6 +274,11 @@ const DashboardRooms = () => {
                                     <div className="room-meta">
                                         <span className="room-title">{room.title}</span>
                                         <span className="room-type-badge">{room.room_type}</span>
+                                        {/* Added small badges for view/bed if they exist */}
+                                        <div className="sub-meta">
+                                            {room.view_type && <span className="meta-tag">{room.view_type}</span>}
+                                            {room.bed_type && <span className="meta-tag">{room.bed_type}</span>}
+                                        </div>
                                     </div>
                                 </div>
                             </td>
@@ -331,49 +337,45 @@ const DashboardRooms = () => {
 
                     {/* Multiple Images Section */}
                     <div className="form-section">
-                        <h4 className="section-heading"><ImageIcon size={18}/> Image Gallery</h4>
+                        <h4 className="section-heading"><ImageIcon size={18}/> Image Gallery (Star = Primary)</h4>
                         <div className="images-grid">
                             <div className="image-inputs-col">
                                 {formData.images.map((img, index) => (
-                                    <div key={index} className="image-input-row">
-                                        <input 
-                                            type="text" 
-                                            className="form-input" 
-                                            placeholder={`Image URL ${index + 1}`} 
-                                            value={img} 
-                                            onChange={(e) => handleImageChange(index, e.target.value)}
-                                        />
+                                    <div key={index} className="image-input-row" style={{display:'flex', gap:'8px', alignItems:'center', marginBottom:'8px'}}>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setPrimaryImage(index)} 
+                                            className={`icon-btn small ${img.isPrimary ? 'active-star' : ''}`} 
+                                            style={{color: img.isPrimary ? '#f59e0b' : '#cbd5e1', border: img.isPrimary ? '1px solid #f59e0b' : '1px solid #e2e8f0'}}
+                                        >
+                                            <Star size={16} fill={img.isPrimary ? '#f59e0b' : 'none'}/>
+                                        </button>
+                                        <input className="form-input" placeholder={`Image URL ${index + 1}`} value={img.url} onChange={(e) => handleImageChange(index, e.target.value)}/>
                                         {formData.images.length > 1 && (
-                                            <button type="button" className="btn-icon delete" onClick={() => removeImageField(index)} title="Remove">
-                                                <MinusCircle size={16}/>
-                                            </button>
+                                            <button type="button" className="btn-icon delete" onClick={() => removeImageField(index)} title="Remove"><MinusCircle size={16}/></button>
                                         )}
                                     </div>
                                 ))}
                                 <button type="button" className="btn-ghost small" onClick={addImageField}>+ Add Another Image</button>
                             </div>
-                            
-                            {/* Live Preview of FIRST image */}
                             <div className="image-preview-box">
-                                {formData.images[0] ? (
-                                    <img src={formData.images[0]} alt="Preview" onError={(e) => e.target.style.display='none'}/>
-                                ) : (
-                                    <div className="preview-placeholder">
-                                        <ImageIcon size={32}/>
-                                        <span>Main Image Preview</span>
-                                    </div>
-                                )}
+                                {formData.images.find(i=>i.isPrimary && i.url) ? <img src={formData.images.find(i=>i.isPrimary).url} alt="Preview" onError={(e) => e.target.style.display='none'}/> : <div className="preview-placeholder"><ImageIcon size={32}/><span>Primary Image</span></div>}
                             </div>
                         </div>
                     </div>
 
                     {/* Specs & Pricing */}
                     <div className="form-section">
-                        <h4 className="section-heading"><Users size={18}/> Occupancy & Pricing</h4>
+                        <h4 className="section-heading"><Users size={18}/> Specs, Occupancy & Pricing</h4>
                         <div className="form-grid-3">
                             <div className="form-group"><label>Adults</label><input type="number" className="form-input" value={formData.maxAdults} onChange={e=>setFormData({...formData, maxAdults:e.target.value})}/></div>
                             <div className="form-group"><label>Children</label><input type="number" className="form-input" value={formData.maxChildren} onChange={e=>setFormData({...formData, maxChildren:e.target.value})}/></div>
                             <div className="form-group"><label>Size (m²)</label><input type="number" className="form-input" value={formData.sizeSqm} onChange={e=>setFormData({...formData, sizeSqm:e.target.value})}/></div>
+                            
+                            {/* ✅ NEW FIELDS: Bed Type & View Type */}
+                            <div className="form-group"><label>Bed Type</label><input type="text" className="form-input" placeholder="e.g. King, Twin" value={formData.bedType} onChange={e=>setFormData({...formData, bedType:e.target.value})}/></div>
+                            <div className="form-group"><label>View Type</label><input type="text" className="form-input" placeholder="e.g. Ocean, City" value={formData.viewType} onChange={e=>setFormData({...formData, viewType:e.target.value})}/></div>
+                            
                             <div className="form-group"><label>Total Stock</label><input type="number" className="form-input" required value={formData.totalQuantity} onChange={e=>setFormData({...formData, totalQuantity:e.target.value})}/></div>
                             <div className="form-group"><label>Price ($)</label><input type="number" className="form-input" required value={formData.price} onChange={e=>setFormData({...formData, price:e.target.value})}/></div>
                             <div className="form-group">

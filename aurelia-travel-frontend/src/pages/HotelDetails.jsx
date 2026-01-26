@@ -5,9 +5,10 @@ import {
   MapPin, Star, Check, Wifi, Car, Coffee, Info, ArrowRight, 
   ShieldCheck, Utensils, Calendar, Users, TrendingUp, 
   Maximize, Mountain, User, Clock, AlertCircle, Ban, Dog, 
-  Bed // ✅ Added missing import
+  Bed 
 } from 'lucide-react';
 import { useUser } from '../context/userContext';
+import ImageGallery from '../components/ui/ImageGallery'; 
 import './styles/hotelDetails.css';
 
 const HotelDetails = () => {
@@ -21,9 +22,12 @@ const HotelDetails = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  // Gallery State
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+
   // Selection State
   const [selectedRoomId, setSelectedRoomId] = useState(null);
-  const [roomQty, setRoomQty] = useState(1); // ✅ New: Track Room Quantity
+  const [roomQty, setRoomQty] = useState(1); 
   const [totalPrice, setTotalPrice] = useState(0);
   
   // Booking Data
@@ -76,21 +80,18 @@ const HotelDetails = () => {
         if (room) {
             const pricePerNight = parseFloat(room.base_price_per_night || room.price_per_night || 0);
             const effectiveNights = nightCount > 0 ? nightCount : 1;
-            // ✅ Updated Calculation: Price * Nights * Quantity
             setTotalPrice(pricePerNight * effectiveNights * roomQty);
         }
     } else {
         setTotalPrice(0);
     }
-  }, [selectedRoomId, nightCount, rooms, roomQty]); // Added roomQty dependency
+  }, [selectedRoomId, nightCount, rooms, roomQty]);
 
   const handleRoomSelect = (roomId) => {
     if (selectedRoomId !== roomId) {
         setSelectedRoomId(roomId);
-        // Reset qty to 1 when switching rooms, unless we want to persist
         if (selectedRoomId !== roomId) setRoomQty(1); 
     } else {
-        // Deselect
         setSelectedRoomId(null);
         setRoomQty(1);
     }
@@ -125,8 +126,8 @@ const HotelDetails = () => {
             check_out: dates.checkOut,
             adults: guests.adults,
             children: guests.children,
-            room_count: roomQty, // ✅ Send Quantity to backend
-            total_price: totalPrice, // Explicitly sending calculated total
+            room_count: roomQty, 
+            total_price: totalPrice, 
             payment_token: paymentToken,
             payment_provider: 'stripe'
         };
@@ -150,16 +151,30 @@ const HotelDetails = () => {
   if (loading) return <div className="loading-screen"><div className="spinner"></div><h3>Loading Hotel...</h3></div>;
   if (!hotel) return <div className="loading-screen">Hotel not found</div>;
 
-  // --- IMAGES & LOCATION ---
-  let images = [];
+  // --- IMAGES & LOCATION LOGIC ---
+  const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80';
+  
+  let rawImages = [];
+  
+  // 1. Try to get images array
   if (Array.isArray(hotel.images) && hotel.images.length > 0) {
-      images = hotel.images.sort((a,b) => (b.is_primary === true) - (a.is_primary === true)).map(img => img.image_url);
-  } else if (hotel.main_image) {
-      images = [hotel.main_image];
-  } else {
-      images = ['https://images.unsplash.com/photo-1566073771259-6a8506099945'];
+      rawImages = hotel.images.map(img => (typeof img === 'object' && img.image_url ? img.image_url : img));
+  } 
+  else if (hotel.main_image) {
+      rawImages = [hotel.main_image];
+  } 
+  
+  // 3. Clean list for Gallery
+  let cleanGalleryImages = rawImages.filter(img => img); 
+  if (cleanGalleryImages.length === 0) {
+      cleanGalleryImages = [DEFAULT_IMAGE];
   }
-  while(images.length < 4) images.push(images[0]); 
+
+  // 4. Layout Images (ensure 4 for grid)
+  let layoutImages = [...cleanGalleryImages];
+  while(layoutImages.length < 4) {
+      layoutImages.push(layoutImages[0] || DEFAULT_IMAGE);
+  }
 
   const mapUrl = hotel.latitude && hotel.longitude 
     ? `https://maps.google.com/maps?q=${hotel.latitude},${hotel.longitude}&z=15&output=embed`
@@ -192,17 +207,23 @@ const HotelDetails = () => {
         {/* HERO: GALLERY + MAP */}
         <section className="hero-split-section">
             <div className="gallery-container">
-                <div className="main-image" style={{backgroundImage: `url(${images[0]})`}}></div>
+                <div 
+                    className="main-image" 
+                    style={{backgroundImage: `url('${layoutImages[0]}')`}}
+                    onClick={() => setIsGalleryOpen(true)}
+                ></div>
+                
                 <div className="sub-images">
-                    <div className="sub-img" style={{backgroundImage: `url(${images[1]})`}}></div>
-                    <div className="sub-img" style={{backgroundImage: `url(${images[2]})`}}></div>
-                    <div className="sub-img more-photos" style={{backgroundImage: `url(${images[3]})`}}>
-                        <div className="view-more"><span>+ View All Photos</span></div>
+                    <div className="sub-img" style={{backgroundImage: `url('${layoutImages[1]}')`}} onClick={() => setIsGalleryOpen(true)}></div>
+                    <div className="sub-img" style={{backgroundImage: `url('${layoutImages[2]}')`}} onClick={() => setIsGalleryOpen(true)}></div>
+                    <div className="sub-img more-photos" style={{backgroundImage: `url('${layoutImages[3]}')`}} onClick={() => setIsGalleryOpen(true)}>
+                        <div className="view-more"><span>+ View Gallery</span></div>
                     </div>
                 </div>
             </div>
+            
             <div className="map-container">
-                <iframe title="Location" width="100%" height="100%" frameBorder="0" scrolling="no" src={mapUrl}></iframe>
+                <iframe title="Location" width="100%" height="100%" frameBorder="0" src={mapUrl}></iframe>
             </div>
         </section>
 
@@ -212,19 +233,34 @@ const HotelDetails = () => {
             {/* LEFT COLUMN */}
             <div className="details-content">
                 
-                {/* Description */}
+                {/* --- DESCRIPTION & AMENITIES (UPDATED) --- */}
                 <div className="section-card">
                     <h2 className="section-title">Experience the Stay</h2>
-                    <p className="description-text">{hotel.description}</p>
+                    <p className="description-text">
+                        {hotel.description || "Enjoy a relaxing stay at " + hotel.name + ". This property offers excellent accommodation and services to make your visit memorable."}
+                    </p>
+                    
                     <h3 className="section-title" style={{fontSize: '18px', marginTop: '30px'}}>Popular Amenities</h3>
                     <div className="amenities-container">
-                         <div className="amenity-pill"><Wifi size={18}/> Free WiFi</div>
-                         <div className="amenity-pill"><ShieldCheck size={18}/> 24/7 Security</div>
-                         <div className="amenity-pill"><Utensils size={18}/> Restaurant</div>
-                         <div className="amenity-pill"><Car size={18}/> Free Parking</div>
-                         {Array.isArray(hotel.amenities) && hotel.amenities.slice(0, 4).map((fac, i) => (
-                             <div key={i} className="amenity-pill"><Star size={18}/> {typeof fac === 'object' ? fac.name : fac}</div>
-                         ))}
+                         {Array.isArray(hotel.amenities) && hotel.amenities.length > 0 ? (
+                             /* Display Amenities from Database */
+                             hotel.amenities.map((item, index) => (
+                                 <div key={index} className="amenity-pill">
+                                     {/* Using Check icon for dynamic amenities */}
+                                     <Check size={18} /> 
+                                     {typeof item === 'object' ? item.name : item}
+                                 </div>
+                             ))
+                         ) : (
+                             /* Fallback if no amenities in DB */
+                             <>
+                                <div className="amenity-pill"><Wifi size={18}/> Free WiFi</div>
+                                <div className="amenity-pill"><ShieldCheck size={18}/> 24/7 Security</div>
+                                <div className="amenity-pill"><Utensils size={18}/> Restaurant</div>
+                                <div className="amenity-pill"><Car size={18}/> Free Parking</div>
+                                <div className="amenity-pill"><Coffee size={18}/> Breakfast Included</div>
+                             </>
+                         )}
                     </div>
                 </div>
 
@@ -238,7 +274,7 @@ const HotelDetails = () => {
                                     <th>Room Type</th>
                                     <th>Capacity</th>
                                     <th>Details</th>
-                                    <th style={{textAlign:'center'}}>Nr. Rooms</th> {/* ✅ New Column */}
+                                    <th style={{textAlign:'center'}}>Nr. Rooms</th> 
                                     <th>Price</th>
                                     <th>Action</th>
                                 </tr>
@@ -265,21 +301,16 @@ const HotelDetails = () => {
                                                     {room.is_refundable && <span className="feature highlight">Refundable</span>}
                                                 </div>
                                             </td>
-                                            {/* ✅ Room Quantity Selector */}
                                             <td style={{textAlign:'center'}}>
                                                 <select 
                                                     className="qty-select"
                                                     value={isSelected ? roomQty : 1}
                                                     onChange={(e) => {
-                                                        setSelectedRoomId(room.id); // Auto-select row
-                                                        setRoomQty(parseInt(e.target.value)); // Update qty
+                                                        setSelectedRoomId(room.id); 
+                                                        setRoomQty(parseInt(e.target.value)); 
                                                     }}
                                                     style={{
-                                                        padding: '8px', 
-                                                        borderRadius: '6px', 
-                                                        border: '1px solid #cbd5e1',
-                                                        fontWeight: '600',
-                                                        color: '#0f172a'
+                                                        padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#0f172a'
                                                     }}
                                                 >
                                                     {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
@@ -432,6 +463,14 @@ const HotelDetails = () => {
             </div>
         </div>
       </div>
+      
+      {/* GALLERY COMPONENT ATTACHED HERE */}
+      <ImageGallery 
+        images={cleanGalleryImages} 
+        isOpen={isGalleryOpen} 
+        onClose={() => setIsGalleryOpen(false)} 
+      />
+
     </div>
   );
 };
