@@ -5,7 +5,7 @@ import {
   MapPin, Star, Check, Wifi, Car, Coffee, Info, ArrowRight, 
   ShieldCheck, Utensils, Calendar, Users, TrendingUp, 
   Maximize, Mountain, User, Clock, AlertCircle, Ban, Dog, 
-  Bed // ✅ Added missing import
+  Bed 
 } from 'lucide-react';
 import { useUser } from '../context/userContext';
 import './styles/hotelDetails.css';
@@ -23,7 +23,7 @@ const HotelDetails = () => {
   
   // Selection State
   const [selectedRoomId, setSelectedRoomId] = useState(null);
-  const [roomQty, setRoomQty] = useState(1); // ✅ New: Track Room Quantity
+  const [roomQty, setRoomQty] = useState(1); 
   const [totalPrice, setTotalPrice] = useState(0);
   
   // Booking Data
@@ -76,21 +76,18 @@ const HotelDetails = () => {
         if (room) {
             const pricePerNight = parseFloat(room.base_price_per_night || room.price_per_night || 0);
             const effectiveNights = nightCount > 0 ? nightCount : 1;
-            // ✅ Updated Calculation: Price * Nights * Quantity
             setTotalPrice(pricePerNight * effectiveNights * roomQty);
         }
     } else {
         setTotalPrice(0);
     }
-  }, [selectedRoomId, nightCount, rooms, roomQty]); // Added roomQty dependency
+  }, [selectedRoomId, nightCount, rooms, roomQty]);
 
   const handleRoomSelect = (roomId) => {
     if (selectedRoomId !== roomId) {
         setSelectedRoomId(roomId);
-        // Reset qty to 1 when switching rooms, unless we want to persist
         if (selectedRoomId !== roomId) setRoomQty(1); 
     } else {
-        // Deselect
         setSelectedRoomId(null);
         setRoomQty(1);
     }
@@ -125,8 +122,8 @@ const HotelDetails = () => {
             check_out: dates.checkOut,
             adults: guests.adults,
             children: guests.children,
-            room_count: roomQty, // ✅ Send Quantity to backend
-            total_price: totalPrice, // Explicitly sending calculated total
+            room_count: roomQty, 
+            total_price: totalPrice, 
             payment_token: paymentToken,
             payment_provider: 'stripe'
         };
@@ -150,16 +147,33 @@ const HotelDetails = () => {
   if (loading) return <div className="loading-screen"><div className="spinner"></div><h3>Loading Hotel...</h3></div>;
   if (!hotel) return <div className="loading-screen">Hotel not found</div>;
 
-  // --- IMAGES & LOCATION ---
+  // --- IMAGES & LOCATION LOGIC (FIXED) ---
+  const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80';
+  
   let images = [];
+  
+  // 1. Try to get images array
   if (Array.isArray(hotel.images) && hotel.images.length > 0) {
-      images = hotel.images.sort((a,b) => (b.is_primary === true) - (a.is_primary === true)).map(img => img.image_url);
-  } else if (hotel.main_image) {
+      // Check if items are objects (like {image_url: '...'}) or just strings
+      images = hotel.images.map(img => (typeof img === 'object' && img.image_url ? img.image_url : img));
+  } 
+  // 2. Fallback to main_image
+  else if (hotel.main_image) {
       images = [hotel.main_image];
-  } else {
-      images = ['https://images.unsplash.com/photo-1566073771259-6a8506099945'];
+  } 
+  
+  // 3. Fallback to Default if empty
+  if (images.length === 0) {
+      images = [DEFAULT_IMAGE];
   }
-  while(images.length < 4) images.push(images[0]); 
+
+  // 4. Filter out any null/undefined values just in case
+  images = images.filter(img => img);
+
+  // 5. Ensure we have enough images for the layout (repeat the first one if needed)
+  while(images.length < 4) {
+      images.push(images[0] || DEFAULT_IMAGE);
+  }
 
   const mapUrl = hotel.latitude && hotel.longitude 
     ? `https://maps.google.com/maps?q=${hotel.latitude},${hotel.longitude}&z=15&output=embed`
@@ -189,20 +203,24 @@ const HotelDetails = () => {
             </div>
         </section>
 
-        {/* HERO: GALLERY + MAP */}
+        {/* HERO: GALLERY + MAP (FIXED DISPLAY) */}
         <section className="hero-split-section">
             <div className="gallery-container">
-                <div className="main-image" style={{backgroundImage: `url(${images[0]})`}}></div>
+                {/* Main Large Image */}
+                <div className="main-image" style={{backgroundImage: `url('${images[0]}')`}}></div>
+                
+                {/* Side Stack Images */}
                 <div className="sub-images">
-                    <div className="sub-img" style={{backgroundImage: `url(${images[1]})`}}></div>
-                    <div className="sub-img" style={{backgroundImage: `url(${images[2]})`}}></div>
-                    <div className="sub-img more-photos" style={{backgroundImage: `url(${images[3]})`}}>
-                        <div className="view-more"><span>+ View All Photos</span></div>
+                    <div className="sub-img" style={{backgroundImage: `url('${images[1]}')`}}></div>
+                    <div className="sub-img" style={{backgroundImage: `url('${images[2]}')`}}></div>
+                    <div className="sub-img more-photos" style={{backgroundImage: `url('${images[3]}')`}}>
+                        <div className="view-more"><span>+ View Gallery</span></div>
                     </div>
                 </div>
             </div>
+            
             <div className="map-container">
-                <iframe title="Location" width="100%" height="100%" frameBorder="0" scrolling="no" src={mapUrl}></iframe>
+                <iframe title="Location" width="100%" height="100%" frameBorder="0" src={mapUrl}></iframe>
             </div>
         </section>
 
@@ -238,7 +256,7 @@ const HotelDetails = () => {
                                     <th>Room Type</th>
                                     <th>Capacity</th>
                                     <th>Details</th>
-                                    <th style={{textAlign:'center'}}>Nr. Rooms</th> {/* ✅ New Column */}
+                                    <th style={{textAlign:'center'}}>Nr. Rooms</th> 
                                     <th>Price</th>
                                     <th>Action</th>
                                 </tr>
@@ -265,14 +283,14 @@ const HotelDetails = () => {
                                                     {room.is_refundable && <span className="feature highlight">Refundable</span>}
                                                 </div>
                                             </td>
-                                            {/* ✅ Room Quantity Selector */}
+                                            {/* Room Quantity Selector */}
                                             <td style={{textAlign:'center'}}>
                                                 <select 
                                                     className="qty-select"
                                                     value={isSelected ? roomQty : 1}
                                                     onChange={(e) => {
-                                                        setSelectedRoomId(room.id); // Auto-select row
-                                                        setRoomQty(parseInt(e.target.value)); // Update qty
+                                                        setSelectedRoomId(room.id); 
+                                                        setRoomQty(parseInt(e.target.value)); 
                                                     }}
                                                     style={{
                                                         padding: '8px', 
