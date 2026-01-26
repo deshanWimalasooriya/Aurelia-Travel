@@ -57,6 +57,8 @@ exports.getMyHotels = async (req, res) => {
 // --- CRUD ---
 exports.create = async (req, res) => {
     try {
+        console.log("Received Hotel Payload:", req.body);
+
         const { 
             name, description, address_line_1, city, state, postal_code, country, 
             latitude, longitude, email, phone, website, 

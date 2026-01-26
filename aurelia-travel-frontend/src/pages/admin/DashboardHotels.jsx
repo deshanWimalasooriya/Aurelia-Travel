@@ -37,6 +37,7 @@ const SimpleEditor = ({ value, onChange }) => {
 };
 
 const DashboardHotels = () => {
+  // --- State Management ---
   const [view, setView] = useState('list');
   const [hotels, setHotels] = useState([]);
   const [filteredHotels, setFilteredHotels] = useState([]);
@@ -185,6 +186,8 @@ const DashboardHotels = () => {
   return (
     <div className="hotels-dashboard-wrapper">
       <AnimatePresence mode="wait">
+        
+        {/* --- LIST VIEW --- */}
         {view === 'list' && (
           <motion.div key="list" className="dashboard-content" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="dashboard-header">

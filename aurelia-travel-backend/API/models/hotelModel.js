@@ -1,4 +1,5 @@
 const knex = require('../../config/knex');
+const hotelModel = require('../models/hotelModel');
 
 // --- Helper: Resolve Mixed Amenities (IDs & New Strings) ---
 // This handles creating new amenities if the user typed a new one

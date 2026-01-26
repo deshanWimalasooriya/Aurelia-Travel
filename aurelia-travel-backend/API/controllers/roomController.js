@@ -123,6 +123,7 @@ exports.updateRoom = async (req, res) => {
     }
 };
 
+
 // 5. DELETE
 exports.deleteRoom = async (req, res) => {
     try {
