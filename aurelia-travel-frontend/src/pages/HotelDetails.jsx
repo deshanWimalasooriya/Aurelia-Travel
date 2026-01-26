@@ -8,6 +8,7 @@ import {
   Bed 
 } from 'lucide-react';
 import { useUser } from '../context/userContext';
+import ImageGallery from '../components/ui/ImageGallery'; // Import the new component
 import './styles/hotelDetails.css';
 
 const HotelDetails = () => {
@@ -21,6 +22,9 @@ const HotelDetails = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  // Gallery State
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+
   // Selection State
   const [selectedRoomId, setSelectedRoomId] = useState(null);
   const [roomQty, setRoomQty] = useState(1); 
@@ -147,32 +151,31 @@ const HotelDetails = () => {
   if (loading) return <div className="loading-screen"><div className="spinner"></div><h3>Loading Hotel...</h3></div>;
   if (!hotel) return <div className="loading-screen">Hotel not found</div>;
 
-  // --- IMAGES & LOCATION LOGIC (FIXED) ---
+  // --- IMAGES & LOCATION LOGIC ---
   const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80';
   
-  let images = [];
+  let rawImages = [];
   
   // 1. Try to get images array
   if (Array.isArray(hotel.images) && hotel.images.length > 0) {
       // Check if items are objects (like {image_url: '...'}) or just strings
-      images = hotel.images.map(img => (typeof img === 'object' && img.image_url ? img.image_url : img));
+      rawImages = hotel.images.map(img => (typeof img === 'object' && img.image_url ? img.image_url : img));
   } 
   // 2. Fallback to main_image
   else if (hotel.main_image) {
-      images = [hotel.main_image];
+      rawImages = [hotel.main_image];
   } 
   
   // 3. Fallback to Default if empty
-  if (images.length === 0) {
-      images = [DEFAULT_IMAGE];
+  let cleanGalleryImages = rawImages.filter(img => img); // Keep a clean copy for the Gallery
+  if (cleanGalleryImages.length === 0) {
+      cleanGalleryImages = [DEFAULT_IMAGE];
   }
 
-  // 4. Filter out any null/undefined values just in case
-  images = images.filter(img => img);
-
-  // 5. Ensure we have enough images for the layout (repeat the first one if needed)
-  while(images.length < 4) {
-      images.push(images[0] || DEFAULT_IMAGE);
+  // 4. Create separate array for Layout (duplicates allowed for UI)
+  let layoutImages = [...cleanGalleryImages];
+  while(layoutImages.length < 4) {
+      layoutImages.push(layoutImages[0] || DEFAULT_IMAGE);
   }
 
   const mapUrl = hotel.latitude && hotel.longitude 
@@ -203,17 +206,33 @@ const HotelDetails = () => {
             </div>
         </section>
 
-        {/* HERO: GALLERY + MAP (FIXED DISPLAY) */}
+        {/* HERO: GALLERY + MAP */}
         <section className="hero-split-section">
             <div className="gallery-container">
                 {/* Main Large Image */}
-                <div className="main-image" style={{backgroundImage: `url('${images[0]}')`}}></div>
+                <div 
+                    className="main-image" 
+                    style={{backgroundImage: `url('${layoutImages[0]}')`}}
+                    onClick={() => setIsGalleryOpen(true)}
+                ></div>
                 
                 {/* Side Stack Images */}
                 <div className="sub-images">
-                    <div className="sub-img" style={{backgroundImage: `url('${images[1]}')`}}></div>
-                    <div className="sub-img" style={{backgroundImage: `url('${images[2]}')`}}></div>
-                    <div className="sub-img more-photos" style={{backgroundImage: `url('${images[3]}')`}}>
+                    <div 
+                        className="sub-img" 
+                        style={{backgroundImage: `url('${layoutImages[1]}')`}}
+                        onClick={() => setIsGalleryOpen(true)}
+                    ></div>
+                    <div 
+                        className="sub-img" 
+                        style={{backgroundImage: `url('${layoutImages[2]}')`}}
+                        onClick={() => setIsGalleryOpen(true)}
+                    ></div>
+                    <div 
+                        className="sub-img more-photos" 
+                        style={{backgroundImage: `url('${layoutImages[3]}')`}}
+                        onClick={() => setIsGalleryOpen(true)}
+                    >
                         <div className="view-more"><span>+ View Gallery</span></div>
                     </div>
                 </div>
@@ -328,7 +347,7 @@ const HotelDetails = () => {
                             <div className="policy-icon"><Clock size={20}/></div>
                             <div className="policy-content">
                                 <div className="policy-header">Check-in</div>
-                                <div className="policy-text">From {hotel.check_in_time || '14:00'}</div>
+                                <div className="policy-text">From {hotel.check_in_time || '13:00'}</div>
                             </div>
                         </div>
                         <div className="policy-row">
@@ -450,6 +469,14 @@ const HotelDetails = () => {
             </div>
         </div>
       </div>
+      
+      {/* GALLERY COMPONENT ATTACHED HERE */}
+      <ImageGallery 
+        images={cleanGalleryImages} 
+        isOpen={isGalleryOpen} 
+        onClose={() => setIsGalleryOpen(false)} 
+      />
+
     </div>
   );
 };

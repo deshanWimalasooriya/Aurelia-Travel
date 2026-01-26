@@ -1,13 +1,13 @@
 /* --- AURELIA PREMIUM THEME SYSTEM --- */
 :root {
-  /* Brand Colors - Adjusted to remove Orange */
-  --navy-900: #0f172a;  /* Deepest Navy (Primary Text/Headings) */
-  --navy-800: #1e293b;  /* Secondary Elements */
-  --navy-50:  #f0f9ff;  /* Light Backgrounds */
+  /* Brand Colors */
+  --navy-900: #0f172a;
+  --navy-800: #1e293b;
+  --navy-50:  #f0f9ff;
   
-  --gold-500: #c29443;  /* True Metallic Gold (Not Orange) */
-  --gold-600: #a17a33;  /* Darker Gold for Hovers */
-  --gold-100: #fbf6ea;  /* Gold Tint Background */
+  --gold-500: #c29443;
+  --gold-600: #a17a33;
+  --gold-100: #fbf6ea;
   
   /* Functional */
   --white: #ffffff;
@@ -50,12 +50,12 @@ body {
 }
 
 /* =========================================
-   1. HEADER SECTION
+   1. HEADER SECTION (UPDATED FOR WHITESPACE)
    ========================================= */
 .header-section {
-  padding: 30px 0;
+  padding: 20px 0 10px 0; /* Reduced top/bottom padding */
   border-bottom: 1px solid var(--gray-200);
-  margin-bottom: 24px;
+  margin-bottom: 12px; /* Reduced margin below the line */
 }
 
 .hotel-headline {
