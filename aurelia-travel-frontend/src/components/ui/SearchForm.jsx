@@ -25,16 +25,12 @@ const SearchForm = () => {
     e.preventDefault()
     setIsSearching(true)
 
-    // --- NEW LOGIC START ---
-    // Remove all spaces to handle "k a ndy" -> "kandy" or "KanD y" -> "KanDy"
-    // This allows the user to type broken words and still send a solid keyword.
+    // Clean destination logic
     const cleanedDestination = searchData.destination.replace(/\s+/g, '');
-    // --- NEW LOGIC END ---
 
     setTimeout(() => {
-        // Construct Query Params using the cleaned destination
         const params = new URLSearchParams({
-            location: cleanedDestination, // Updated to use the cleaned version
+            location: cleanedDestination,
             checkIn: searchData.checkIn,
             checkOut: searchData.checkOut,
             adults: searchData.adults,
@@ -51,9 +47,11 @@ const SearchForm = () => {
       
       {/* 1. Destination */}
       <div className="search-group destination-group">
-        <label>Where to?</label>
+        <label>
+          <MapPin size={16} className="label-icon" /> 
+          Where to?
+        </label>
         <div className="input-wrapper">
-          <MapPin size={18} className="search-icon" />
           <input 
             type="text" 
             name="destination"
@@ -69,9 +67,11 @@ const SearchForm = () => {
 
       {/* 2. Check-in */}
       <div className="search-group date-group">
-        <label>Check-in</label>
+        <label>
+          <Calendar size={16} className="label-icon" />
+          Check-in
+        </label>
         <div className="input-wrapper">
-          <Calendar size={18} className="search-icon" />
           <input 
             type="date" 
             name="checkIn"
@@ -86,9 +86,11 @@ const SearchForm = () => {
 
       {/* 3. Check-out */}
       <div className="search-group date-group">
-        <label>Check-out</label>
+        <label>
+          <Calendar size={16} className="label-icon" />
+          Check-out
+        </label>
         <div className="input-wrapper">
-          <Calendar size={18} className="search-icon" />
           <input 
             type="date" 
             name="checkOut"
@@ -103,9 +105,11 @@ const SearchForm = () => {
 
       {/* 4. Adults */}
       <div className="search-group guest-group">
-        <label>Adults</label>
+        <label>
+          <User size={16} className="label-icon" />
+          Adults
+        </label>
         <div className="input-wrapper">
-          <User size={18} className="search-icon" />
           <input 
             type="number" 
             name="adults"
@@ -119,9 +123,11 @@ const SearchForm = () => {
 
       {/* 5. Children */}
       <div className="search-group guest-group">
-        <label>Children</label>
+        <label>
+          <Users size={16} className="label-icon" />
+          Children
+        </label>
         <div className="input-wrapper">
-          <Users size={18} className="search-icon" />
           <input 
             type="number" 
             name="children"

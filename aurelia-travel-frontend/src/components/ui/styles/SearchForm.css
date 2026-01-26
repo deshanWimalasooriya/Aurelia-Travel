@@ -35,33 +35,52 @@
 }
 
 .search-group label {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #374151;
-    margin-bottom: 2px;
-    margin-left: 28px; /* Align with input text */
+  display: flex;
+  align-items: center;
+  gap: 6px; /* Space between Icon and Label Text */
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: black;
+  margin-bottom: 6px;
+  /* Removed margin-left since icon is now part of the label flow */
+  margin-left: 0; 
 }
 
-/* Input Wrapper */
+/* Style for the new label icons */
+.label-icon {
+  color: #94a3b8;
+  margin-bottom: 1px; /* Optical alignment */
+  transition: color 0.3s ease;
+}
+
+/* Highlight icon when group is focused */
+.search-group:focus-within .label-icon {
+  color: var(--primary-color);
+}
+
+/* Update these specific classes in your CSS */
+
 .input-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  width: 100%;
 }
 
 .search-icon {
-    color: #9ca3af;
+    flex-shrink: 0;          /* CRITICAL: Prevents the icon from getting crushed/hidden */
+    margin-right: 12px;      /* Adds the physical gap between Icon and Text */
+    z-index: 2;              /* Ensures icon stays on top visually if needed */
 }
 
 .input-wrapper input {
-    border: none;
-    background: transparent;
-    font-size: 0.95rem;
-    color: #111827;
-    font-weight: 500;
-    width: 100%;
-    outline: none;
-}
+    flex-grow: 1;            /* Tells input to take the REST of the space, not ALL of it */
+    min-width: 0;            /* Prevents input from forcing the container too wide */
+    background: transparent; /* Ensures it doesn't cover the background */
+    border: none;            /* Removes default borders */
+    outline: none;   
+    padding-left: 0;        /* Removes focus outline */
+}-gor
 
 .input-wrapper input::placeholder {
     color: #9ca3af;
