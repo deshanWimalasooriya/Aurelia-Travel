@@ -8,7 +8,7 @@ import {
   Bed 
 } from 'lucide-react';
 import { useUser } from '../context/userContext';
-import ImageGallery from '../components/ui/ImageGallery'; // Import the new component
+import ImageGallery from '../components/ui/ImageGallery'; 
 import './styles/hotelDetails.css';
 
 const HotelDetails = () => {
@@ -158,21 +158,19 @@ const HotelDetails = () => {
   
   // 1. Try to get images array
   if (Array.isArray(hotel.images) && hotel.images.length > 0) {
-      // Check if items are objects (like {image_url: '...'}) or just strings
       rawImages = hotel.images.map(img => (typeof img === 'object' && img.image_url ? img.image_url : img));
   } 
-  // 2. Fallback to main_image
   else if (hotel.main_image) {
       rawImages = [hotel.main_image];
   } 
   
-  // 3. Fallback to Default if empty
-  let cleanGalleryImages = rawImages.filter(img => img); // Keep a clean copy for the Gallery
+  // 3. Clean list for Gallery
+  let cleanGalleryImages = rawImages.filter(img => img); 
   if (cleanGalleryImages.length === 0) {
       cleanGalleryImages = [DEFAULT_IMAGE];
   }
 
-  // 4. Create separate array for Layout (duplicates allowed for UI)
+  // 4. Layout Images (ensure 4 for grid)
   let layoutImages = [...cleanGalleryImages];
   while(layoutImages.length < 4) {
       layoutImages.push(layoutImages[0] || DEFAULT_IMAGE);
@@ -209,30 +207,16 @@ const HotelDetails = () => {
         {/* HERO: GALLERY + MAP */}
         <section className="hero-split-section">
             <div className="gallery-container">
-                {/* Main Large Image */}
                 <div 
                     className="main-image" 
                     style={{backgroundImage: `url('${layoutImages[0]}')`}}
                     onClick={() => setIsGalleryOpen(true)}
                 ></div>
                 
-                {/* Side Stack Images */}
                 <div className="sub-images">
-                    <div 
-                        className="sub-img" 
-                        style={{backgroundImage: `url('${layoutImages[1]}')`}}
-                        onClick={() => setIsGalleryOpen(true)}
-                    ></div>
-                    <div 
-                        className="sub-img" 
-                        style={{backgroundImage: `url('${layoutImages[2]}')`}}
-                        onClick={() => setIsGalleryOpen(true)}
-                    ></div>
-                    <div 
-                        className="sub-img more-photos" 
-                        style={{backgroundImage: `url('${layoutImages[3]}')`}}
-                        onClick={() => setIsGalleryOpen(true)}
-                    >
+                    <div className="sub-img" style={{backgroundImage: `url('${layoutImages[1]}')`}} onClick={() => setIsGalleryOpen(true)}></div>
+                    <div className="sub-img" style={{backgroundImage: `url('${layoutImages[2]}')`}} onClick={() => setIsGalleryOpen(true)}></div>
+                    <div className="sub-img more-photos" style={{backgroundImage: `url('${layoutImages[3]}')`}} onClick={() => setIsGalleryOpen(true)}>
                         <div className="view-more"><span>+ View Gallery</span></div>
                     </div>
                 </div>
@@ -249,19 +233,34 @@ const HotelDetails = () => {
             {/* LEFT COLUMN */}
             <div className="details-content">
                 
-                {/* Description */}
+                {/* --- DESCRIPTION & AMENITIES (UPDATED) --- */}
                 <div className="section-card">
                     <h2 className="section-title">Experience the Stay</h2>
-                    <p className="description-text">{hotel.description}</p>
+                    <p className="description-text">
+                        {hotel.description || "Enjoy a relaxing stay at " + hotel.name + ". This property offers excellent accommodation and services to make your visit memorable."}
+                    </p>
+                    
                     <h3 className="section-title" style={{fontSize: '18px', marginTop: '30px'}}>Popular Amenities</h3>
                     <div className="amenities-container">
-                         <div className="amenity-pill"><Wifi size={18}/> Free WiFi</div>
-                         <div className="amenity-pill"><ShieldCheck size={18}/> 24/7 Security</div>
-                         <div className="amenity-pill"><Utensils size={18}/> Restaurant</div>
-                         <div className="amenity-pill"><Car size={18}/> Free Parking</div>
-                         {Array.isArray(hotel.amenities) && hotel.amenities.slice(0, 4).map((fac, i) => (
-                             <div key={i} className="amenity-pill"><Star size={18}/> {typeof fac === 'object' ? fac.name : fac}</div>
-                         ))}
+                         {Array.isArray(hotel.amenities) && hotel.amenities.length > 0 ? (
+                             /* Display Amenities from Database */
+                             hotel.amenities.map((item, index) => (
+                                 <div key={index} className="amenity-pill">
+                                     {/* Using Check icon for dynamic amenities */}
+                                     <Check size={18} /> 
+                                     {typeof item === 'object' ? item.name : item}
+                                 </div>
+                             ))
+                         ) : (
+                             /* Fallback if no amenities in DB */
+                             <>
+                                <div className="amenity-pill"><Wifi size={18}/> Free WiFi</div>
+                                <div className="amenity-pill"><ShieldCheck size={18}/> 24/7 Security</div>
+                                <div className="amenity-pill"><Utensils size={18}/> Restaurant</div>
+                                <div className="amenity-pill"><Car size={18}/> Free Parking</div>
+                                <div className="amenity-pill"><Coffee size={18}/> Breakfast Included</div>
+                             </>
+                         )}
                     </div>
                 </div>
 
@@ -302,7 +301,6 @@ const HotelDetails = () => {
                                                     {room.is_refundable && <span className="feature highlight">Refundable</span>}
                                                 </div>
                                             </td>
-                                            {/* Room Quantity Selector */}
                                             <td style={{textAlign:'center'}}>
                                                 <select 
                                                     className="qty-select"
@@ -312,11 +310,7 @@ const HotelDetails = () => {
                                                         setRoomQty(parseInt(e.target.value)); 
                                                     }}
                                                     style={{
-                                                        padding: '8px', 
-                                                        borderRadius: '6px', 
-                                                        border: '1px solid #cbd5e1',
-                                                        fontWeight: '600',
-                                                        color: '#0f172a'
+                                                        padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#0f172a'
                                                     }}
                                                 >
                                                     {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
@@ -347,7 +341,7 @@ const HotelDetails = () => {
                             <div className="policy-icon"><Clock size={20}/></div>
                             <div className="policy-content">
                                 <div className="policy-header">Check-in</div>
-                                <div className="policy-text">From {hotel.check_in_time || '13:00'}</div>
+                                <div className="policy-text">From {hotel.check_in_time || '14:00'}</div>
                             </div>
                         </div>
                         <div className="policy-row">
