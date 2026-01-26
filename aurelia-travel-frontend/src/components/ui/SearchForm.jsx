@@ -25,10 +25,16 @@ const SearchForm = () => {
     e.preventDefault()
     setIsSearching(true)
 
+    // --- NEW LOGIC START ---
+    // Remove all spaces to handle "k a ndy" -> "kandy" or "KanD y" -> "KanDy"
+    // This allows the user to type broken words and still send a solid keyword.
+    const cleanedDestination = searchData.destination.replace(/\s+/g, '');
+    // --- NEW LOGIC END ---
+
     setTimeout(() => {
-        // Construct Query Params
+        // Construct Query Params using the cleaned destination
         const params = new URLSearchParams({
-            location: searchData.destination,
+            location: cleanedDestination, // Updated to use the cleaned version
             checkIn: searchData.checkIn,
             checkOut: searchData.checkOut,
             adults: searchData.adults,
