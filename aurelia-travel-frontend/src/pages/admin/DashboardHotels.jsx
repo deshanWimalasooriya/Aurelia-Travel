@@ -4,13 +4,14 @@ import api from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Edit2, Trash2, Eye, Image as ImageIcon, Loader2, MinusCircle,
-  MapPin, Clock, Phone, Globe, Mail, Search, X,
+  MapPin, Clock, Phone, Search, X,
   Building, Star, CheckCircle2,
-  Bold, Italic, Underline, List
+  Bold, Italic, List,
+  ChevronRight, ChevronLeft
 } from 'lucide-react';
 import './styles/dashboard-hotels.css';
 
-// --- Simple Editor ---
+// --- Simple Editor (No Changes) ---
 const SimpleEditor = ({ value, onChange }) => {
     const editorRef = useRef(null);
     const isLocked = useRef(false);
@@ -46,8 +47,8 @@ const DashboardHotels = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   
-  // Amenities Data
-  const [dbAmenities, setDbAmenities] = useState([]); 
+  // Amenities State
+  const [dbAmenities, setDbAmenities] = useState([]); // Master list (Right Side Source)
   const [newAmenityText, setNewAmenityText] = useState('');
 
   const [formData, setFormData] = useState({
@@ -55,39 +56,80 @@ const DashboardHotels = () => {
     postalCode: '', country: '', latitude: '', longitude: '',
     email: '', phone: '', website: '',
     checkIn: '14:00', checkOut: '11:00', cancellationPolicy: '24', 
-    images: [], // { url, isPrimary }
-    amenities: [] // Mixed IDs and Strings
+    images: [], 
+    amenities: [] // This stores the IDs of amenities on the Left Side
   });
 
+  // --- 1. Fetch Global Amenities (The Available Options) ---
+  useEffect(() => {
+      api.get('/amenities') 
+        .then(res => {
+            const rawAm = Array.isArray(res.data) ? res.data : (res.data.data || []);
+            const normalized = rawAm.map(a => ({
+                ...a,
+                id: a.id || a._id, 
+                name: a.name 
+            }));
+            setDbAmenities(normalized);
+        })
+        .catch(err => console.warn("Global amenities fetch failed:", err));
+  }, []);
+
+  // --- 2. Fetch Hotels List ---
   const fetchHotels = useCallback(async () => {
     try {
       const res = await api.get('/hotels/mine');
       const data = Array.isArray(res.data) ? res.data : (res.data.data || []);
       setHotels(data);
       setFilteredHotels(data);
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+      console.error("Failed to load hotels:", err); 
+    }
   }, []);
 
-  // Fetch Amenities
   useEffect(() => {
-      api.get('/hotels/amenities').then(res => {
-          setDbAmenities(res.data.data || []);
-      }).catch(() => console.log("Amenities fetch skipped"));
       fetchHotels();
   }, [fetchHotels]);
 
-  // Search
+  // Search Logic
   useEffect(() => {
     const lowerTerm = searchTerm.toLowerCase();
     const filtered = hotels.filter(h => h.name.toLowerCase().includes(lowerTerm));
     setFilteredHotels(filtered);
   }, [searchTerm, hotels]);
 
+
+  // --- 3. SYNC LOGIC: Fetch Specific Hotel Amenities ---
+  // When editing, this fetches the hotel's existing amenities and puts them in the "Left Side"
+  useEffect(() => {
+    if (editingHotel && view === 'form') {
+        api.get(`/hotels/${editingHotel.id}/amenities`)
+            .then(res => {
+                const fetchedAmenities = Array.isArray(res.data) ? res.data : (res.data.data || []);
+                
+                // Extract IDs to match against the global list
+                const amenityIds = fetchedAmenities.map(item => {
+                    if (typeof item === 'object' && item !== null) {
+                        // Handle potential pivot table structure (amenity_id) or direct object (id)
+                        return item.amenity_id || item.id || item._id; 
+                    }
+                    return item; // Handle if it is just an ID
+                });
+
+                // Updating formData.amenities moves them to the "Selected" (Left) list
+                setFormData(prev => ({ ...prev, amenities: amenityIds }));
+            })
+            .catch(err => console.error("Failed to fetch hotel amenities:", err));
+    }
+  }, [editingHotel, view]);
+
+
   // --- FORM HANDLERS ---
   const handleSwitchToForm = (hotel = null) => {
     setEditingHotel(hotel);
+    
     if (hotel) {
-        // Handle images
+        // Handle Images
         const processedImages = (hotel.images_meta && hotel.images_meta.length > 0) 
             ? hotel.images_meta.map(img => ({ url: img.url, isPrimary: img.isPrimary }))
             : (hotel.images && hotel.images.length > 0 
@@ -104,7 +146,7 @@ const DashboardHotels = () => {
             checkIn: hotel.check_in_time || '14:00', checkOut: hotel.check_out_time || '11:00',
             cancellationPolicy: hotel.cancellation_policy_hours || '24',
             images: processedImages,
-            amenities: hotel.amenities ? hotel.amenities.map(a => a.id) : [] 
+            amenities: [] // Start empty, useEffect above will fill this with existing data
         });
     } else {
         setFormData({ 
@@ -117,7 +159,6 @@ const DashboardHotels = () => {
     setView('form');
   };
 
-  // Image Handlers
   const handleImageChange = (index, value) => {
       const newImages = [...formData.images];
       newImages[index].url = value;
@@ -134,25 +175,54 @@ const DashboardHotels = () => {
       setFormData({ ...formData, images: newImages });
   };
 
-  // Amenity Handlers
-  const toggleAmenity = (id) => {
+  // --- TRANSFER LIST LOGIC ---
+
+  // 1. Move from RIGHT (Available) to LEFT (Selected)
+  const moveToSelected = (id) => {
+      if (!formData.amenities.some(a => String(a) === String(id))) {
+          setFormData(prev => ({
+              ...prev,
+              amenities: [...prev.amenities, id]
+          }));
+      }
+  };
+
+  // 2. Move from LEFT (Selected) to RIGHT (Available)
+  const moveToAvailable = (id) => {
       setFormData(prev => ({
           ...prev,
-          amenities: prev.amenities.includes(id) 
-            ? prev.amenities.filter(a => a !== id)
-            : [...prev.amenities, id]
+          amenities: prev.amenities.filter(a => String(a) !== String(id))
       }));
   };
 
+  // Add a brand new amenity (automatically goes to Left)
   const addNewAmenity = () => {
       if (!newAmenityText.trim()) return;
       const name = newAmenityText.trim();
-      if (!formData.amenities.includes(name)) {
-          setFormData(prev => ({ ...prev, amenities: [...prev.amenities, name] }));
-          setDbAmenities(prev => [...prev, { id: name, name: name }]); // Optimistic Update
+      
+      const existing = dbAmenities.find(a => a.name.toLowerCase() === name.toLowerCase());
+      
+      if (existing) {
+          moveToSelected(existing.id); 
+      } else {
+          // Add to local master list and select it
+          const tempId = name; 
+          setDbAmenities(prev => [...prev, { id: tempId, name: name }]); 
+          setFormData(prev => ({ ...prev, amenities: [...prev.amenities, tempId] }));
       }
       setNewAmenityText('');
   };
+
+  // --- LIST CALCULATION ---
+  // LEFT SIDE: Amenities that ARE in formData.amenities
+  const selectedList = dbAmenities.filter(am => 
+      formData.amenities.some(id => String(id) === String(am.id))
+  );
+  
+  // RIGHT SIDE: Amenities that are NOT in formData.amenities
+  const availableList = dbAmenities.filter(am => 
+      !formData.amenities.some(id => String(id) === String(am.id))
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -166,7 +236,8 @@ const DashboardHotels = () => {
       email: formData.email, phone: formData.phone, website: formData.website,
       check_in_time: formData.checkIn, check_out_time: formData.checkOut,
       cancellation_policy_hours: parseInt(formData.cancellationPolicy) || 24,
-      images: validImages, amenities: formData.amenities
+      images: validImages, 
+      amenities: formData.amenities // Sends the list from the Left Side
     };
 
     try {
@@ -201,31 +272,36 @@ const DashboardHotels = () => {
                 <table className="modern-table">
                     <thead><tr><th>Property</th><th>Location</th><th>Contact</th><th className="text-right">Actions</th></tr></thead>
                     <tbody>
-                    {filteredHotels.map(hotel => (
-                        <tr key={hotel.id}>
-                            <td>
-                                <div className="hotel-cell-main">
-                                    <div className="hotel-thumbnail">{hotel.main_image ? <img src={hotel.main_image} alt=""/> : <Building size={20}/>}</div>
-                                    <div className="hotel-meta"><span className="hotel-name clickable-name" onClick={() => navigate(`/hotel/${hotel.id}`)}>{hotel.name}</span><span className="hotel-id">#{hotel.id}</span></div>
-                                </div>
-                            </td>
-                            <td><MapPin size={14}/> {hotel.city}, {hotel.country}</td>
-                            <td><div className="contact-stack"><span>{hotel.email}</span><span>{hotel.phone}</span></div></td>
-                            <td className="text-right">
-                                <div className="action-row">
-                                    <button className="icon-btn" onClick={() => navigate(`/hotel/${hotel.id}`)}><Eye size={16}/></button>
-                                    <button className="icon-btn" onClick={() => handleSwitchToForm(hotel)}><Edit2 size={16}/></button>
-                                    <button className="icon-btn delete" onClick={() => handleDelete(hotel.id)}><Trash2 size={16}/></button>
-                                </div>
-                            </td>
-                        </tr>
-                    ))}
+                    {filteredHotels.length === 0 ? (
+                        <tr><td colSpan="4" style={{textAlign:'center', padding:'20px'}}>No hotels found.</td></tr>
+                    ) : (
+                        filteredHotels.map(hotel => (
+                            <tr key={hotel.id}>
+                                <td>
+                                    <div className="hotel-cell-main">
+                                        <div className="hotel-thumbnail">{hotel.main_image ? <img src={hotel.main_image} alt=""/> : <Building size={20}/>}</div>
+                                        <div className="hotel-meta"><span className="hotel-name clickable-name" onClick={() => navigate(`/hotel/${hotel.id}`)}>{hotel.name}</span><span className="hotel-id">#{hotel.id}</span></div>
+                                    </div>
+                                </td>
+                                <td><MapPin size={14}/> {hotel.city}, {hotel.country}</td>
+                                <td><div className="contact-stack"><span>{hotel.email}</span><span>{hotel.phone}</span></div></td>
+                                <td className="text-right">
+                                    <div className="action-row">
+                                        <button className="icon-btn" onClick={() => navigate(`/hotel/${hotel.id}`)}><Eye size={16}/></button>
+                                        <button className="icon-btn" onClick={() => handleSwitchToForm(hotel)}><Edit2 size={16}/></button>
+                                        <button className="icon-btn delete" onClick={() => handleDelete(hotel.id)}><Trash2 size={16}/></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))
+                    )}
                     </tbody>
                 </table>
             </div>
           </motion.div>
         )}
         
+        {/* --- FORM VIEW --- */}
         {view === 'form' && (
           <motion.div key="form" className="form-wrapper" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="form-card">
@@ -233,7 +309,7 @@ const DashboardHotels = () => {
                 
                 <form onSubmit={handleSubmit} className="professional-form">
                     
-                    {/* Basic Info & Images */}
+                    {/* CORE INFO */}
                     <div className="form-section">
                         <h4 className="section-heading"><Building size={18}/> Core Info</h4>
                         <div className="core-info-grid">
@@ -263,7 +339,7 @@ const DashboardHotels = () => {
                         </div>
                     </div>
 
-                    {/* Location */}
+                    {/* LOCATION */}
                     <div className="form-section">
                         <h4 className="section-heading"><MapPin size={18}/> Location Details</h4>
                         <div className="form-grid-2">
@@ -276,7 +352,7 @@ const DashboardHotels = () => {
                         </div>
                     </div>
 
-                    {/* Contact & Policy */}
+                    {/* CONTACT */}
                     <div className="form-section">
                         <h4 className="section-heading"><Clock size={18}/> Operations & Contact</h4>
                         <div className="form-grid-3">
@@ -289,20 +365,75 @@ const DashboardHotels = () => {
                         </div>
                     </div>
 
-                    {/* Amenities */}
+                    {/* --- TRANSFER LIST AMENITIES --- */}
                     <div className="form-section no-border">
-                        <h4 className="section-heading"><CheckCircle2 size={18}/> Amenities</h4>
-                        <div style={{display:'flex', gap:'10px', marginBottom:'15px'}}>
-                            <input className="form-input" placeholder="Add new amenity..." value={newAmenityText} onChange={e => setNewAmenityText(e.target.value)} style={{maxWidth:'300px'}}/>
+                        <h4 className="section-heading"><CheckCircle2 size={18}/> Amenities Management</h4>
+                        
+                        {/* New Amenity Input */}
+                        <div style={{display:'flex', gap:'10px', marginBottom:'15px', alignItems: 'center'}}>
+                            <input 
+                                className="form-input" 
+                                placeholder="Create new amenity..." 
+                                value={newAmenityText} 
+                                onChange={e => setNewAmenityText(e.target.value)} 
+                                style={{maxWidth: '300px'}}
+                            />
                             <button type="button" className="btn-secondary" onClick={addNewAmenity}>Add</button>
+                            <span style={{fontSize:'0.8rem', color:'#64748b'}}>Adds to Selected list.</span>
                         </div>
-                        <div className="amenity-checkboxes" style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:'12px'}}>
-                            {dbAmenities.map(am => (
-                                <label key={am.id} style={{display:'flex', alignItems:'center', gap:'8px', cursor:'pointer', fontSize:'0.9rem'}}>
-                                    <input type="checkbox" checked={formData.amenities.includes(am.id) || formData.amenities.includes(am.name)} onChange={() => toggleAmenity(am.id)}/>
-                                    {am.name}
-                                </label>
-                            ))}
+
+                        {/* Dual List Container */}
+                        <div className="transfer-container">
+                            
+                            {/* Left Side: SELECTED (Existing backend amenities will appear here) */}
+                            <div className="transfer-column">
+                                <div className="transfer-header">
+                                    <span>Selected ({selectedList.length})</span>
+                                    <CheckCircle2 size={16} />
+                                </div>
+                                <div className="transfer-list">
+                                    {selectedList.length === 0 && <p style={{padding:'20px', textAlign:'center', color:'#94a3b8', fontSize:'0.85rem'}}>No amenities selected.</p>}
+                                    {selectedList.map(am => (
+                                        <div 
+                                            key={am.id} 
+                                            className="transfer-item selected-item"
+                                            onClick={() => moveToAvailable(am.id)}
+                                            title="Click to remove"
+                                        >
+                                            <span>{am.name}</span>
+                                            <MinusCircle size={14} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Middle Controls */}
+                            <div className="transfer-controls">
+                                <div className="count-badge"><ChevronLeft size={14}/> In</div>
+                                <div className="count-badge">Out <ChevronRight size={14}/></div>
+                            </div>
+
+                            {/* Right Side: AVAILABLE (Global list minus selected) */}
+                            <div className="transfer-column">
+                                <div className="transfer-header">
+                                    <span>Available ({availableList.length})</span>
+                                    <List size={16} />
+                                </div>
+                                <div className="transfer-list">
+                                    {availableList.length === 0 && <p style={{padding:'20px', textAlign:'center', color:'#94a3b8', fontSize:'0.85rem'}}>No other amenities available.</p>}
+                                    {availableList.map(am => (
+                                        <div 
+                                            key={am.id} 
+                                            className="transfer-item available-item"
+                                            onClick={() => moveToSelected(am.id)}
+                                            title="Click to add"
+                                        >
+                                            <span>{am.name}</span>
+                                            <Plus size={14} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
 

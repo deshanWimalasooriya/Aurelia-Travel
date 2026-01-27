@@ -45,6 +45,15 @@ exports.getAmenitiesList = async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 };
 
+//get hotel amenities by hotel id
+exports.getAmenitiesByHotelId = async (req, res) => {
+    try {
+        const amenities = await hotelModel.getAmenitiesByHotelId(req.params.id);
+        res.json({ success: true, data: amenities });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+};
+
+
 // --- MANAGER ---
 exports.getMyHotels = async (req, res) => {
     try {

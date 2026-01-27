@@ -190,4 +190,12 @@ exports.getNewest = async (limit = 4) => {
     return await attachDetails(hotels);
 };
 
+// Get amenities by hotel ID
+exports.getAmenitiesByHotelId = async (hotelId) => {
+    return await knex('hotel_amenities')
+        .join('amenities', 'hotel_amenities.amenity_id', '=', 'amenities.id')
+        .where('hotel_amenities.hotel_id', hotelId)
+        .select('amenities.id', 'amenities.name', 'amenities.category');
+};
+
 exports.getAllAmenities = () => knex('amenities').select('id', 'name', 'category');
