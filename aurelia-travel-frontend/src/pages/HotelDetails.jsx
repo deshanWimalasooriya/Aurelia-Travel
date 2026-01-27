@@ -34,7 +34,7 @@ const HotelDetails = () => {
   const [dates, setDates] = useState({ checkIn: '', checkOut: '' });
   const [guests, setGuests] = useState({ adults: 2, children: 0 });
 
-  // --- 1. FETCH DATA ---
+  // --- 1. FETCH DATA (MODIFIED) ---
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -49,8 +49,11 @@ const HotelDetails = () => {
         const roomsData = Array.isArray(roomRes.data) ? roomRes.data : (roomRes.data.data || []);
         const reviewsData = Array.isArray(reviewRes.data.data) ? reviewRes.data.data : [];
         
+        // ✅ FILTER: Only keep active rooms
+        const activeRooms = roomsData.filter(room => room.is_active);
+
         setHotel(hotelData);
-        setRooms(roomsData);
+        setRooms(activeRooms); // Set only active rooms to state
         setReviews(reviewsData);
       } catch (err) {
         console.error("Fetch details error:", err);
@@ -156,7 +159,6 @@ const HotelDetails = () => {
   
   let rawImages = [];
   
-  // 1. Try to get images array
   if (Array.isArray(hotel.images) && hotel.images.length > 0) {
       rawImages = hotel.images.map(img => (typeof img === 'object' && img.image_url ? img.image_url : img));
   } 
@@ -164,13 +166,11 @@ const HotelDetails = () => {
       rawImages = [hotel.main_image];
   } 
   
-  // 3. Clean list for Gallery
   let cleanGalleryImages = rawImages.filter(img => img); 
   if (cleanGalleryImages.length === 0) {
       cleanGalleryImages = [DEFAULT_IMAGE];
   }
 
-  // 4. Layout Images (ensure 4 for grid)
   let layoutImages = [...cleanGalleryImages];
   while(layoutImages.length < 4) {
       layoutImages.push(layoutImages[0] || DEFAULT_IMAGE);
@@ -233,7 +233,7 @@ const HotelDetails = () => {
             {/* LEFT COLUMN */}
             <div className="details-content">
                 
-                {/* --- DESCRIPTION & AMENITIES (UPDATED) --- */}
+                {/* --- DESCRIPTION & AMENITIES --- */}
                 <div className="section-card">
                     <h2 className="section-title">Experience the Stay</h2>
                     <p className="description-text">
@@ -243,16 +243,13 @@ const HotelDetails = () => {
                     <h3 className="section-title" style={{fontSize: '18px', marginTop: '30px'}}>Popular Amenities</h3>
                     <div className="amenities-container">
                          {Array.isArray(hotel.amenities) && hotel.amenities.length > 0 ? (
-                             /* Display Amenities from Database */
                              hotel.amenities.map((item, index) => (
                                  <div key={index} className="amenity-pill">
-                                     {/* Using Check icon for dynamic amenities */}
                                      <Check size={18} /> 
                                      {typeof item === 'object' ? item.name : item}
                                  </div>
                              ))
                          ) : (
-                             /* Fallback if no amenities in DB */
                              <>
                                 <div className="amenity-pill"><Wifi size={18}/> Free WiFi</div>
                                 <div className="amenity-pill"><ShieldCheck size={18}/> 24/7 Security</div>
@@ -328,6 +325,11 @@ const HotelDetails = () => {
                                         </tr>
                                     )
                                 })}
+                                {rooms.length === 0 && (
+                                    <tr>
+                                        <td colSpan="6" style={{textAlign:'center', padding:'20px'}}>No active rooms available at the moment.</td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>

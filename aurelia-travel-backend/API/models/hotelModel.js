@@ -86,7 +86,7 @@ const attachDetails = async (hotels) => {
 
 // 1. GET ALL
 exports.getAll = async () => {
-    const hotels = await withMinPrice(knex('hotels'));
+    const hotels = await withMinPrice(knex('hotels')).where('is_active', true);
     return await attachDetails(hotels);
 };
 
@@ -181,12 +181,16 @@ exports.getByManagerId = async (managerId) => {
 };
 
 exports.TopRated = async (limit = 4) => {
-    const hotels = await withMinPrice(knex('hotels').orderBy('rating_average', 'desc').limit(limit));
+    const hotels = await withMinPrice(knex('hotels')
+        .where('is_active', true)
+        .orderBy('rating_average', 'desc').limit(limit));
     return await attachDetails(hotels);
 };
 
 exports.getNewest = async (limit = 4) => {
-    const hotels = await withMinPrice(knex('hotels').orderBy('created_at', 'desc').limit(limit));
+    const hotels = await withMinPrice(knex('hotels')
+        .where('is_active', true)
+        .orderBy('created_at', 'desc').limit(limit));
     return await attachDetails(hotels);
 };
 

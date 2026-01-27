@@ -101,7 +101,7 @@ const DashboardHotels = () => {
   // --- 3. Sync Hotel Amenities on Edit ---
   useEffect(() => {
     if (editingHotel && view === 'form') {
-        api.get(`/hotelid/${editingHotel.id}/amenities`)
+        api.get(`/hotels/${editingHotel.id}/amenities`)
             .then(res => {
                 const fetchedAmenities = Array.isArray(res.data) ? res.data : (res.data.data || []);
                 const amenityIds = fetchedAmenities.map(item => {
@@ -420,7 +420,10 @@ const DashboardHotels = () => {
                                     ))}
                                 </div>
                             </div>
-                            <div className="transfer-controls"><div className="count-badge"><ChevronLeft size={14}/> In</div><div className="count-badge">Out <ChevronRight size={14}/></div></div>
+                            <div className="transfer-controls">
+                                {/* <div className="count-badge"><ChevronLeft size={14}/> In</div>
+                                <div className="count-badge">Out <ChevronRight size={14}/></div> */}
+                            </div>
                             <div className="transfer-column">
                                 <div className="transfer-header"><span>Available ({availableList.length})</span><List size={16} /></div>
                                 <div className="transfer-list">
