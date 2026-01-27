@@ -122,7 +122,7 @@ exports.update = async (req, res) => {
             'name', 'description', 'address_line_1', 'city', 'state', 'postal_code', 
             'country', 'latitude', 'longitude', 'email', 'phone', 'website', 
             'check_in_time', 'check_out_time', 'cancellation_policy_hours', 
-            'main_image', 'is_featured'
+            'main_image', 'is_featured', 'is_active'
         ];
 
         validColumns.forEach(field => {
