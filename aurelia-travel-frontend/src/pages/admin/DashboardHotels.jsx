@@ -4,13 +4,14 @@ import api from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Edit2, Trash2, Eye, Image as ImageIcon, Loader2, MinusCircle,
-  MapPin, Clock, Phone, Globe, Mail, Search, X,
+  MapPin, Clock, Phone, Search, X,
   Building, Star, CheckCircle2,
-  Bold, Italic, Underline, List
+  Bold, Italic, List,
+  ChevronRight, ChevronLeft, Power // Ensure Power is imported
 } from 'lucide-react';
 import './styles/dashboard-hotels.css';
 
-// --- Simple Editor ---
+// --- Simple Editor (No Changes) ---
 const SimpleEditor = ({ value, onChange }) => {
     const editorRef = useRef(null);
     const isLocked = useRef(false);
@@ -46,7 +47,7 @@ const DashboardHotels = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   
-  // Amenities Data
+  // Amenities State
   const [dbAmenities, setDbAmenities] = useState([]); 
   const [newAmenityText, setNewAmenityText] = useState('');
 
@@ -55,39 +56,72 @@ const DashboardHotels = () => {
     postalCode: '', country: '', latitude: '', longitude: '',
     email: '', phone: '', website: '',
     checkIn: '14:00', checkOut: '11:00', cancellationPolicy: '24', 
-    images: [], // { url, isPrimary }
-    amenities: [] // Mixed IDs and Strings
+    images: [], 
+    amenities: [] 
   });
 
+  // --- 1. Fetch Global Amenities ---
+  useEffect(() => {
+      api.get('/amenities') 
+        .then(res => {
+            const rawAm = Array.isArray(res.data) ? res.data : (res.data.data || []);
+            const normalized = rawAm.map(a => ({
+                ...a,
+                id: a.id || a._id, 
+                name: a.name 
+            }));
+            setDbAmenities(normalized);
+        })
+        .catch(err => console.warn("Global amenities fetch failed:", err));
+  }, []);
+
+  // --- 2. Fetch Hotels List ---
   const fetchHotels = useCallback(async () => {
     try {
       const res = await api.get('/hotels/mine');
       const data = Array.isArray(res.data) ? res.data : (res.data.data || []);
       setHotels(data);
       setFilteredHotels(data);
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+      console.error("Failed to load hotels:", err); 
+    }
   }, []);
 
-  // Fetch Amenities
   useEffect(() => {
-      api.get('/hotels/amenities').then(res => {
-          setDbAmenities(res.data.data || []);
-      }).catch(() => console.log("Amenities fetch skipped"));
       fetchHotels();
   }, [fetchHotels]);
 
-  // Search
+  // Search Logic
   useEffect(() => {
     const lowerTerm = searchTerm.toLowerCase();
     const filtered = hotels.filter(h => h.name.toLowerCase().includes(lowerTerm));
     setFilteredHotels(filtered);
   }, [searchTerm, hotels]);
 
+  // --- 3. Sync Hotel Amenities on Edit ---
+  useEffect(() => {
+    if (editingHotel && view === 'form') {
+        api.get(`/hotels/${editingHotel.id}/amenities`)
+            .then(res => {
+                const fetchedAmenities = Array.isArray(res.data) ? res.data : (res.data.data || []);
+                const amenityIds = fetchedAmenities.map(item => {
+                    if (typeof item === 'object' && item !== null) {
+                        return item.amenity_id || item.id || item._id; 
+                    }
+                    return item; 
+                });
+                setFormData(prev => ({ ...prev, amenities: amenityIds }));
+            })
+            .catch(err => console.error("Failed to fetch hotel amenities:", err));
+    }
+  }, [editingHotel, view]);
+
+
   // --- FORM HANDLERS ---
   const handleSwitchToForm = (hotel = null) => {
     setEditingHotel(hotel);
+    
     if (hotel) {
-        // Handle images
         const processedImages = (hotel.images_meta && hotel.images_meta.length > 0) 
             ? hotel.images_meta.map(img => ({ url: img.url, isPrimary: img.isPrimary }))
             : (hotel.images && hotel.images.length > 0 
@@ -104,7 +138,7 @@ const DashboardHotels = () => {
             checkIn: hotel.check_in_time || '14:00', checkOut: hotel.check_out_time || '11:00',
             cancellationPolicy: hotel.cancellation_policy_hours || '24',
             images: processedImages,
-            amenities: hotel.amenities ? hotel.amenities.map(a => a.id) : [] 
+            amenities: [] 
         });
     } else {
         setFormData({ 
@@ -117,7 +151,6 @@ const DashboardHotels = () => {
     setView('form');
   };
 
-  // Image Handlers
   const handleImageChange = (index, value) => {
       const newImages = [...formData.images];
       newImages[index].url = value;
@@ -134,26 +167,38 @@ const DashboardHotels = () => {
       setFormData({ ...formData, images: newImages });
   };
 
-  // Amenity Handlers
-  const toggleAmenity = (id) => {
-      setFormData(prev => ({
-          ...prev,
-          amenities: prev.amenities.includes(id) 
-            ? prev.amenities.filter(a => a !== id)
-            : [...prev.amenities, id]
-      }));
+  // --- AMENITY TRANSFER LIST LOGIC ---
+  const moveToSelected = (id) => {
+      if (!formData.amenities.some(a => String(a) === String(id))) {
+          setFormData(prev => ({ ...prev, amenities: [...prev.amenities, id] }));
+      }
+  };
+
+  const moveToAvailable = (id) => {
+      setFormData(prev => ({ ...prev, amenities: prev.amenities.filter(a => String(a) !== String(id)) }));
   };
 
   const addNewAmenity = () => {
       if (!newAmenityText.trim()) return;
       const name = newAmenityText.trim();
-      if (!formData.amenities.includes(name)) {
-          setFormData(prev => ({ ...prev, amenities: [...prev.amenities, name] }));
-          setDbAmenities(prev => [...prev, { id: name, name: name }]); // Optimistic Update
+      const existing = dbAmenities.find(a => a.name.toLowerCase() === name.toLowerCase());
+      if (existing) {
+          moveToSelected(existing.id); 
+      } else {
+          const tempId = name; 
+          setDbAmenities(prev => [...prev, { id: tempId, name: name }]); 
+          setFormData(prev => ({ ...prev, amenities: [...prev.amenities, tempId] }));
       }
       setNewAmenityText('');
   };
 
+  const selectedList = dbAmenities.filter(am => formData.amenities.some(id => String(id) === String(am.id)));
+  const availableList = dbAmenities.filter(am => !formData.amenities.some(id => String(id) === String(am.id)));
+
+
+  // --- API ACTIONS ---
+
+  // 1. Submit Form
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -166,7 +211,8 @@ const DashboardHotels = () => {
       email: formData.email, phone: formData.phone, website: formData.website,
       check_in_time: formData.checkIn, check_out_time: formData.checkOut,
       cancellation_policy_hours: parseInt(formData.cancellationPolicy) || 24,
-      images: validImages, amenities: formData.amenities
+      images: validImages, 
+      amenities: formData.amenities 
     };
 
     try {
@@ -177,10 +223,40 @@ const DashboardHotels = () => {
     finally { setLoading(false); }
   };
 
+  // 2. Delete Hotel
   const handleDelete = async (id) => {
     if(!window.confirm("Delete property?")) return;
     try { await api.delete(`/hotels/${id}`); setHotels(prev => prev.filter(h => h.id !== id)); } 
     catch(err) { alert("Failed to delete."); }
+  };
+
+  // 3. Toggle Active Status Logic (MODIFIED)
+  const handleToggleStatus = async (hotel) => {
+      const newStatus = !hotel.is_active; // Calculate new status
+      
+      const confirmMsg = newStatus 
+        ? "Publish this property?" 
+        : "Unpublish this property? It will be hidden from search results.";
+        
+      if (!window.confirm(confirmMsg)) return;
+
+      try {
+          // A. Optimistic Update (Update UI instantly)
+          setHotels(prev => prev.map(h => h.id === hotel.id ? { ...h, is_active: newStatus } : h));
+          setFilteredHotels(prev => prev.map(h => h.id === hotel.id ? { ...h, is_active: newStatus } : h));
+
+          // B. Send Update to Backend
+          // We send ONLY the is_active field to avoid overwriting other data accidentally
+          await api.put(`/hotels/${hotel.id}`, { is_active: newStatus });
+          
+          // Optional: You could re-fetch here if you want to be 100% sure, 
+          // but optimistic update is usually enough for toggles.
+      } catch (err) {
+          console.error("Status toggle failed", err);
+          alert("Failed to update status. Please try again.");
+          // C. Revert UI on failure
+          await fetchHotels(); 
+      }
   };
 
   return (
@@ -199,41 +275,78 @@ const DashboardHotels = () => {
             </div>
             <div className="table-container">
                 <table className="modern-table">
-                    <thead><tr><th>Property</th><th>Location</th><th>Contact</th><th className="text-right">Actions</th></tr></thead>
+                    <thead><tr><th>Property</th><th>Location</th><th>Status</th><th className="text-right">Actions</th></tr></thead>
                     <tbody>
-                    {filteredHotels.map(hotel => (
-                        <tr key={hotel.id}>
-                            <td>
-                                <div className="hotel-cell-main">
-                                    <div className="hotel-thumbnail">{hotel.main_image ? <img src={hotel.main_image} alt=""/> : <Building size={20}/>}</div>
-                                    <div className="hotel-meta"><span className="hotel-name clickable-name" onClick={() => navigate(`/hotel/${hotel.id}`)}>{hotel.name}</span><span className="hotel-id">#{hotel.id}</span></div>
-                                </div>
-                            </td>
-                            <td><MapPin size={14}/> {hotel.city}, {hotel.country}</td>
-                            <td><div className="contact-stack"><span>{hotel.email}</span><span>{hotel.phone}</span></div></td>
-                            <td className="text-right">
-                                <div className="action-row">
-                                    <button className="icon-btn" onClick={() => navigate(`/hotel/${hotel.id}`)}><Eye size={16}/></button>
-                                    <button className="icon-btn" onClick={() => handleSwitchToForm(hotel)}><Edit2 size={16}/></button>
-                                    <button className="icon-btn delete" onClick={() => handleDelete(hotel.id)}><Trash2 size={16}/></button>
-                                </div>
-                            </td>
-                        </tr>
-                    ))}
+                    {filteredHotels.length === 0 ? (
+                        <tr><td colSpan="4" style={{textAlign:'center', padding:'20px'}}>No hotels found.</td></tr>
+                    ) : (
+                        filteredHotels.map(hotel => (
+                            <tr key={hotel.id} style={{ opacity: hotel.is_active ? 1 : 0.6 }}>
+                                <td>
+                                    <div className="hotel-cell-main">
+                                        <div className="hotel-thumbnail">{hotel.main_image ? <img src={hotel.main_image} alt=""/> : <Building size={20}/>}</div>
+                                        <div className="hotel-meta">
+                                            <span className="hotel-name clickable-name" onClick={() => navigate(`/hotel/${hotel.id}`)}>{hotel.name}</span>
+                                            <span className="hotel-id">#{hotel.id}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><MapPin size={14}/> {hotel.city}, {hotel.country}</td>
+                                
+                                {/* Status Column */}
+                                <td>
+                                    <span className={`status-badge ${hotel.is_active ? 'active' : 'inactive'}`} 
+                                          style={{
+                                              padding: '4px 8px', 
+                                              borderRadius: '12px', 
+                                              fontSize: '0.75rem', 
+                                              fontWeight: 600,
+                                              backgroundColor: hotel.is_active ? '#dcfce7' : '#f1f5f9',
+                                              color: hotel.is_active ? '#166534' : '#64748b',
+                                              border: `1px solid ${hotel.is_active ? '#bbf7d0' : '#e2e8f0'}`
+                                          }}>
+                                        {hotel.is_active ? 'Active' : 'Hidden'}
+                                    </span>
+                                </td>
+
+                                <td className="text-right">
+                                    <div className="action-row">
+                                        {/* TOGGLE BUTTON */}
+                                        <button 
+                                            className="icon-btn" 
+                                            onClick={() => handleToggleStatus(hotel)}
+                                            title={hotel.is_active ? "Click to Unpublish" : "Click to Publish"}
+                                            style={{ 
+                                                color: hotel.is_active ? '#22c55e' : '#cbd5e1', 
+                                                borderColor: hotel.is_active ? '#22c55e' : '#e2e8f0',
+                                                backgroundColor: hotel.is_active ? '#f0fdf4' : 'white'
+                                            }}
+                                        >
+                                            <Power size={16}/>
+                                        </button>
+
+                                        <button className="icon-btn" onClick={() => navigate(`/hotel/${hotel.id}`)}><Eye size={16}/></button>
+                                        <button className="icon-btn" onClick={() => handleSwitchToForm(hotel)}><Edit2 size={16}/></button>
+                                        <button className="icon-btn delete" onClick={() => handleDelete(hotel.id)}><Trash2 size={16}/></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))
+                    )}
                     </tbody>
                 </table>
             </div>
           </motion.div>
         )}
         
+        {/* --- FORM VIEW (Unchanged Logic) --- */}
         {view === 'form' && (
           <motion.div key="form" className="form-wrapper" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="form-card">
                 <div className="form-header"><h2>{editingHotel ? 'Edit Property' : 'New Property'}</h2><button onClick={() => setView('list')}><X/></button></div>
-                
                 <form onSubmit={handleSubmit} className="professional-form">
                     
-                    {/* Basic Info & Images */}
+                    {/* CORE INFO */}
                     <div className="form-section">
                         <h4 className="section-heading"><Building size={18}/> Core Info</h4>
                         <div className="core-info-grid">
@@ -241,7 +354,6 @@ const DashboardHotels = () => {
                                 <input className="form-input mb-3" placeholder="Property Name" value={formData.name} onChange={e=>setFormData({...formData, name:e.target.value})} required/>
                                 <SimpleEditor value={formData.description} onChange={val => setFormData({...formData, description:val})}/>
                             </div>
-                            
                             <div className="image-preview-wrapper">
                                 <label>Images (Star = Primary)</label>
                                 <div className="image-inputs-col">
@@ -263,7 +375,7 @@ const DashboardHotels = () => {
                         </div>
                     </div>
 
-                    {/* Location */}
+                    {/* LOCATION */}
                     <div className="form-section">
                         <h4 className="section-heading"><MapPin size={18}/> Location Details</h4>
                         <div className="form-grid-2">
@@ -276,7 +388,7 @@ const DashboardHotels = () => {
                         </div>
                     </div>
 
-                    {/* Contact & Policy */}
+                    {/* CONTACT */}
                     <div className="form-section">
                         <h4 className="section-heading"><Clock size={18}/> Operations & Contact</h4>
                         <div className="form-grid-3">
@@ -289,20 +401,39 @@ const DashboardHotels = () => {
                         </div>
                     </div>
 
-                    {/* Amenities */}
+                    {/* AMENITIES - TRANSFER LIST */}
                     <div className="form-section no-border">
-                        <h4 className="section-heading"><CheckCircle2 size={18}/> Amenities</h4>
-                        <div style={{display:'flex', gap:'10px', marginBottom:'15px'}}>
-                            <input className="form-input" placeholder="Add new amenity..." value={newAmenityText} onChange={e => setNewAmenityText(e.target.value)} style={{maxWidth:'300px'}}/>
+                        <h4 className="section-heading"><CheckCircle2 size={18}/> Amenities Management</h4>
+                        <div style={{display:'flex', gap:'10px', marginBottom:'15px', alignItems: 'center'}}>
+                            <input className="form-input" placeholder="Create new amenity..." value={newAmenityText} onChange={e => setNewAmenityText(e.target.value)} style={{maxWidth: '300px'}}/>
                             <button type="button" className="btn-secondary" onClick={addNewAmenity}>Add</button>
+                            <span style={{fontSize:'0.8rem', color:'#64748b'}}>Adds to Selected list.</span>
                         </div>
-                        <div className="amenity-checkboxes" style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:'12px'}}>
-                            {dbAmenities.map(am => (
-                                <label key={am.id} style={{display:'flex', alignItems:'center', gap:'8px', cursor:'pointer', fontSize:'0.9rem'}}>
-                                    <input type="checkbox" checked={formData.amenities.includes(am.id) || formData.amenities.includes(am.name)} onChange={() => toggleAmenity(am.id)}/>
-                                    {am.name}
-                                </label>
-                            ))}
+                        <div className="transfer-container">
+                            <div className="transfer-column">
+                                <div className="transfer-header"><span>Selected ({selectedList.length})</span><CheckCircle2 size={16} /></div>
+                                <div className="transfer-list">
+                                    {selectedList.map(am => (
+                                        <div key={am.id} className="transfer-item selected-item" onClick={() => moveToAvailable(am.id)} title="Click to remove">
+                                            <span>{am.name}</span><MinusCircle size={14} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="transfer-controls">
+                                {/* <div className="count-badge"><ChevronLeft size={14}/> In</div>
+                                <div className="count-badge">Out <ChevronRight size={14}/></div> */}
+                            </div>
+                            <div className="transfer-column">
+                                <div className="transfer-header"><span>Available ({availableList.length})</span><List size={16} /></div>
+                                <div className="transfer-list">
+                                    {availableList.map(am => (
+                                        <div key={am.id} className="transfer-item available-item" onClick={() => moveToSelected(am.id)} title="Click to add">
+                                            <span>{am.name}</span><Plus size={14} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
 

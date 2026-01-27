@@ -5,7 +5,8 @@ import {
   Plus, Edit2, Trash2, Image as ImageIcon, Loader2, 
   Search, X, Users, Building, Maximize, 
   BedDouble, Mountain, Bold, Italic, Underline, List, 
-  ListOrdered, Coffee, Cigarette, RefreshCw, MinusCircle, Star
+  ListOrdered, Coffee, Cigarette, RefreshCw, MinusCircle, Star,
+  Power // ✅ Imported Power Icon
 } from 'lucide-react';
 import './styles/dashboard-rooms.css';
 
@@ -71,7 +72,7 @@ const DashboardRooms = () => {
   const [formData, setFormData] = useState({
     title: '', hotelId: '', price: '', description: '', roomType: 'Standard',
     maxAdults: 2, maxChildren: 0, sizeSqm: '', 
-    viewType: '', bedType: '', // ✅ New Fields
+    viewType: '', bedType: '', 
     totalQuantity: 1, 
     images: [], // Array of {url, isPrimary}
     hasBreakfast: false, isRefundable: true, smokingAllowed: false
@@ -133,8 +134,8 @@ const DashboardRooms = () => {
               maxAdults: room.max_adults || 2,
               maxChildren: room.max_children || 0,
               sizeSqm: room.size_sqm || '',
-              viewType: room.view_type || '', // ✅ Map View Type
-              bedType: room.bed_type || '',   // ✅ Map Bed Type
+              viewType: room.view_type || '', 
+              bedType: room.bed_type || '',   
               totalQuantity: room.total_quantity || 1,
               images: processedImages, 
               hasBreakfast: !!room.has_breakfast,
@@ -148,7 +149,7 @@ const DashboardRooms = () => {
               hotelId: (selectedHotelFilter !== 'all' ? selectedHotelFilter : ''), 
               price: '', description: '', roomType: 'Standard',
               maxAdults: 2, maxChildren: 0, sizeSqm: '', 
-              viewType: '', bedType: '', // ✅ Defaults
+              viewType: '', bedType: '', 
               totalQuantity: 1, 
               images: [{ url: '', isPrimary: true }], 
               hasBreakfast: false, isRefundable: true, smokingAllowed: false
@@ -189,8 +190,8 @@ const DashboardRooms = () => {
         max_adults: Number(formData.maxAdults),
         max_children: Number(formData.maxChildren),
         size_sqm: formData.sizeSqm ? Number(formData.sizeSqm) : null,
-        view_type: formData.viewType, // ✅ Send View Type
-        bed_type: formData.bedType,   // ✅ Send Bed Type
+        view_type: formData.viewType, 
+        bed_type: formData.bedType,   
         total_quantity: Number(formData.totalQuantity),
         has_breakfast: formData.hasBreakfast ? 1 : 0,
         is_refundable: formData.isRefundable ? 1 : 0,
@@ -221,6 +222,30 @@ const DashboardRooms = () => {
           setRooms(updated);
           setFilteredRooms(updated);
       } catch (err) { alert("Failed to delete."); }
+  };
+
+  // ✅ NEW: Toggle Active Status Logic
+  const handleToggleStatus = async (room) => {
+      const newStatus = !room.is_active;
+      const confirmMsg = newStatus 
+        ? "Activate this room type? It will be visible to guests." 
+        : "Deactivate this room type? It will be hidden from guests.";
+        
+      if (!window.confirm(confirmMsg)) return;
+
+      try {
+          // Optimistic UI Update
+          const updateList = (list) => list.map(r => r.id === room.id ? { ...r, is_active: newStatus } : r);
+          setRooms(prev => updateList(prev));
+          setFilteredRooms(prev => updateList(prev));
+
+          // API Call
+          await api.put(`/rooms/${room.id}`, { is_active: newStatus });
+      } catch (err) {
+          console.error("Status toggle failed", err);
+          alert("Failed to update status.");
+          await fetchRooms(); // Revert on failure
+      }
   };
 
   return (
@@ -258,14 +283,15 @@ const DashboardRooms = () => {
                             <th>Specs</th>
                             <th>Pricing</th>
                             <th>Stock</th>
+                            <th>Status</th> {/* ✅ New Header */}
                             <th className="text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                     {loading ? (
-                        <tr><td colSpan="5" className="text-center p-8"><Loader2 className="animate-spin mx-auto"/></td></tr> 
+                        <tr><td colSpan="6" className="text-center p-8"><Loader2 className="animate-spin mx-auto"/></td></tr> 
                     ) : filteredRooms.length > 0 ? filteredRooms.map(room => (
-                        <tr key={room.id}>
+                        <tr key={room.id} style={{ opacity: room.is_active ? 1 : 0.6 }}> {/* ✅ Opacity style */}
                             <td>
                                 <div className="room-cell-main">
                                     <div className="room-thumbnail">
@@ -274,7 +300,6 @@ const DashboardRooms = () => {
                                     <div className="room-meta">
                                         <span className="room-title">{room.title}</span>
                                         <span className="room-type-badge">{room.room_type}</span>
-                                        {/* Added small badges for view/bed if they exist */}
                                         <div className="sub-meta">
                                             {room.view_type && <span className="meta-tag">{room.view_type}</span>}
                                             {room.bed_type && <span className="meta-tag">{room.bed_type}</span>}
@@ -290,15 +315,42 @@ const DashboardRooms = () => {
                             </td>
                             <td><div className="price-tag">${room.base_price_per_night}</div></td>
                             <td><div className={`stock-indicator ${room.total_quantity > 0 ? 'good' : 'low'}`}>{room.total_quantity} Units</div></td>
+                            
+                            {/* ✅ Status Column */}
+                            <td>
+                                <span className={`status-badge ${room.is_active ? 'active' : 'inactive'}`} 
+                                      style={{
+                                          padding: '4px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600,
+                                          backgroundColor: room.is_active ? '#dcfce7' : '#f1f5f9',
+                                          color: room.is_active ? '#166534' : '#64748b',
+                                          border: `1px solid ${room.is_active ? '#bbf7d0' : '#e2e8f0'}`
+                                      }}>
+                                    {room.is_active ? 'Active' : 'Hidden'}
+                                </span>
+                            </td>
+
                             <td className="text-right">
                                 <div className="action-row">
+                                    {/* ✅ Power Button */}
+                                    <button 
+                                        className="icon-btn" 
+                                        onClick={() => handleToggleStatus(room)}
+                                        title={room.is_active ? "Hide Room" : "Activate Room"}
+                                        style={{ 
+                                            color: room.is_active ? '#22c55e' : '#cbd5e1', 
+                                            borderColor: room.is_active ? '#22c55e' : '#e2e8f0' 
+                                        }}
+                                    >
+                                        <Power size={16}/>
+                                    </button>
+
                                     <button className="icon-btn" onClick={() => handleSwitchToForm(room)}><Edit2 size={16}/></button>
                                     <button className="icon-btn delete" onClick={() => handleDelete(room.id)}><Trash2 size={16}/></button>
                                 </div>
                             </td>
                         </tr>
                     )) : (
-                        <tr><td colSpan="5" className="empty-state-cell">No rooms found.</td></tr>
+                        <tr><td colSpan="6" className="empty-state-cell">No rooms found.</td></tr>
                     )}
                     </tbody>
                 </table>
@@ -306,7 +358,7 @@ const DashboardRooms = () => {
           </motion.div>
         )}
         
-        {/* --- FORM VIEW --- */}
+        {/* --- FORM VIEW (UNCHANGED) --- */}
         {view === 'form' && (
           <motion.div key="form" className="form-wrapper" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="form-card">
@@ -372,7 +424,6 @@ const DashboardRooms = () => {
                             <div className="form-group"><label>Children</label><input type="number" className="form-input" value={formData.maxChildren} onChange={e=>setFormData({...formData, maxChildren:e.target.value})}/></div>
                             <div className="form-group"><label>Size (m²)</label><input type="number" className="form-input" value={formData.sizeSqm} onChange={e=>setFormData({...formData, sizeSqm:e.target.value})}/></div>
                             
-                            {/* ✅ NEW FIELDS: Bed Type & View Type */}
                             <div className="form-group"><label>Bed Type</label><input type="text" className="form-input" placeholder="e.g. King, Twin" value={formData.bedType} onChange={e=>setFormData({...formData, bedType:e.target.value})}/></div>
                             <div className="form-group"><label>View Type</label><input type="text" className="form-input" placeholder="e.g. Ocean, City" value={formData.viewType} onChange={e=>setFormData({...formData, viewType:e.target.value})}/></div>
                             

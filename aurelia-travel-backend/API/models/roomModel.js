@@ -107,7 +107,9 @@ exports.getRoomsByHotelId = async (hotelId) => {
     const rooms = await knex('rooms').where({ hotel_id: hotelId });
     // Attach images
     for (let r of rooms) {
-        const imgs = await knex('room_images').where({ room_id: r.id }).select('image_url', 'is_primary');
+        const imgs = await knex('room_images')
+        .where({ room_id: r.id })
+        .select('image_url', 'is_primary');
         r.images = imgs.map(i => i.image_url);
         // Find primary for main display
         const primary = imgs.find(i => i.is_primary);
