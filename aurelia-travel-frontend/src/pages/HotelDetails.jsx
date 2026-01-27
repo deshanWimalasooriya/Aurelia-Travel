@@ -5,7 +5,7 @@ import {
   MapPin, Star, Check, Wifi, Car, Coffee, Info, ArrowRight, 
   ShieldCheck, Utensils, Calendar, Users, TrendingUp, 
   Maximize, Mountain, User, Clock, AlertCircle, Ban, Dog, 
-  Bed, Eye, X, Image as ImageIcon // ✅ Added Eye, X, ImageIcon
+  Bed, Eye, X, Image as ImageIcon 
 } from 'lucide-react';
 import { useUser } from '../context/userContext';
 import ImageGallery from '../components/ui/ImageGallery'; 
@@ -22,10 +22,10 @@ const HotelDetails = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Gallery State (Hotel)
+  // Gallery State
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
-  // ✅ Room Popup & Gallery State
+  // Room Popup & Gallery State
   const [viewingRoom, setViewingRoom] = useState(null);
   const [isRoomGalleryOpen, setIsRoomGalleryOpen] = useState(false);
 
@@ -50,14 +50,17 @@ const HotelDetails = () => {
         ]);
         
         const hotelData = hotelRes.data.data || hotelRes.data;
-        const roomsData = Array.isArray(roomRes.data) ? roomRes.data : (roomRes.data.data || []);
+        
+        // Handle raw room data
+        const rawRooms = Array.isArray(roomRes.data) ? roomRes.data : (roomRes.data.data || []);
+        
+        // ✅ MODIFIED: Filter to only show active rooms
+        const activeRooms = rawRooms.filter(room => room.is_active);
+
         const reviewsData = Array.isArray(reviewRes.data.data) ? reviewRes.data.data : [];
         
-        // Filter active rooms
-        const activeRooms = roomsData.filter(room => room.is_active);
-
         setHotel(hotelData);
-        setRooms(activeRooms);
+        setRooms(activeRooms); // Set filtered list
         setReviews(reviewsData);
       } catch (err) {
         console.error("Fetch details error:", err);
@@ -104,16 +107,15 @@ const HotelDetails = () => {
     }
   };
 
-  // ✅ Handle View Details
+  // Handle View Details Modal
   const handleViewDetails = (room) => {
       setViewingRoom(room);
   };
 
-  // ✅ Helper to extract room images for gallery
+  // Helper to extract room images for gallery
   const getRoomImages = (room) => {
       if (!room) return [];
       let imgs = [];
-      // Handle different API structures (array of objects or strings)
       if (room.images && Array.isArray(room.images)) {
           imgs = room.images.map(img => typeof img === 'object' ? img.url || img.image_url : img);
       } else if (room.images_meta && Array.isArray(room.images_meta)) {
@@ -244,6 +246,7 @@ const HotelDetails = () => {
                     </div>
                 </div>
             </div>
+            
             <div className="map-container">
                 <iframe title="Location" width="100%" height="100%" frameBorder="0" src={mapUrl}></iframe>
             </div>
@@ -251,20 +254,24 @@ const HotelDetails = () => {
 
         {/* MAIN CONTENT GRID */}
         <div className="content-grid">
+            
             {/* LEFT COLUMN */}
             <div className="details-content">
-                {/* DESCRIPTION & AMENITIES */}
+                
+                {/* --- DESCRIPTION & AMENITIES --- */}
                 <div className="section-card">
                     <h2 className="section-title">Experience the Stay</h2>
                     <p className="description-text">
                         {hotel.description || "Enjoy a relaxing stay at " + hotel.name + ". This property offers excellent accommodation and services to make your visit memorable."}
                     </p>
+                    
                     <h3 className="section-title" style={{fontSize: '18px', marginTop: '30px'}}>Popular Amenities</h3>
                     <div className="amenities-container">
                          {Array.isArray(hotel.amenities) && hotel.amenities.length > 0 ? (
                              hotel.amenities.map((item, index) => (
                                  <div key={index} className="amenity-pill">
-                                     <Check size={18} /> {typeof item === 'object' ? item.name : item}
+                                     <Check size={18} /> 
+                                     {typeof item === 'object' ? item.name : item}
                                  </div>
                              ))
                          ) : (
@@ -298,18 +305,37 @@ const HotelDetails = () => {
                                 {rooms.map((room) => {
                                     const isSelected = selectedRoomId === (room._id || room.id);
                                     const price = parseFloat(room.base_price_per_night || room.price_per_night || 0);
+                                    
+                                    // Robust Image Selection for Preview
+                                    let previewImage = room.main_image;
+                                    if (!previewImage && room.images && room.images.length > 0) {
+                                        const first = room.images[0];
+                                        previewImage = typeof first === 'object' ? (first.image_url || first.url) : first;
+                                    }
+
                                     return (
                                         <tr key={room.id} className={isSelected ? 'selected-row' : ''}>
                                             <td>
-                                                <div className="room-cell-title">
-                                                    {/* ✅ Clickable Title */}
-                                                    <strong 
-                                                        className="clickable-room-title" 
-                                                        onClick={() => handleViewDetails(room)}
-                                                    >
-                                                        {room.title}
-                                                    </strong>
-                                                    <span className="room-sub-text">{room.bed_type || 'Double Bed'}</span>
+                                                <div className="room-cell-main">
+                                                    {/* IMAGE THUMBNAIL */}
+                                                    <div className="room-table-thumbnail" onClick={() => handleViewDetails(room)}>
+                                                        {previewImage ? (
+                                                            <img src={previewImage} alt={room.title} />
+                                                        ) : (
+                                                            <div className="room-placeholder-icon"><Bed size={20}/></div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="room-meta-group">
+                                                        {/* Clickable Title */}
+                                                        <strong 
+                                                            className="clickable-room-title" 
+                                                            onClick={() => handleViewDetails(room)}
+                                                        >
+                                                            {room.title}
+                                                        </strong>
+                                                        <span className="room-sub-text">{room.bed_type || 'Double Bed'}</span>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td><div className="capacity-cell"><Users size={16} /> x {room.capacity || 2}</div></td>
@@ -317,7 +343,7 @@ const HotelDetails = () => {
                                                 <div className="features-cell">
                                                     <span className="feature"><Maximize size={14}/> {room.size_sqm || 30}m²</span>
                                                     <span className="feature"><Mountain size={14}/> {room.view_type || 'View'}</span>
-                                                    {/* ✅ View Details Button in Features */}
+                                                    {/* View Details Button */}
                                                     <button 
                                                         className="view-details-small-btn" 
                                                         onClick={() => handleViewDetails(room)}
@@ -360,7 +386,7 @@ const HotelDetails = () => {
                     </div>
                 </div>
 
-                {/* REVIEWS & RULES (Hidden for brevity, essentially the same as before) */}
+                {/* REVIEWS */}
                 <div className="section-card reviews-section">
                     <div className="reviews-header-bar">
                         <h2 className="section-title">Guest Reviews</h2>
@@ -378,10 +404,16 @@ const HotelDetails = () => {
                                 <div key={rev.id} className="review-card">
                                     <div className="review-user-row">
                                         <div className="user-avatar">{rev.user_name ? rev.user_name.charAt(0) : "G"}</div>
-                                        <div className="user-meta"><span className="user-name">{rev.user_name || "Verified Guest"}</span><span className="user-country">Sri Lanka</span></div>
+                                        <div className="user-meta">
+                                            <span className="user-name">{rev.user_name || "Verified Guest"}</span>
+                                            <span className="user-country">Sri Lanka</span>
+                                        </div>
                                     </div>
                                     <div className="review-content-block">
-                                        <div className="review-date-row"><span className="review-date">Reviewed on {new Date(rev.created_at).toLocaleDateString()}</span><span className="review-score-small">{rev.rating}</span></div>
+                                        <div className="review-date-row">
+                                            <span className="review-date">Reviewed on {new Date(rev.created_at).toLocaleDateString()}</span>
+                                            <span className="review-score-small">{rev.rating}</span>
+                                        </div>
                                         <h4 className="review-subject">{rev.title}</h4>
                                         <p className="review-body">{rev.comment}</p>
                                     </div>
@@ -389,12 +421,15 @@ const HotelDetails = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className="no-reviews" style={{textAlign:'center', padding:'40px', color:'#666'}}><Info size={24} style={{marginBottom:'10px'}}/><p>No reviews yet. Be the first to share your experience!</p></div>
+                        <div className="no-reviews" style={{textAlign:'center', padding:'40px', color:'#666'}}>
+                            <Info size={24} style={{marginBottom:'10px'}}/>
+                            <p>No reviews yet. Be the first to share your experience!</p>
+                        </div>
                     )}
                 </div>
             </div>
 
-            {/* RIGHT: STICKY WIDGET (Unchanged) */}
+            {/* RIGHT: STICKY WIDGET */}
             <div className="sidebar-column">
                 <div className="booking-widget">
                     <div className="price-header">
@@ -415,10 +450,16 @@ const HotelDetails = () => {
                             <option value="1">1 Adult</option><option value="2">2 Adults</option><option value="3">3 Adults</option><option value="4">4 Adults</option>
                         </select>
                     </div>
-                    {selectedRoomId ? <div className="notification success"><Check size={16}/> {roomQty} Room{roomQty > 1 ? 's' : ''} Selected</div> : <div className="notification warning"><Info size={16}/> Select a room from the table</div>}
+                    {selectedRoomId ? (
+                        <div className="notification success"><Check size={16}/> {roomQty} Room{roomQty > 1 ? 's' : ''} Selected</div>
+                    ) : (
+                        <div className="notification warning"><Info size={16}/> Select a room from the table</div>
+                    )}
                     <button className="book-btn" onClick={handleReserve}>{selectedRoomId ? 'Reserve Securely' : 'Check Availability'}</button>
                     <p className="no-charge-text">You won't be charged yet</p>
-                    {totalPrice > 0 && <div className="total-row"><span>Total (Tax incl.)</span><span>${(totalPrice * 1.1).toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>}
+                    {totalPrice > 0 && (
+                        <div className="total-row"><span>Total (Tax incl.)</span><span>${(totalPrice * 1.1).toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
+                    )}
                 </div>
             </div>
         </div>
@@ -431,50 +472,36 @@ const HotelDetails = () => {
         onClose={() => setIsGalleryOpen(false)} 
       />
 
-      {/* ✅ ROOM DETAILS MODAL */}
+      {/* ROOM DETAILS MODAL */}
       {viewingRoom && (
           <div className="room-modal-overlay" onClick={() => setViewingRoom(null)}>
               <div className="room-modal-content" onClick={e => e.stopPropagation()}>
                   <button className="room-modal-close" onClick={() => setViewingRoom(null)}><X size={20}/></button>
-                  
-                  {/* SCROLLABLE AREA (Hero + Body) */}
                   <div className="room-modal-scroll-area">
-                      {/* Hero Image */}
                       <div className="room-modal-hero" style={{backgroundImage: `url('${currentRoomImages[0] || DEFAULT_IMAGE}')`}}>
                           <button className="view-gallery-btn" onClick={() => setIsRoomGalleryOpen(true)}>
                               <ImageIcon size={16} /> View Photos
                           </button>
                       </div>
-
-                      {/* Content Body */}
                       <div className="room-modal-body">
-                          {/* Header inside body for flow */}
                           <div className="room-modal-header">
                               <h2>{viewingRoom.title}</h2>
                               <span className="room-type-badge">{viewingRoom.room_type}</span>
                           </div>
-
                           <div className="room-modal-description" dangerouslySetInnerHTML={{ __html: viewingRoom.description }} />
-                          
                           <div className="room-features-grid">
                               <div className="feature-item"><Users size={20}/> {viewingRoom.max_adults} Adults, {viewingRoom.max_children} Kids</div>
                               <div className="feature-item"><Maximize size={20}/> {viewingRoom.size_sqm || '-'} m²</div>
                               <div className="feature-item"><Bed size={20}/> {viewingRoom.bed_type || 'Double Bed'}</div>
                               <div className="feature-item"><Mountain size={20}/> {viewingRoom.view_type || 'Standard View'}</div>
                           </div>
-
                           <div className="room-amenities-list">
                               {viewingRoom.has_breakfast ? <span className="modal-pill"><Coffee size={16}/> Breakfast Included</span> : null}
                               {viewingRoom.is_refundable ? <span className="modal-pill"><Check size={16}/> Free Cancellation</span> : null}
-                              {viewingRoom.smoking_allowed ? 
-                                  <span className="modal-pill"><Check size={16}/> Smoking Allowed</span> : 
-                                  <span className="modal-pill"><Ban size={16} className="ban-icon"/> Non-Smoking</span>
-                              }
+                              {viewingRoom.smoking_allowed ? <span className="modal-pill"><Check size={16}/> Smoking Allowed</span> : <span className="modal-pill"><Ban size={16} className="ban-icon"/> Non-Smoking</span>}
                           </div>
                       </div>
                   </div>
-
-                  {/* FIXED FOOTER */}
                   <div className="room-modal-footer">
                       <div className="modal-price">
                           <span className="amount">${viewingRoom.base_price_per_night}</span>
@@ -494,7 +521,7 @@ const HotelDetails = () => {
           </div>
       )}
 
-      {/* ✅ ROOM SPECIFIC GALLERY */}
+      {/* ROOM SPECIFIC GALLERY */}
       <ImageGallery 
         images={currentRoomImages.length > 0 ? currentRoomImages : [DEFAULT_IMAGE]} 
         isOpen={isRoomGalleryOpen} 
