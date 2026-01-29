@@ -1,12 +1,33 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
-const { protect, admin } = require('../middleware/authMiddleware'); 
 
-// IMPORTANT: Apply authentication middleware to all routes
-// This ensures only logged-in Admins can access these
-router.use(protect); 
-router.use(admin);
+// 1. Import Middleware with the correct names
+// We use 'verifyToken' because that is what your server.js uses.
+const { verifyToken } = require('../middleware/authMiddleware');
+
+// 2. Define a simple Admin Check middleware directly here
+// (This prevents crashes if checkRole/admin is missing in your authMiddleware file)
+const verifyAdmin = (req, res, next) => {
+    // Check if user exists and has admin role
+    // Note: Adjust 'role' or 'isAdmin' based on your actual database column
+    if (req.user && (req.user.role === 'admin' || req.user.isAdmin === true)) {
+        next();
+    } else {
+        res.status(403).json({ 
+            success: false, 
+            message: 'Access denied. Admin privileges required.' 
+        });
+    }
+};
+
+// 3. Apply Authentication & Admin Check to ALL routes below
+router.use(verifyToken); // 1st: Ensure user is logged in
+router.use(verifyAdmin); // 2nd: Ensure user is an admin
+
+// ==========================================
+// ROUTES
+// ==========================================
 
 // 1. Dashboard & Analytics
 router.get('/stats', adminController.getDashboardStats);

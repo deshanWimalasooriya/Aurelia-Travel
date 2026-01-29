@@ -4,7 +4,7 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const connection = require('./config/db');
 
-// Load env vars
+// Load environment variables
 dotenv.config();
 
 const app = express();
@@ -14,7 +14,7 @@ const app = express();
 // ========================================
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json()); // Only need this once
+app.use(express.json()); // Only needed once
 
 app.use(cors({
     origin: 'http://localhost:5173', // Your React app URL
@@ -24,15 +24,15 @@ app.use(cors({
     exposedHeaders: ['set-cookie']
 }));
 
-// Import Middleware
+// Import Auth Middleware
 const { verifyToken } = require('./API/middleware/authMiddleware');
 
 // ========================================
-// 2. IMPORT ROUTES (Declare these ONLY ONCE)
+// 2. IMPORT ROUTES (Only Import Once)
 // ========================================
 const authRoutes = require('./API/routes/authRoutes');
 const userRoutes = require('./API/routes/userRoutes');
-const adminRoutes = require('./API/routes/adminRoutes'); // Fixed: Only imported once
+const adminRoutes = require('./API/routes/adminRoutes'); // Imported once here
 const hotelRoutes = require('./API/routes/hotelRoutes');
 const roomRoutes = require('./API/routes/roomRoutes');
 const bookingRoutes = require('./API/routes/bookingRoutes');
@@ -42,10 +42,10 @@ const crmRoutes = require('./API/routes/crmRoutes');
 const amenityRoutes = require('./API/routes/amenityRoutes');
 
 // ========================================
-// 3. USE ROUTES
+// 3. USE ROUTES (Only Use Once)
 // ========================================
 app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes); // Fixed: Only used once
+app.use('/api/admin', adminRoutes); // Admin routes
 app.use('/api/hotels', hotelRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/bookings', bookingRoutes);
@@ -54,9 +54,8 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/support', crmRoutes);
 app.use('/api/amenities', amenityRoutes);
 
-// User routes (Protected)
-// Note: Depending on your logic, verifyToken might be inside the router, 
-// but if you want it here, this is correct:
+// Protected Routes
+// Note: verifyToken is applied here to protect all user routes
 app.use('/api/users', verifyToken, userRoutes); 
 
 // ========================================
@@ -64,7 +63,7 @@ app.use('/api/users', verifyToken, userRoutes);
 // ========================================
 connection.connect((err) => {
     if (err) {
-        console.error('Error connecting to the database:', err);
+        console.error('❌ Error connecting to the database:', err);
         return;
     }
     console.log('✅ Connected to MySQL Database');
