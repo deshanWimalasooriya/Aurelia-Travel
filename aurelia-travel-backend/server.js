@@ -1,24 +1,39 @@
-
 const express = require('express');
 const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
-dotenv.config();
+const cors = require('cors');
 const connection = require('./config/db');
+
+// Load env vars
+dotenv.config();
+
 const app = express();
 
-// Add cookie-parser middleware here
+// ========================================
+// 1. MIDDLEWARE
+// ========================================
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(express.json()); // Only need this once
 
-// Import middleware
-const { verifyToken, checkRole } = require('./API/middleware/authMiddleware');
+app.use(cors({
+    origin: 'http://localhost:5173', // Your React app URL
+    credentials: true, // Important for cookies
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['set-cookie']
+}));
 
-//Routes
-const hotelRoutes = require('./API/routes/hotelRoutes');
+// Import Middleware
+const { verifyToken } = require('./API/middleware/authMiddleware');
+
+// ========================================
+// 2. IMPORT ROUTES (Declare these ONLY ONCE)
+// ========================================
 const authRoutes = require('./API/routes/authRoutes');
 const userRoutes = require('./API/routes/userRoutes');
-const adminRoutes = require('./API/routes/adminRoutes');
+const adminRoutes = require('./API/routes/adminRoutes'); // Fixed: Only imported once
+const hotelRoutes = require('./API/routes/hotelRoutes');
 const roomRoutes = require('./API/routes/roomRoutes');
 const bookingRoutes = require('./API/routes/bookingRoutes');
 const reviewRoutes = require('./API/routes/reviewRoutes');
@@ -26,24 +41,12 @@ const walletRoutes = require('./API/routes/walletRoutes');
 const crmRoutes = require('./API/routes/crmRoutes');
 const amenityRoutes = require('./API/routes/amenityRoutes');
 
-
-const cors = require('cors');
-app.use(cors({
-    origin: 'http://localhost:5173', // Your React app URL
-    credentials: true, // ✅ Important for cookies
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    exposedHeaders: ['set-cookie']  // ✅ Expose set-cookie header
-}));
-
-
-app.use(express.json());
-
-//use Routes
-app.use('/api/hotels', hotelRoutes);
+// ========================================
+// 3. USE ROUTES
+// ========================================
 app.use('/api/auth', authRoutes);
-app.use('/api/users', verifyToken, userRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/admin', adminRoutes); // Fixed: Only used once
+app.use('/api/hotels', hotelRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/reviews', reviewRoutes);
@@ -51,8 +54,14 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/support', crmRoutes);
 app.use('/api/amenities', amenityRoutes);
 
+// User routes (Protected)
+// Note: Depending on your logic, verifyToken might be inside the router, 
+// but if you want it here, this is correct:
+app.use('/api/users', verifyToken, userRoutes); 
 
-//Database Establish
+// ========================================
+// 4. DATABASE CONNECTION
+// ========================================
 connection.connect((err) => {
     if (err) {
         console.error('Error connecting to the database:', err);
@@ -61,8 +70,10 @@ connection.connect((err) => {
     console.log('✅ Connected to MySQL Database');
 });
 
-//Server Establish
+// ========================================
+// 5. START SERVER
+// ========================================
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, ()=>{
+app.listen(PORT, () => {
     console.log(`🚀 Server is running on port ${PORT}`);
 });

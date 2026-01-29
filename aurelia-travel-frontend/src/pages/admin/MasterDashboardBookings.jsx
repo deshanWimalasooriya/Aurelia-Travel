@@ -1,128 +1,116 @@
 import React, { useState, useEffect } from 'react';
 import { adminAPI } from '../../services/api';
-import { Eye, Filter, Download } from 'lucide-react';
+import { CheckCircle, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import '../styles/masterAdmin.css';
 
 const MasterDashboardBookings = () => {
-    const [bookings, setBookings] = useState([]);
-    const [filters, setFilters] = useState({ status: '' });
-    const [loading, setLoading] = useState(true);
+  const [bookings, setBookings] = useState([]);
+  const [filter, setFilter] = useState('');
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchBookings();
-    }, [filters]);
+  useEffect(() => {
+    fetchBookings();
+  }, [filter]);
 
-    const fetchBookings = async () => {
-        setLoading(true);
-        try {
-            const res = await adminAPI.getAllBookings(filters);
-            setBookings(res.data.data);
-        } catch (err) {
-            toast.error('Failed to fetch bookings');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleStatusChange = async (id, newStatus) => {
-        try {
-            await adminAPI.updateBooking(id, newStatus);
-            toast.success('Booking status updated');
-            fetchBookings();
-        } catch (err) {
-            toast.error('Failed to update booking');
-        }
-    };
-
-    if (loading) {
-        return <div className="loading-container">Loading bookings...</div>;
+  const fetchBookings = async () => {
+    setLoading(true);
+    try {
+      const res = await adminAPI.getAllBookings({ status: filter });
+      if (res.data.success) {
+        setBookings(res.data.data);
+      }
+    } catch (err) {
+      toast.error('Failed to load bookings');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    return (
-        <div className="fade-in">
-            {/* Header */}
-            <div className="content-header">
-                <div className="content-header-top">
-                    <div className="content-title">
-                        <h1>Booking Management</h1>
-                        <p>Monitor and manage all bookings</p>
-                    </div>
-                    <button className="action-btn primary">
-                        <Download size={18} /> Export Data
-                    </button>
-                </div>
-            </div>
+  const handleUpdateStatus = async (id, status) => {
+    if(!window.confirm(`Mark booking as ${status}?`)) return;
+    try {
+      const res = await adminAPI.updateBooking(id, status);
+      if(res.data.success) {
+        toast.success(`Booking ${status}`);
+        fetchBookings();
+      }
+    } catch(err) {
+      toast.error("Update failed");
+    }
+  };
 
-            {/* Filters */}
-            <div className="filter-bar" style={{ marginBottom: 24 }}>
-                <select 
-                    className="form-select"
-                    value={filters.status}
-                    onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                >
-                    <option value="">All Status</option>
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                </select>
-            </div>
-
-            {/* Table */}
-            <div className="data-table-container">
-                <table className="data-table">
-                    <thead>
-                        <tr>
-                            <th>Booking ID</th>
-                            <th>Guest</th>
-                            <th>Hotel</th>
-                            <th>Room</th>
-                            <th>Check-in</th>
-                            <th>Check-out</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {bookings.length === 0 ? (
-                            <tr>
-                                <td colSpan="9" style={{ textAlign: 'center', padding: '40px' }}>
-                                    No bookings found
-                                </td>
-                            </tr>
-                        ) : (
-                            bookings.map((booking) => (
-                                <tr key={booking.id}>
-                                    <td><strong>{booking.booking_reference}</strong></td>
-                                    <td>{booking.guest_name}</td>
-                                    <td>{booking.hotel_name}</td>
-                                    <td>{booking.room_title}</td>
-                                    <td>{new Date(booking.check_in).toLocaleDateString()}</td>
-                                    <td>{new Date(booking.check_out).toLocaleDateString()}</td>
-                                    <td><strong>${booking.total_price}</strong></td>
-                                    <td>
-                                        <span className={`status-badge ${booking.status}`}>
-                                            {booking.status}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div className="table-actions">
-                                            <button className="table-action-btn">
-                                                <Eye size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+  return (
+    <div className="fade-in">
+      <div className="content-header">
+        <div className="content-title">
+          <h1>Booking Operations</h1>
+          <p>Oversee all reservations across the platform</p>
         </div>
-    );
+      </div>
+
+      <div className="filter-bar">
+        <select 
+          className="form-select" 
+          value={filter} 
+          onChange={(e) => setFilter(e.target.value)}
+        >
+          <option value="">All Statuses</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="pending">Pending</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+
+      <div className="data-table-container">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Reference</th>
+              <th>Guest</th>
+              <th>Hotel & Room</th>
+              <th>Dates</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? <tr><td colSpan="7" className="text-center p-8">Loading...</td></tr> : 
+             bookings.map(b => (
+              <tr key={b.id}>
+                <td><strong>{b.booking_reference}</strong></td>
+                <td>
+                  <div>{b.guest_name}</div>
+                  <small style={{color:'#64748b'}}>{b.guest_email}</small>
+                </td>
+                <td>
+                  <div style={{fontWeight:600}}>{b.hotel_name}</div>
+                  <div style={{fontSize:'0.8rem', color:'#64748b'}}>{b.room_title}</div>
+                </td>
+                <td>
+                  <div style={{fontSize:'0.85rem'}}>
+                    {new Date(b.check_in).toLocaleDateString()} -> {new Date(b.check_out).toLocaleDateString()}
+                  </div>
+                </td>
+                <td style={{fontWeight:700}}>${b.total_price}</td>
+                <td><span className={`status-badge ${b.status}`}>{b.status}</span></td>
+                <td>
+                  {b.status === 'pending' && (
+                    <div style={{display:'flex', gap:8}}>
+                      <button onClick={() => handleUpdateStatus(b.id, 'confirmed')} title="Confirm" style={{border:'none', background:'transparent', color:'#10b981', cursor:'pointer'}}><CheckCircle/></button>
+                      <button onClick={() => handleUpdateStatus(b.id, 'cancelled')} title="Cancel" style={{border:'none', background:'transparent', color:'#ef4444', cursor:'pointer'}}><XCircle/></button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 };
 
 export default MasterDashboardBookings;
