@@ -1,253 +1,212 @@
-const knex = require('../../config/knex');
+const adminModel = require('../models/adminModel');
 
 // ========================================
-// 1. DASHBOARD STATS
+// DASHBOARD OVERVIEW
 // ========================================
-exports.getGlobalStats = async () => {
-    const [bookings] = await knex('bookings').count('* as total_bookings');
-    const [revenue] = await knex('bookings')
-        .sum('total_price as total_revenue')
-        .where('status', 'completed');
-    
-    const [activeHotels] = await knex('hotels')
-        .count('* as active_hotels')
-        .where('is_active', true);
-    
-    const [activeUsers] = await knex('users')
-        .count('* as active_users')
-        .where('is_active', true);
+exports.getDashboardStats = async (req, res) => {
+    try {
+        const stats = await adminModel.getGlobalStats();
+        const netRevenue = stats.total_revenue * 0.15;
 
-    return {
-        total_bookings: bookings.total_bookings || 0,
-        total_revenue: parseFloat(revenue.total_revenue || 0),
-        active_hotels: activeHotels.active_hotels || 0,
-        active_users: activeUsers.active_users || 0
-    };
-};
+        const formattedStats = [
+            { label: 'Total Bookings', value: stats.total_bookings, icon: '📅', change: '+12%' },
+            { label: 'Gross Volume', value: `$${stats.total_revenue.toLocaleString()}`, icon: '💳', change: '+8%' },
+            { label: 'Net Revenue (15%)', value: `$${netRevenue.toLocaleString()}`, icon: '💰', change: '+15%' },
+            { label: 'Active Hotels', value: stats.active_hotels, icon: '🏨', change: '+3%' }
+        ];
 
-// ========================================
-// 2. RECENT ACTIVITY
-// ========================================
-exports.getRecentActivity = async (limit = 10) => {
-    return await knex('bookings')
-        .join('users', 'bookings.user_id', 'users.id')
-        .join('hotels', 'bookings.hotel_id', 'hotels.id')
-        .select(
-            'bookings.id',
-            'bookings.booking_reference',
-            'bookings.check_in',
-            'bookings.check_out',
-            'bookings.total_price',
-            'bookings.status',
-            'users.username as guest',
-            'users.email as guest_email',
-            'hotels.name as hotel'
-        )
-        .orderBy('bookings.created_at', 'desc')
-        .limit(limit);
-};
-
-// ========================================
-// 3. MONTHLY REVENUE (for Charts)
-// ========================================
-exports.getMonthlyRevenue = async () => {
-    const currentYear = new Date().getFullYear();
-    
-    return await knex('bookings')
-        .select(
-            knex.raw('DATE_FORMAT(check_in, "%b") as month'),
-            knex.raw('SUM(total_price) as revenue'),
-            knex.raw('COUNT(*) as bookings')
-        )
-        .whereRaw('YEAR(check_in) = ?', [currentYear])
-        .groupByRaw('MONTH(check_in)')
-        .orderByRaw('MONTH(check_in)');
-};
-
-// ========================================
-// 4. BOOKING STATUS BREAKDOWN
-// ========================================
-exports.getBookingsByStatus = async () => {
-    return await knex('bookings')
-        .select('status')
-        .count('* as count')
-        .groupBy('status');
-};
-
-// ========================================
-// 5. TOP PERFORMING HOTELS
-// ========================================
-exports.getTopHotels = async (limit = 5) => {
-    return await knex('hotels')
-        .join('bookings', 'hotels.id', 'bookings.hotel_id')
-        .select(
-            'hotels.id',
-            'hotels.name',
-            'hotels.city',
-            'hotels.rating_average'
-        )
-        .count('bookings.id as total_bookings')
-        .sum('bookings.total_price as revenue')
-        .groupBy('hotels.id')
-        .orderBy('revenue', 'desc')
-        .limit(limit);
-};
-
-// ========================================
-// 6. USER MANAGEMENT
-// ========================================
-exports.getAllUsers = async (filters = {}) => {
-    let query = knex('users')
-        .select('id', 'username', 'email', 'role', 'is_active', 'created_at')
-        .where('is_active', true);
-    
-    if (filters.role) {
-        query = query.where('role', filters.role);
+        res.json({ success: true, stats: formattedStats });
+    } catch (err) {
+        console.error('Dashboard Stats Error:', err);
+        res.status(500).json({ success: false, error: err.message });
     }
-    
-    if (filters.search) {
-        query = query.where(function() {
-            this.where('username', 'like', `%${filters.search}%`)
-                .orWhere('email', 'like', `%${filters.search}%`);
+};
+
+exports.getRecentBookings = async (req, res) => {
+    try {
+        const limit = req.query.limit || 10;
+        const recent = await adminModel.getRecentActivity(limit);
+        res.json({ success: true, data: recent });
+    } catch (err) {
+        console.error('Recent Bookings Error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+exports.getAnalyticsData = async (req, res) => {
+    try {
+        const monthly = await adminModel.getMonthlyRevenue();
+        const statusBreakdown = await adminModel.getBookingsByStatus();
+        const topHotels = await adminModel.getTopHotels();
+        
+        res.json({ 
+            success: true, 
+            revenue_chart: monthly,
+            status_breakdown: statusBreakdown,
+            top_hotels: topHotels
         });
+    } catch (err) {
+        console.error('Analytics Error:', err);
+        res.status(500).json({ success: false, error: err.message });
     }
-    
-    return await query.orderBy('created_at', 'desc');
 };
 
-exports.updateUser = async (id, data) => {
-    await knex('users').where({ id }).update(data);
-    return await knex('users').where({ id }).first();
-};
-
-exports.deleteUser = async (id) => {
-    // Soft delete
-    return await knex('users').where({ id }).update({ 
-        is_active: false, 
-        deleted_at: knex.fn.now() 
-    });
-};
-
-// ========================================
-// 7. HOTEL MANAGEMENT
-// ========================================
-exports.getAllHotelsForAdmin = async () => {
-    return await knex('hotels')
-        .leftJoin('users', 'hotels.manager_id', 'users.id')
-        .select(
-            'hotels.*',
-            'users.username as manager_name',
-            'users.email as manager_email'
-        )
-        .count('bookings.id as total_bookings')
-        .leftJoin('bookings', 'hotels.id', 'bookings.hotel_id')
-        .groupBy('hotels.id')
-        .orderBy('hotels.created_at', 'desc');
-};
-
-exports.updateHotel = async (id, data) => {
-    await knex('hotels').where({ id }).update(data);
-    return await knex('hotels').where({ id }).first();
-};
-
-exports.toggleHotelStatus = async (id) => {
-    const hotel = await knex('hotels').where({ id }).first();
-    await knex('hotels').where({ id }).update({ 
-        is_active: !hotel.is_active 
-    });
-    return await knex('hotels').where({ id }).first();
-};
-
-// ========================================
-// 8. BOOKING MANAGEMENT
-// ========================================
-exports.getAllBookingsForAdmin = async (filters = {}) => {
-    let query = knex('bookings')
-        .join('users', 'bookings.user_id', 'users.id')
-        .join('hotels', 'bookings.hotel_id', 'hotels.id')
-        .join('rooms', 'bookings.room_id', 'rooms.id')
-        .select(
-            'bookings.*',
-            'users.username as guest_name',
-            'users.email as guest_email',
-            'hotels.name as hotel_name',
-            'rooms.title as room_title'
-        );
-    
-    if (filters.status) {
-        query = query.where('bookings.status', filters.status);
+exports.getFinancialData = async (req, res) => {
+    try {
+        const summary = await adminModel.getFinancialSummary();
+        res.json({ success: true, data: summary });
+    } catch (err) {
+        console.error('Financial Data Error:', err);
+        res.status(500).json({ success: false, error: err.message });
     }
-    
-    if (filters.date_from) {
-        query = query.where('bookings.check_in', '>=', filters.date_from);
+};
+
+// ========================================
+// USER MANAGEMENT
+// ========================================
+exports.getAllUsers = async (req, res) => {
+    try {
+        const filters = {
+            role: req.query.role,
+            search: req.query.search
+        };
+        const users = await adminModel.getAllUsers(filters);
+        res.json({ success: true, data: users });
+    } catch (err) {
+        console.error('Get Users Error:', err);
+        res.status(500).json({ success: false, error: err.message });
     }
-    
-    if (filters.date_to) {
-        query = query.where('bookings.check_out', '<=', filters.date_to);
+};
+
+exports.updateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updated = await adminModel.updateUser(id, req.body);
+        res.json({ success: true, message: 'User updated', data: updated });
+    } catch (err) {
+        console.error('Update User Error:', err);
+        res.status(500).json({ success: false, error: err.message });
     }
-    
-    return await query.orderBy('bookings.created_at', 'desc');
 };
 
-exports.updateBookingStatus = async (id, status) => {
-    await knex('bookings').where({ id }).update({ status });
-    return await knex('bookings').where({ id }).first();
-};
-
-// ========================================
-// 9. REVIEWS MANAGEMENT
-// ========================================
-exports.getAllReviews = async (filters = {}) => {
-    let query = knex('reviews')
-        .join('users', 'reviews.user_id', 'users.id')
-        .join('hotels', 'reviews.hotel_id', 'hotels.id')
-        .select(
-            'reviews.*',
-            'users.username',
-            'hotels.name as hotel_name'
-        );
-    
-    if (filters.is_approved !== undefined) {
-        query = query.where('reviews.is_approved', filters.is_approved);
+exports.deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await adminModel.deleteUser(id);
+        res.json({ success: true, message: 'User deactivated' });
+    } catch (err) {
+        console.error('Delete User Error:', err);
+        res.status(500).json({ success: false, error: err.message });
     }
-    
-    return await query.orderBy('reviews.created_at', 'desc');
-};
-
-exports.toggleReviewApproval = async (id) => {
-    const review = await knex('reviews').where({ id }).first();
-    await knex('reviews').where({ id }).update({ 
-        is_approved: !review.is_approved 
-    });
-    return await knex('reviews').where({ id }).first();
-};
-
-exports.deleteReview = async (id) => {
-    return await knex('reviews').where({ id }).del();
 };
 
 // ========================================
-// 10. FINANCIAL ANALYTICS
+// HOTEL MANAGEMENT
 // ========================================
-exports.getFinancialSummary = async () => {
-    const [total] = await knex('bookings')
-        .sum('total_price as gross_revenue')
-        .where('status', 'completed');
-    
-    const grossRevenue = parseFloat(total.gross_revenue || 0);
-    const aureliaShare = grossRevenue * 0.15; // 15% commission
-    const hotelShare = grossRevenue * 0.85;
-    
-    const [pending] = await knex('bookings')
-        .sum('total_price as pending_revenue')
-        .whereIn('status', ['pending', 'confirmed']);
-    
-    return {
-        gross_revenue: grossRevenue,
-        aurelia_commission: aureliaShare,
-        hotel_payouts: hotelShare,
-        pending_revenue: parseFloat(pending.pending_revenue || 0)
-    };
+exports.getAllHotels = async (req, res) => {
+    try {
+        const hotels = await adminModel.getAllHotelsForAdmin();
+        res.json({ success: true, data: hotels });
+    } catch (err) {
+        console.error('Get Hotels Error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
 };
 
-module.exports = exports;
+exports.updateHotel = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updated = await adminModel.updateHotel(id, req.body);
+        res.json({ success: true, message: 'Hotel updated', data: updated });
+    } catch (err) {
+        console.error('Update Hotel Error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+exports.toggleHotelStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const hotel = await adminModel.toggleHotelStatus(id);
+        res.json({ 
+            success: true, 
+            message: `Hotel ${hotel.is_active ? 'activated' : 'deactivated'}`, 
+            data: hotel 
+        });
+    } catch (err) {
+        console.error('Toggle Hotel Status Error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// ========================================
+// BOOKING MANAGEMENT
+// ========================================
+exports.getAllBookings = async (req, res) => {
+    try {
+        const filters = {
+            status: req.query.status,
+            date_from: req.query.date_from,
+            date_to: req.query.date_to
+        };
+        const bookings = await adminModel.getAllBookingsForAdmin(filters);
+        res.json({ success: true, data: bookings });
+    } catch (err) {
+        console.error('Get Bookings Error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+exports.updateBooking = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        const updated = await adminModel.updateBookingStatus(id, status);
+        res.json({ success: true, message: 'Booking updated', data: updated });
+    } catch (err) {
+        console.error('Update Booking Error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// ========================================
+// REVIEW MANAGEMENT
+// ========================================
+exports.getAllReviews = async (req, res) => {
+    try {
+        const filters = {
+            is_approved: req.query.is_approved
+        };
+        const reviews = await adminModel.getAllReviews(filters);
+        res.json({ success: true, data: reviews });
+    } catch (err) {
+        console.error('Get Reviews Error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+exports.toggleReviewApproval = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const review = await adminModel.toggleReviewApproval(id);
+        res.json({ 
+            success: true, 
+            message: `Review ${review.is_approved ? 'approved' : 'rejected'}`, 
+            data: review 
+        });
+    } catch (err) {
+        console.error('Toggle Review Error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+exports.deleteReview = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await adminModel.deleteReview(id);
+        res.json({ success: true, message: 'Review deleted' });
+    } catch (err) {
+        console.error('Delete Review Error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
