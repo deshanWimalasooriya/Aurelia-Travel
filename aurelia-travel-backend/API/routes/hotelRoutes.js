@@ -19,4 +19,8 @@ router.post("/", verifyToken, checkRole('admin', 'hotel_manager'), hotelControll
 router.put("/:id", verifyToken, checkRole('admin', 'hotel_manager'), hotelController.update);
 router.delete("/:id", verifyToken, checkRole('admin', 'hotel_manager'), hotelController.delete);
 
+router.get("/amenities", hotelController.getAmenitiesList);
+//get hotel amenities by hotel id
+router.get("/:id/amenities", hotelController.getAmenitiesByHotelId);
+
 module.exports = router;

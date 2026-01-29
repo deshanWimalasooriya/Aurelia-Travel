@@ -5,9 +5,10 @@ import {
   MapPin, Star, Check, Wifi, Car, Coffee, Info, ArrowRight, 
   ShieldCheck, Utensils, Calendar, Users, TrendingUp, 
   Maximize, Mountain, User, Clock, AlertCircle, Ban, Dog, 
-  Bed // ✅ Added missing import
+  Bed, Eye, X, Image as ImageIcon 
 } from 'lucide-react';
 import { useUser } from '../context/userContext';
+import ImageGallery from '../components/ui/ImageGallery'; 
 import './styles/hotelDetails.css';
 
 const HotelDetails = () => {
@@ -21,9 +22,16 @@ const HotelDetails = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  // Gallery State
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+
+  // Room Popup & Gallery State
+  const [viewingRoom, setViewingRoom] = useState(null);
+  const [isRoomGalleryOpen, setIsRoomGalleryOpen] = useState(false);
+
   // Selection State
   const [selectedRoomId, setSelectedRoomId] = useState(null);
-  const [roomQty, setRoomQty] = useState(1); // ✅ New: Track Room Quantity
+  const [roomQty, setRoomQty] = useState(1); 
   const [totalPrice, setTotalPrice] = useState(0);
   
   // Booking Data
@@ -42,11 +50,17 @@ const HotelDetails = () => {
         ]);
         
         const hotelData = hotelRes.data.data || hotelRes.data;
-        const roomsData = Array.isArray(roomRes.data) ? roomRes.data : (roomRes.data.data || []);
+        
+        // Handle raw room data
+        const rawRooms = Array.isArray(roomRes.data) ? roomRes.data : (roomRes.data.data || []);
+        
+        // ✅ MODIFIED: Filter to only show active rooms
+        const activeRooms = rawRooms.filter(room => room.is_active);
+
         const reviewsData = Array.isArray(reviewRes.data.data) ? reviewRes.data.data : [];
         
         setHotel(hotelData);
-        setRooms(roomsData);
+        setRooms(activeRooms); // Set filtered list
         setReviews(reviewsData);
       } catch (err) {
         console.error("Fetch details error:", err);
@@ -76,25 +90,43 @@ const HotelDetails = () => {
         if (room) {
             const pricePerNight = parseFloat(room.base_price_per_night || room.price_per_night || 0);
             const effectiveNights = nightCount > 0 ? nightCount : 1;
-            // ✅ Updated Calculation: Price * Nights * Quantity
             setTotalPrice(pricePerNight * effectiveNights * roomQty);
         }
     } else {
         setTotalPrice(0);
     }
-  }, [selectedRoomId, nightCount, rooms, roomQty]); // Added roomQty dependency
+  }, [selectedRoomId, nightCount, rooms, roomQty]);
 
   const handleRoomSelect = (roomId) => {
     if (selectedRoomId !== roomId) {
         setSelectedRoomId(roomId);
-        // Reset qty to 1 when switching rooms, unless we want to persist
         if (selectedRoomId !== roomId) setRoomQty(1); 
     } else {
-        // Deselect
         setSelectedRoomId(null);
         setRoomQty(1);
     }
   };
+
+  // Handle View Details Modal
+  const handleViewDetails = (room) => {
+      setViewingRoom(room);
+  };
+
+  // Helper to extract room images for gallery
+  const getRoomImages = (room) => {
+      if (!room) return [];
+      let imgs = [];
+      if (room.images && Array.isArray(room.images)) {
+          imgs = room.images.map(img => typeof img === 'object' ? img.url || img.image_url : img);
+      } else if (room.images_meta && Array.isArray(room.images_meta)) {
+          imgs = room.images_meta.map(img => img.url);
+      } else if (room.main_image) {
+          imgs = [room.main_image];
+      }
+      return imgs.filter(Boolean);
+  };
+
+  const currentRoomImages = viewingRoom ? getRoomImages(viewingRoom) : [];
 
   // --- 4. HANDLE RESERVATION ---
   const handleReserve = async () => {
@@ -125,8 +157,8 @@ const HotelDetails = () => {
             check_out: dates.checkOut,
             adults: guests.adults,
             children: guests.children,
-            room_count: roomQty, // ✅ Send Quantity to backend
-            total_price: totalPrice, // Explicitly sending calculated total
+            room_count: roomQty, 
+            total_price: totalPrice, 
             payment_token: paymentToken,
             payment_provider: 'stripe'
         };
@@ -150,16 +182,25 @@ const HotelDetails = () => {
   if (loading) return <div className="loading-screen"><div className="spinner"></div><h3>Loading Hotel...</h3></div>;
   if (!hotel) return <div className="loading-screen">Hotel not found</div>;
 
-  // --- IMAGES & LOCATION ---
-  let images = [];
+  // --- IMAGES & LOCATION LOGIC ---
+  const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80';
+  
+  let rawImages = [];
   if (Array.isArray(hotel.images) && hotel.images.length > 0) {
-      images = hotel.images.sort((a,b) => (b.is_primary === true) - (a.is_primary === true)).map(img => img.image_url);
+      rawImages = hotel.images.map(img => (typeof img === 'object' && img.image_url ? img.image_url : img));
   } else if (hotel.main_image) {
-      images = [hotel.main_image];
-  } else {
-      images = ['https://images.unsplash.com/photo-1566073771259-6a8506099945'];
+      rawImages = [hotel.main_image];
+  } 
+  
+  let cleanGalleryImages = rawImages.filter(img => img); 
+  if (cleanGalleryImages.length === 0) {
+      cleanGalleryImages = [DEFAULT_IMAGE];
   }
-  while(images.length < 4) images.push(images[0]); 
+
+  let layoutImages = [...cleanGalleryImages];
+  while(layoutImages.length < 4) {
+      layoutImages.push(layoutImages[0] || DEFAULT_IMAGE);
+  }
 
   const mapUrl = hotel.latitude && hotel.longitude 
     ? `https://maps.google.com/maps?q=${hotel.latitude},${hotel.longitude}&z=15&output=embed`
@@ -192,17 +233,22 @@ const HotelDetails = () => {
         {/* HERO: GALLERY + MAP */}
         <section className="hero-split-section">
             <div className="gallery-container">
-                <div className="main-image" style={{backgroundImage: `url(${images[0]})`}}></div>
+                <div 
+                    className="main-image" 
+                    style={{backgroundImage: `url('${layoutImages[0]}')`}}
+                    onClick={() => setIsGalleryOpen(true)}
+                ></div>
                 <div className="sub-images">
-                    <div className="sub-img" style={{backgroundImage: `url(${images[1]})`}}></div>
-                    <div className="sub-img" style={{backgroundImage: `url(${images[2]})`}}></div>
-                    <div className="sub-img more-photos" style={{backgroundImage: `url(${images[3]})`}}>
-                        <div className="view-more"><span>+ View All Photos</span></div>
+                    <div className="sub-img" style={{backgroundImage: `url('${layoutImages[1]}')`}} onClick={() => setIsGalleryOpen(true)}></div>
+                    <div className="sub-img" style={{backgroundImage: `url('${layoutImages[2]}')`}} onClick={() => setIsGalleryOpen(true)}></div>
+                    <div className="sub-img more-photos" style={{backgroundImage: `url('${layoutImages[3]}')`}} onClick={() => setIsGalleryOpen(true)}>
+                        <div className="view-more"><span>+ View Gallery</span></div>
                     </div>
                 </div>
             </div>
+            
             <div className="map-container">
-                <iframe title="Location" width="100%" height="100%" frameBorder="0" scrolling="no" src={mapUrl}></iframe>
+                <iframe title="Location" width="100%" height="100%" frameBorder="0" src={mapUrl}></iframe>
             </div>
         </section>
 
@@ -212,19 +258,31 @@ const HotelDetails = () => {
             {/* LEFT COLUMN */}
             <div className="details-content">
                 
-                {/* Description */}
+                {/* --- DESCRIPTION & AMENITIES --- */}
                 <div className="section-card">
                     <h2 className="section-title">Experience the Stay</h2>
-                    <p className="description-text">{hotel.description}</p>
+                    <p className="description-text">
+                        {hotel.description || "Enjoy a relaxing stay at " + hotel.name + ". This property offers excellent accommodation and services to make your visit memorable."}
+                    </p>
+                    
                     <h3 className="section-title" style={{fontSize: '18px', marginTop: '30px'}}>Popular Amenities</h3>
                     <div className="amenities-container">
-                         <div className="amenity-pill"><Wifi size={18}/> Free WiFi</div>
-                         <div className="amenity-pill"><ShieldCheck size={18}/> 24/7 Security</div>
-                         <div className="amenity-pill"><Utensils size={18}/> Restaurant</div>
-                         <div className="amenity-pill"><Car size={18}/> Free Parking</div>
-                         {Array.isArray(hotel.amenities) && hotel.amenities.slice(0, 4).map((fac, i) => (
-                             <div key={i} className="amenity-pill"><Star size={18}/> {typeof fac === 'object' ? fac.name : fac}</div>
-                         ))}
+                         {Array.isArray(hotel.amenities) && hotel.amenities.length > 0 ? (
+                             hotel.amenities.map((item, index) => (
+                                 <div key={index} className="amenity-pill">
+                                     <Check size={18} /> 
+                                     {typeof item === 'object' ? item.name : item}
+                                 </div>
+                             ))
+                         ) : (
+                             <>
+                                <div className="amenity-pill"><Wifi size={18}/> Free WiFi</div>
+                                <div className="amenity-pill"><ShieldCheck size={18}/> 24/7 Security</div>
+                                <div className="amenity-pill"><Utensils size={18}/> Restaurant</div>
+                                <div className="amenity-pill"><Car size={18}/> Free Parking</div>
+                                <div className="amenity-pill"><Coffee size={18}/> Breakfast Included</div>
+                             </>
+                         )}
                     </div>
                 </div>
 
@@ -238,7 +296,7 @@ const HotelDetails = () => {
                                     <th>Room Type</th>
                                     <th>Capacity</th>
                                     <th>Details</th>
-                                    <th style={{textAlign:'center'}}>Nr. Rooms</th> {/* ✅ New Column */}
+                                    <th style={{textAlign:'center'}}>Nr. Rooms</th> 
                                     <th>Price</th>
                                     <th>Action</th>
                                 </tr>
@@ -248,12 +306,36 @@ const HotelDetails = () => {
                                     const isSelected = selectedRoomId === (room._id || room.id);
                                     const price = parseFloat(room.base_price_per_night || room.price_per_night || 0);
                                     
+                                    // Robust Image Selection for Preview
+                                    let previewImage = room.main_image;
+                                    if (!previewImage && room.images && room.images.length > 0) {
+                                        const first = room.images[0];
+                                        previewImage = typeof first === 'object' ? (first.image_url || first.url) : first;
+                                    }
+
                                     return (
                                         <tr key={room.id} className={isSelected ? 'selected-row' : ''}>
                                             <td>
-                                                <div className="room-cell-title">
-                                                    <strong>{room.title}</strong>
-                                                    <span className="room-sub-text">{room.bed_type || 'Double Bed'}</span>
+                                                <div className="room-cell-main">
+                                                    {/* IMAGE THUMBNAIL */}
+                                                    <div className="room-table-thumbnail" onClick={() => handleViewDetails(room)}>
+                                                        {previewImage ? (
+                                                            <img src={previewImage} alt={room.title} />
+                                                        ) : (
+                                                            <div className="room-placeholder-icon"><Bed size={20}/></div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="room-meta-group">
+                                                        {/* Clickable Title */}
+                                                        <strong 
+                                                            className="clickable-room-title" 
+                                                            onClick={() => handleViewDetails(room)}
+                                                        >
+                                                            {room.title}
+                                                        </strong>
+                                                        <span className="room-sub-text">{room.bed_type || 'Double Bed'}</span>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td><div className="capacity-cell"><Users size={16} /> x {room.capacity || 2}</div></td>
@@ -261,26 +343,25 @@ const HotelDetails = () => {
                                                 <div className="features-cell">
                                                     <span className="feature"><Maximize size={14}/> {room.size_sqm || 30}m²</span>
                                                     <span className="feature"><Mountain size={14}/> {room.view_type || 'View'}</span>
-                                                    {room.bed_type && <span className="feature"><Bed size={14}/> {room.bed_type}</span>}
-                                                    {room.is_refundable && <span className="feature highlight">Refundable</span>}
+                                                    {/* View Details Button */}
+                                                    <button 
+                                                        className="view-details-small-btn" 
+                                                        onClick={() => handleViewDetails(room)}
+                                                        title="View Room Details"
+                                                    >
+                                                        <Eye size={14}/> View
+                                                    </button>
                                                 </div>
                                             </td>
-                                            {/* ✅ Room Quantity Selector */}
                                             <td style={{textAlign:'center'}}>
                                                 <select 
                                                     className="qty-select"
                                                     value={isSelected ? roomQty : 1}
                                                     onChange={(e) => {
-                                                        setSelectedRoomId(room.id); // Auto-select row
-                                                        setRoomQty(parseInt(e.target.value)); // Update qty
+                                                        setSelectedRoomId(room.id); 
+                                                        setRoomQty(parseInt(e.target.value)); 
                                                     }}
-                                                    style={{
-                                                        padding: '8px', 
-                                                        borderRadius: '6px', 
-                                                        border: '1px solid #cbd5e1',
-                                                        fontWeight: '600',
-                                                        color: '#0f172a'
-                                                    }}
+                                                    style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#0f172a' }}
                                                 >
                                                     {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
                                                 </select>
@@ -297,43 +378,11 @@ const HotelDetails = () => {
                                         </tr>
                                     )
                                 })}
+                                {rooms.length === 0 && (
+                                    <tr><td colSpan="6" style={{textAlign:'center', padding:'20px'}}>No active rooms available at the moment.</td></tr>
+                                )}
                             </tbody>
                         </table>
-                    </div>
-                </div>
-
-                {/* HOUSE RULES */}
-                <div className="section-card policy-card">
-                    <h2 className="section-title">House Rules</h2>
-                    <div className="policy-list">
-                        <div className="policy-row">
-                            <div className="policy-icon"><Clock size={20}/></div>
-                            <div className="policy-content">
-                                <div className="policy-header">Check-in</div>
-                                <div className="policy-text">From {hotel.check_in_time || '14:00'}</div>
-                            </div>
-                        </div>
-                        <div className="policy-row">
-                            <div className="policy-icon"><Clock size={20}/></div>
-                            <div className="policy-content">
-                                <div className="policy-header">Check-out</div>
-                                <div className="policy-text">Until {hotel.check_out_time || '11:00'}</div>
-                            </div>
-                        </div>
-                        <div className="policy-row">
-                            <div className="policy-icon"><AlertCircle size={20}/></div>
-                            <div className="policy-content">
-                                <div className="policy-header">Cancellation/Prepayment</div>
-                                <div className="policy-text">Cancellation and prepayment policies vary according to accommodation type.</div>
-                            </div>
-                        </div>
-                        <div className="policy-row">
-                            <div className="policy-icon"><Dog size={20}/></div>
-                            <div className="policy-content">
-                                <div className="policy-header">Pets</div>
-                                <div className="policy-text">Pets are not allowed.</div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -349,7 +398,6 @@ const HotelDetails = () => {
                             </div>
                         </div>
                     </div>
-                    
                     {reviews.length > 0 ? (
                         <div className="reviews-grid">
                             {reviews.map((rev) => (
@@ -379,7 +427,6 @@ const HotelDetails = () => {
                         </div>
                     )}
                 </div>
-
             </div>
 
             {/* RIGHT: STICKY WIDGET */}
@@ -393,36 +440,21 @@ const HotelDetails = () => {
                         </div>
                         <div className="demand-badge"><TrendingUp size={14}/> High Demand</div>
                     </div>
-
                     <div className="picker-grid">
-                        <div className="input-box">
-                            <label>CHECK-IN</label>
-                            <input type="date" value={dates.checkIn} onChange={(e) => setDates({...dates, checkIn: e.target.value})} />
-                        </div>
-                        <div className="input-box">
-                            <label>CHECK-OUT</label>
-                            <input type="date" value={dates.checkOut} onChange={(e) => setDates({...dates, checkOut: e.target.value})} />
-                        </div>
+                        <div className="input-box"><label>CHECK-IN</label><input type="date" value={dates.checkIn} onChange={(e) => setDates({...dates, checkIn: e.target.value})} /></div>
+                        <div className="input-box"><label>CHECK-OUT</label><input type="date" value={dates.checkOut} onChange={(e) => setDates({...dates, checkOut: e.target.value})} /></div>
                     </div>
-
                     <div className="input-box" style={{marginBottom: '20px'}}>
                         <label>GUESTS</label>
                         <select value={guests.adults} onChange={e => setGuests({...guests, adults: parseInt(e.target.value)})}>
-                            <option value="1">1 Adult</option>
-                            <option value="2">2 Adults</option>
-                            <option value="3">3 Adults</option>
-                            <option value="4">4 Adults</option>
+                            <option value="1">1 Adult</option><option value="2">2 Adults</option><option value="3">3 Adults</option><option value="4">4 Adults</option>
                         </select>
                     </div>
-
                     {selectedRoomId ? (
-                        <div className="notification success">
-                            <Check size={16}/> {roomQty} Room{roomQty > 1 ? 's' : ''} Selected
-                        </div>
+                        <div className="notification success"><Check size={16}/> {roomQty} Room{roomQty > 1 ? 's' : ''} Selected</div>
                     ) : (
                         <div className="notification warning"><Info size={16}/> Select a room from the table</div>
                     )}
-
                     <button className="book-btn" onClick={handleReserve}>{selectedRoomId ? 'Reserve Securely' : 'Check Availability'}</button>
                     <p className="no-charge-text">You won't be charged yet</p>
                     {totalPrice > 0 && (
@@ -432,6 +464,70 @@ const HotelDetails = () => {
             </div>
         </div>
       </div>
+      
+      {/* HOTEL GALLERY */}
+      <ImageGallery 
+        images={cleanGalleryImages} 
+        isOpen={isGalleryOpen} 
+        onClose={() => setIsGalleryOpen(false)} 
+      />
+
+      {/* ROOM DETAILS MODAL */}
+      {viewingRoom && (
+          <div className="room-modal-overlay" onClick={() => setViewingRoom(null)}>
+              <div className="room-modal-content" onClick={e => e.stopPropagation()}>
+                  <button className="room-modal-close" onClick={() => setViewingRoom(null)}><X size={20}/></button>
+                  <div className="room-modal-scroll-area">
+                      <div className="room-modal-hero" style={{backgroundImage: `url('${currentRoomImages[0] || DEFAULT_IMAGE}')`}}>
+                          <button className="view-gallery-btn" onClick={() => setIsRoomGalleryOpen(true)}>
+                              <ImageIcon size={16} /> View Photos
+                          </button>
+                      </div>
+                      <div className="room-modal-body">
+                          <div className="room-modal-header">
+                              <h2>{viewingRoom.title}</h2>
+                              <span className="room-type-badge">{viewingRoom.room_type}</span>
+                          </div>
+                          <div className="room-modal-description" dangerouslySetInnerHTML={{ __html: viewingRoom.description }} />
+                          <div className="room-features-grid">
+                              <div className="feature-item"><Users size={20}/> {viewingRoom.max_adults} Adults, {viewingRoom.max_children} Kids</div>
+                              <div className="feature-item"><Maximize size={20}/> {viewingRoom.size_sqm || '-'} m²</div>
+                              <div className="feature-item"><Bed size={20}/> {viewingRoom.bed_type || 'Double Bed'}</div>
+                              <div className="feature-item"><Mountain size={20}/> {viewingRoom.view_type || 'Standard View'}</div>
+                          </div>
+                          <div className="room-amenities-list">
+                              {viewingRoom.has_breakfast ? <span className="modal-pill"><Coffee size={16}/> Breakfast Included</span> : null}
+                              {viewingRoom.is_refundable ? <span className="modal-pill"><Check size={16}/> Free Cancellation</span> : null}
+                              {viewingRoom.smoking_allowed ? <span className="modal-pill"><Check size={16}/> Smoking Allowed</span> : <span className="modal-pill"><Ban size={16} className="ban-icon"/> Non-Smoking</span>}
+                          </div>
+                      </div>
+                  </div>
+                  <div className="room-modal-footer">
+                      <div className="modal-price">
+                          <span className="amount">${viewingRoom.base_price_per_night}</span>
+                          <span className="text">per night</span>
+                      </div>
+                      <button 
+                          className="modal-select-btn"
+                          onClick={() => {
+                              handleRoomSelect(viewingRoom.id);
+                              setViewingRoom(null); 
+                          }}
+                      >
+                          {selectedRoomId === viewingRoom.id ? 'Currently Selected' : 'Select This Room'}
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* ROOM SPECIFIC GALLERY */}
+      <ImageGallery 
+        images={currentRoomImages.length > 0 ? currentRoomImages : [DEFAULT_IMAGE]} 
+        isOpen={isRoomGalleryOpen} 
+        onClose={() => setIsRoomGalleryOpen(false)} 
+      />
+
     </div>
   );
 };

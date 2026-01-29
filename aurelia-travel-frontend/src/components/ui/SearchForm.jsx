@@ -25,19 +25,19 @@ const SearchForm = () => {
     e.preventDefault()
     setIsSearching(true)
 
-    // Simulate small delay for UX
+    // Clean destination logic
+    const cleanedDestination = searchData.destination.replace(/\s+/g, '');
+
     setTimeout(() => {
-        // Construct Query Params
         const params = new URLSearchParams({
-            location: searchData.destination,
+            location: cleanedDestination,
             checkIn: searchData.checkIn,
             checkOut: searchData.checkOut,
             adults: searchData.adults,
             children: searchData.children
         }).toString();
 
-        // Navigate to HotelPage with these params
-        navigate(`/hotels?${params}`) // Assuming /hotels is your HotelPage route
+        navigate(`/hotels?${params}`) 
         setIsSearching(false)
     }, 600)
   }
@@ -47,13 +47,15 @@ const SearchForm = () => {
       
       {/* 1. Destination */}
       <div className="search-group destination-group">
-        <label>Where to?</label>
+        <label>
+          <MapPin size={16} className="label-icon" /> 
+          Where to?
+        </label>
         <div className="input-wrapper">
-          <MapPin size={18} className="search-icon" />
           <input 
             type="text" 
             name="destination"
-            placeholder="Search destination..." 
+            placeholder="Hotel, City, or Province..." 
             value={searchData.destination}
             onChange={handleInputChange}
             required
@@ -65,9 +67,11 @@ const SearchForm = () => {
 
       {/* 2. Check-in */}
       <div className="search-group date-group">
-        <label>Check-in</label>
+        <label>
+          <Calendar size={16} className="label-icon" />
+          Check-in
+        </label>
         <div className="input-wrapper">
-          <Calendar size={18} className="search-icon" />
           <input 
             type="date" 
             name="checkIn"
@@ -82,9 +86,11 @@ const SearchForm = () => {
 
       {/* 3. Check-out */}
       <div className="search-group date-group">
-        <label>Check-out</label>
+        <label>
+          <Calendar size={16} className="label-icon" />
+          Check-out
+        </label>
         <div className="input-wrapper">
-          <Calendar size={18} className="search-icon" />
           <input 
             type="date" 
             name="checkOut"
@@ -99,9 +105,11 @@ const SearchForm = () => {
 
       {/* 4. Adults */}
       <div className="search-group guest-group">
-        <label>Adults</label>
+        <label>
+          <User size={16} className="label-icon" />
+          Adults
+        </label>
         <div className="input-wrapper">
-          <User size={18} className="search-icon" />
           <input 
             type="number" 
             name="adults"
@@ -115,9 +123,11 @@ const SearchForm = () => {
 
       {/* 5. Children */}
       <div className="search-group guest-group">
-        <label>Children</label>
+        <label>
+          <Users size={16} className="label-icon" />
+          Children
+        </label>
         <div className="input-wrapper">
-          <Users size={18} className="search-icon" />
           <input 
             type="number" 
             name="children"

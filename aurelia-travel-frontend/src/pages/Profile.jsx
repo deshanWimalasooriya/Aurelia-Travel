@@ -1,14 +1,17 @@
-import { useState, useEffect } from 'react'
-import { useUser } from '../context/userContext' // ✅ Fixed import casing
-import { useNavigate } from 'react-router-dom'
-import api from '../services/api' // ✅ Use configured API for cookies
+import { useState, useEffect } from 'react';
+import { useUser } from '../context/userContext';
+import { useNavigate } from 'react-router-dom';
+import api from '../services/api'; 
 import { motion, AnimatePresence } from 'framer-motion'; 
-import { CreditCard, MapPin, Calendar, Trash2, Edit2, Save, X, Camera, ShieldCheck, Clock, Plane, AlertCircle, Briefcase } from 'lucide-react'; 
-import './styles/profile.css'
+import { 
+  CreditCard, MapPin, Calendar, Trash2, Edit2, Save, X, 
+  ShieldCheck, Clock, Plane, AlertCircle, Briefcase 
+} from 'lucide-react'; 
+import './styles/profile.css';
 
 export default function Profile() {
-  const { user, refreshUser } = useUser()
-  const navigate = useNavigate()
+  const { user, refreshUser } = useUser();
+  const navigate = useNavigate();
   
   // --- STATE MANAGEMENT ---
   const [editingProfile, setEditingProfile] = useState(false);
@@ -17,7 +20,7 @@ export default function Profile() {
   const [profileSuccess, setProfileSuccess] = useState(false);
 
   // --- BOOKINGS STATE ---
-  const [bookings, setBookings] = useState([]); // ✅ Init as empty array
+  const [bookings, setBookings] = useState([]); 
   const [loadingBookings, setLoadingBookings] = useState(true);
   
   // --- MANAGER UPGRADE STATE ---
@@ -25,7 +28,7 @@ export default function Profile() {
 
   // Form State
   const [profileData, setProfileData] = useState({
-    username: '',
+    username: '', // Note: If your backend needs 'first_name', change this key or map it in handleSave
     email: '',
     password: '',
     address_line_1: '',
@@ -35,9 +38,6 @@ export default function Profile() {
     postal_code: '',
     country: ''
   });
-
-  const [picPreview, setPicPreview] = useState('');
-  const [profileImageFile, setProfileImageFile] = useState(null);
 
   // Payment State
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -57,7 +57,7 @@ export default function Profile() {
   useEffect(() => {
     if (user) {
         setProfileData({
-            username: user.username || '',
+            username: user.username || user.first_name || '', // Fallback for different DB field names
             email: user.email || '',
             password: '', 
             address_line_1: user.address_line_1 || '',
@@ -67,27 +67,23 @@ export default function Profile() {
             postal_code: user.postal_code || '',
             country: user.country || ''
         });
-        setPicPreview(user.profile_image || '');
     }
   }, [user]);
 
-  // --- 2. FETCH BOOKINGS (FIXED) ---
+  // --- 2. FETCH BOOKINGS ---
   useEffect(() => {
     const fetchBookings = async () => {
       if (!user) return;
       try {
         setLoadingBookings(true);
-        // ✅ Use 'api' client (handles base URL + credentials)
         const response = await api.get('/bookings/my-bookings');
         
-        // ✅ CRITICAL FIX: Extract array from response object
         let data = [];
         if (Array.isArray(response.data)) {
             data = response.data;
         } else if (response.data && Array.isArray(response.data.data)) {
             data = response.data.data;
         }
-        
         setBookings(data);
       } catch (err) {
         console.error("Failed to fetch bookings:", err);
@@ -101,17 +97,7 @@ export default function Profile() {
 
   if (!user) return <div className="profile-not-logged-in">Please sign in to view your profile.</div>
 
-
   // --- HANDLERS (Profile & Payment) ---
-  const onFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setProfileImageFile(file);
-      const fr = new FileReader();
-      fr.onload = () => setPicPreview(fr.result);
-      fr.readAsDataURL(file);
-    }
-  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -122,7 +108,7 @@ export default function Profile() {
     if (editingProfile) {
         // Reset if cancelling
         setProfileData({
-            username: user.username || '',
+            username: user.username || user.first_name || '',
             email: user.email || '',
             password: '',
             address_line_1: user.address_line_1 || '',
@@ -132,8 +118,6 @@ export default function Profile() {
             postal_code: user.postal_code || '',
             country: user.country || ''
         });
-        setPicPreview(user.profile_image || '');
-        setProfileImageFile(null);
         setProfileError(null);
     }
     setEditingProfile(!editingProfile);
@@ -145,49 +129,58 @@ export default function Profile() {
     setProfileSuccess(false);
     setLoadingProfile(true);
 
+    const userId = user.id || user._id;
+
+    if (!userId) {
+        setProfileError("User ID missing. Please login again.");
+        setLoadingProfile(false);
+        return;
+    }
+
     try {
-      let imageUrlToSave = user.profile_image;
+      // 1. Prepare Clean JSON Payload
+      const payload = { ...profileData };
 
-      if (profileImageFile) {
-        const imageFormData = new FormData();
-        imageFormData.append('profile_image', profileImageFile);
-        
-        try {
-            // ✅ Use api client
-            const imageResponse = await api.post(
-              `/users/${user.id}/upload-image`,
-              imageFormData,
-              { headers: { 'Content-Type': 'multipart/form-data' } }
-            );
-            
-            if (imageResponse.data.imageUrl) {
-                imageUrlToSave = imageResponse.data.imageUrl;
-            }
-        } catch (uploadErr) {
-            console.warn("Image upload skipped:", uploadErr);
-        }
+      // Remove empty password so we don't accidentally overwrite it with blank
+      if (!payload.password || payload.password.trim() === '') {
+          delete payload.password;
       }
 
-      const payload = {
-          ...profileData,
-          profile_image: imageUrlToSave
-      };
+      // ⚠️ IMPORTANT: Fix for "Cannot destructure property first_name" error
+      // If your backend specifically asks for 'first_name' but your form uses 'username',
+      // we map it here.
+      if (payload.username && !payload.first_name) {
+          payload.first_name = payload.username;
+      }
+
+      console.log("Sending JSON Payload:", payload);
+
+      // 2. Send Standard JSON Request
+      const response = await api.put(
+          `/users/${userId}`, 
+          payload,
+          { headers: { 'Content-Type': 'application/json' } }
+      );
       
-      // Remove empty password so it doesn't overwrite
-      if (!payload.password) delete payload.password;
-
-      // ✅ Use api client
-      const response = await api.put(`/users/${user.id}`, payload);
-
       if (response.status === 200 || response.data.success) {
-        setProfileSuccess(true);
         await refreshUser(); 
+        setProfileSuccess(true);
         setEditingProfile(false);
-        setProfileImageFile(null); 
+      } else {
+        throw new Error("Update returned unexpected status.");
       }
+
     } catch (err) {
-      console.error('Update failed:', err);
-      setProfileError(err.response?.data?.message || 'Failed to update profile');
+      console.error("Profile Save Error:", err);
+      let errMsg = "Failed to update profile.";
+      if (err.response) {
+        errMsg = err.response.data.message || err.response.data.error || `Server Error: ${err.response.status}`;
+      } else if (err.request) {
+        errMsg = "No response from server.";
+      } else {
+        errMsg = err.message;
+      }
+      setProfileError(errMsg);
     } finally {
       setLoadingProfile(false);
     }
@@ -211,8 +204,7 @@ export default function Profile() {
     setPaymentError(null);
     try {
         const cleanNumber = paymentData.card_number.replace(/\s/g, '');
-        // ✅ Use api client
-        await api.put(`/users/${user.id}`, { 
+        await api.put(`/users/${user.id || user._id}`, { 
             card_type: paymentData.card_type, 
             card_number: cleanNumber, 
             cvv: paymentData.cvv, 
@@ -231,8 +223,7 @@ export default function Profile() {
   const handleRemovePayment = async () => {
     if(!window.confirm("Remove this card?")) return;
     try {
-        // ✅ Use api client
-        await api.put(`/users/${user.id}`, { 
+        await api.put(`/users/${user.id || user._id}`, { 
             card_type: null, 
             card_number: null, 
             cvv: null, 
@@ -269,7 +260,6 @@ export default function Profile() {
       
       setIsUpgrading(true);
       try {
-          // ✅ Use api client
           const res = await api.put('/users/upgrade-to-manager', {});
           
           if(res.data.success) {
@@ -369,16 +359,11 @@ export default function Profile() {
         <motion.div className="profile-sidebar">
           <div className="profile-avatar-section card">
               <div className="avatar-wrapper">
-                  {picPreview ? (
-                      <img src={picPreview} alt="Avatar" className="profile-avatar-img" />
+                  {/* JUST DISPLAY THE IMAGE, NO UPLOAD */}
+                  {user.profile_image ? (
+                      <img src={user.profile_image} alt="Avatar" className="profile-avatar-img" />
                   ) : (
                       <div className="profile-avatar-placeholder-pic">{user.username?.charAt(0).toUpperCase()}</div>
-                  )}
-                  {editingProfile && (
-                      <label className="avatar-upload-btn">
-                          <Camera size={16} />
-                          <input type="file" hidden accept="image/*" onChange={onFileChange} />
-                      </label>
                   )}
               </div>
               <h2 className="profile-user-name">
@@ -536,7 +521,6 @@ export default function Profile() {
                           <span className="sub-empty">Your next adventure is just a click away.</span>
                       </div>
                   ) : (
-                      // ✅ Safe Map
                       bookings.map(booking => (
                           <div key={booking._id || booking.id} className="booking-ticket">
                               <div className="ticket-left">
@@ -568,5 +552,5 @@ export default function Profile() {
         </motion.div>
       </motion.div>
     </div>
-  )
+  );
 }
