@@ -3,6 +3,9 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import MasterAdminLayout from './admin/MasterAdminLayout'
 import MasterDashboardOverview from './admin/MasterDashboardOverview'
 import { Toaster } from 'react-hot-toast'
+import MasterDashboardUsers from './admin/MasterDashboardUsers';
+import MasterDashboardHotels from './admin/MasterDashboardHotels';
+import MasterDashboardBookings from './admin/MasterDashboardBookings';
 
 const MasterAdmin = () => {
   return (
@@ -21,6 +24,9 @@ const MasterAdmin = () => {
           <Route path="security" element={<ComingSoon title="Security Hub" />} />
           <Route path="reports" element={<ComingSoon title="Reports & Export" />} />
           <Route path="settings" element={<ComingSoon title="System Settings" />} />
+          <Route path="users" element={<MasterDashboardUsers />} />
+          <Route path="hotels" element={<MasterDashboardHotels />} />
+          <Route path="bookings" element={<MasterDashboardBookings />} />
         </Route>
       </Routes>
     </>
