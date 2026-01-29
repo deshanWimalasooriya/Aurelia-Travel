@@ -7,9 +7,22 @@ import {
   MapPin, Clock, Phone, Search, X,
   Building, Star, CheckCircle2,
   Bold, Italic, List,
-  ChevronRight, ChevronLeft, Power // Ensure Power is imported
+  Power 
 } from 'lucide-react';
 import './styles/dashboard-hotels.css';
+
+// --- LEAFLET IMPORTS & SETUP ---
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+
+// Fix for default Leaflet marker icons not showing in React
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 // --- Simple Editor (No Changes) ---
 const SimpleEditor = ({ value, onChange }) => {
@@ -35,6 +48,29 @@ const SimpleEditor = ({ value, onChange }) => {
             <div className="editor-content" contentEditable ref={editorRef} onInput={handleInput} onBlur={handleBlur} />
         </div>
     );
+};
+
+// --- MAP COMPONENTS ---
+
+// 1. Component to handle clicks on the map
+const LocationMarker = ({ setPosition }) => {
+    useMapEvents({
+        click(e) {
+            setPosition(e.latlng.lat, e.latlng.lng);
+        },
+    });
+    return null;
+};
+
+// 2. Component to update map view when inputs change manually
+const MapUpdater = ({ center }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (center) {
+            map.flyTo(center, map.getZoom());
+        }
+    }, [center, map]);
+    return null;
 };
 
 const DashboardHotels = () => {
@@ -151,6 +187,15 @@ const DashboardHotels = () => {
     setView('form');
   };
 
+  // Helper to set location from Map
+  const handleMapClick = (lat, lng) => {
+      setFormData(prev => ({
+          ...prev,
+          latitude: lat.toFixed(6), // Standard precision for maps
+          longitude: lng.toFixed(6)
+      }));
+  };
+
   const handleImageChange = (index, value) => {
       const newImages = [...formData.images];
       newImages[index].url = value;
@@ -230,7 +275,7 @@ const DashboardHotels = () => {
     catch(err) { alert("Failed to delete."); }
   };
 
-  // 3. Toggle Active Status Logic (MODIFIED)
+  // 3. Toggle Active Status Logic
   const handleToggleStatus = async (hotel) => {
       const newStatus = !hotel.is_active; // Calculate new status
       
@@ -241,16 +286,13 @@ const DashboardHotels = () => {
       if (!window.confirm(confirmMsg)) return;
 
       try {
-          // A. Optimistic Update (Update UI instantly)
+          // A. Optimistic Update
           setHotels(prev => prev.map(h => h.id === hotel.id ? { ...h, is_active: newStatus } : h));
           setFilteredHotels(prev => prev.map(h => h.id === hotel.id ? { ...h, is_active: newStatus } : h));
 
           // B. Send Update to Backend
-          // We send ONLY the is_active field to avoid overwriting other data accidentally
           await api.put(`/hotels/${hotel.id}`, { is_active: newStatus });
           
-          // Optional: You could re-fetch here if you want to be 100% sure, 
-          // but optimistic update is usually enough for toggles.
       } catch (err) {
           console.error("Status toggle failed", err);
           alert("Failed to update status. Please try again.");
@@ -292,8 +334,6 @@ const DashboardHotels = () => {
                                     </div>
                                 </td>
                                 <td><MapPin size={14}/> {hotel.city}, {hotel.country}</td>
-                                
-                                {/* Status Column */}
                                 <td>
                                     <span className={`status-badge ${hotel.is_active ? 'active' : 'inactive'}`} 
                                           style={{
@@ -308,10 +348,8 @@ const DashboardHotels = () => {
                                         {hotel.is_active ? 'Active' : 'Hidden'}
                                     </span>
                                 </td>
-
                                 <td className="text-right">
                                     <div className="action-row">
-                                        {/* TOGGLE BUTTON */}
                                         <button 
                                             className="icon-btn" 
                                             onClick={() => handleToggleStatus(hotel)}
@@ -324,7 +362,6 @@ const DashboardHotels = () => {
                                         >
                                             <Power size={16}/>
                                         </button>
-
                                         <button className="icon-btn" onClick={() => navigate(`/hotel/${hotel.id}`)}><Eye size={16}/></button>
                                         <button className="icon-btn" onClick={() => handleSwitchToForm(hotel)}><Edit2 size={16}/></button>
                                         <button className="icon-btn delete" onClick={() => handleDelete(hotel.id)}><Trash2 size={16}/></button>
@@ -339,7 +376,7 @@ const DashboardHotels = () => {
           </motion.div>
         )}
         
-        {/* --- FORM VIEW (Unchanged Logic) --- */}
+        {/* --- FORM VIEW --- */}
         {view === 'form' && (
           <motion.div key="form" className="form-wrapper" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="form-card">
@@ -375,7 +412,7 @@ const DashboardHotels = () => {
                         </div>
                     </div>
 
-                    {/* LOCATION */}
+                    {/* LOCATION (UPDATED WITH MAP) */}
                     <div className="form-section">
                         <h4 className="section-heading"><MapPin size={18}/> Location Details</h4>
                         <div className="form-grid-2">
@@ -383,8 +420,37 @@ const DashboardHotels = () => {
                             <input className="form-input" placeholder="City" value={formData.city} onChange={e=>setFormData({...formData, city:e.target.value})} required/>
                             <input className="form-input" placeholder="Province/State" value={formData.province} onChange={e=>setFormData({...formData, province:e.target.value})}/>
                             <input className="form-input" placeholder="Country" value={formData.country} onChange={e=>setFormData({...formData, country:e.target.value})} required/>
+                            
                             <input className="form-input" placeholder="Latitude" type="number" step="any" value={formData.latitude} onChange={e=>setFormData({...formData, latitude:e.target.value})}/>
                             <input className="form-input" placeholder="Longitude" type="number" step="any" value={formData.longitude} onChange={e=>setFormData({...formData, longitude:e.target.value})}/>
+                        </div>
+
+                        {/* MAP CONTAINER */}
+                        <div className="map-picker-container" style={{ marginTop: '20px', height: '300px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                            <MapContainer 
+                                center={[formData.latitude || 51.505, formData.longitude || -0.09]} 
+                                zoom={formData.latitude ? 15 : 4} 
+                                style={{ height: '100%', width: '100%' }}
+                            >
+                                <TileLayer
+                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                />
+                                
+                                {/* Updates lat/lng when clicked */}
+                                <LocationMarker setPosition={handleMapClick} />
+                                
+                                {/* Updates Map View when user types manually */}
+                                {(formData.latitude && formData.longitude) && (
+                                    <>
+                                        <Marker position={[formData.latitude, formData.longitude]} />
+                                        <MapUpdater center={[formData.latitude, formData.longitude]} />
+                                    </>
+                                )}
+                            </MapContainer>
+                            <p style={{fontSize: '0.8rem', color: '#64748b', marginTop: '5px'}}>
+                                * Click on the map to set the exact property location.
+                            </p>
                         </div>
                     </div>
 
@@ -420,10 +486,7 @@ const DashboardHotels = () => {
                                     ))}
                                 </div>
                             </div>
-                            <div className="transfer-controls">
-                                {/* <div className="count-badge"><ChevronLeft size={14}/> In</div>
-                                <div className="count-badge">Out <ChevronRight size={14}/></div> */}
-                            </div>
+                            <div className="transfer-controls"></div>
                             <div className="transfer-column">
                                 <div className="transfer-header"><span>Available ({availableList.length})</span><List size={16} /></div>
                                 <div className="transfer-list">
