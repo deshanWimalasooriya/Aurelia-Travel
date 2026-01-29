@@ -24,10 +24,10 @@ exports.getGlobalStats = async () => {
             .first();
 
         return {
-            total_bookings: parseInt(bookings.total_bookings) || 0,
-            total_revenue: parseFloat(revenue.total_revenue || 0),
-            active_hotels: parseInt(activeHotels.active_hotels) || 0,
-            active_users: parseInt(activeUsers.active_users) || 0
+            totalbookings: parseInt(bookings.total_bookings) || 0,
+            totalrevenue: parseFloat(revenue.total_revenue || 0),
+            activehotels: parseInt(activeHotels.active_hotels) || 0,
+            activeusers: parseInt(activeUsers.active_users) || 0
         };
     } catch (err) {
         console.error('Model Error - getGlobalStats:', err);
@@ -51,7 +51,7 @@ exports.getRecentActivity = async (limit = 10) => {
                 'bookings.totalprice',
                 'bookings.status',
                 'users.username as guest',
-                'users.email as guest_email',
+                'users.email as guestemail',
                 'hotels.name as hotel'
             )
             .orderBy('bookings.createdat', 'desc')
@@ -112,7 +112,7 @@ exports.getTopHotels = async (limit = 5) => {
                 'hotels.city',
                 'hotels.ratingaverage'
             )
-            .count('bookings.id as total_bookings')
+            .count('bookings.id as totalbookings')
             .sum('bookings.totalprice as revenue')
             .groupBy('hotels.id', 'hotels.name', 'hotels.city', 'hotels.ratingaverage')
             .orderBy('revenue', 'desc')
@@ -126,7 +126,7 @@ exports.getTopHotels = async (limit = 5) => {
 // ========================================
 // 6. USER MANAGEMENT
 // ========================================
-exports.getAllUsers = async (filters = {}) => {
+exports.getAllUsers = async (filters) => {
     let query = knex('users')
         .select('id', 'username', 'email', 'role', 'isactive', 'createdat')
         .where('isactive', true);
@@ -166,10 +166,10 @@ exports.getAllHotelsForAdmin = async () => {
         .leftJoin('bookings', 'hotels.id', 'bookings.hotelid')
         .select(
             'hotels.*',
-            'users.username as manager_name',
-            'users.email as manager_email'
+            'users.username as managername',
+            'users.email as manageremail'
         )
-        .count('bookings.id as total_bookings')
+        .count('bookings.id as totalbookings')
         .groupBy('hotels.id')
         .orderBy('hotels.createdat', 'desc');
 };
@@ -184,7 +184,7 @@ exports.toggleHotelStatus = async (id) => {
     if (!hotel) {
         throw new Error('Hotel not found');
     }
-    // Hotels table doesn't have isactive column; toggle `isfeatured` carefully
+    // Hotels table doesn't have isactive column, toggle isfeatured carefully
     await knex('hotels').where({ id }).update({
         isfeatured: !hotel.isfeatured
     });
@@ -194,27 +194,27 @@ exports.toggleHotelStatus = async (id) => {
 // ========================================
 // 8. BOOKING MANAGEMENT
 // ========================================
-exports.getAllBookingsForAdmin = async (filters = {}) => {
+exports.getAllBookingsForAdmin = async (filters) => {
     let query = knex('bookings')
         .join('users', 'bookings.userid', 'users.id')
         .join('hotels', 'bookings.hotelid', 'hotels.id')
         .join('rooms', 'bookings.roomid', 'rooms.id')
         .select(
             'bookings.*',
-            'users.username as guest_name',
-            'users.email as guest_email',
-            'hotels.name as hotel_name',
-            'rooms.title as room_title'
+            'users.username as guestname',
+            'users.email as guestemail',
+            'hotels.name as hotelname',
+            'rooms.title as roomtitle'
         );
 
     if (filters.status) {
         query = query.where('bookings.status', filters.status);
     }
-    if (filters.date_from) {
-        query = query.where('bookings.checkin', '>=', filters.date_from);
+    if (filters.datefrom) {
+        query = query.where('bookings.checkin', '>=', filters.datefrom);
     }
-    if (filters.date_to) {
-        query = query.where('bookings.checkout', '<=', filters.date_to);
+    if (filters.dateto) {
+        query = query.where('bookings.checkout', '<=', filters.dateto);
     }
 
     return await query.orderBy('bookings.createdat', 'desc');
@@ -228,18 +228,18 @@ exports.updateBookingStatus = async (id, status) => {
 // ========================================
 // 9. REVIEWS MANAGEMENT
 // ========================================
-exports.getAllReviews = async (filters = {}) => {
+exports.getAllReviews = async (filters) => {
     let query = knex('reviews')
         .join('users', 'reviews.userid', 'users.id')
         .join('hotels', 'reviews.hotelid', 'hotels.id')
         .select(
             'reviews.*',
             'users.username',
-            'hotels.name as hotel_name'
+            'hotels.name as hotelname'
         );
 
-    if (filters.is_approved !== undefined) {
-        query = query.where('reviews.isapproved', filters.is_approved);
+    if (filters.isapproved !== undefined) {
+        query = query.where('reviews.isapproved', filters.isapproved);
     }
 
     return await query.orderBy('reviews.createdat', 'desc');
@@ -262,24 +262,24 @@ exports.deleteReview = async (id) => {
 // ========================================
 exports.getFinancialSummary = async () => {
     const total = await knex('bookings')
-        .sum('totalprice as gross_revenue')
+        .sum('totalprice as grossrevenue')
         .where('status', 'completed')
         .first();
 
-    const grossRevenue = parseFloat(total.gross_revenue || 0);
+    const grossRevenue = parseFloat(total.grossrevenue || 0);
     const aureliaShare = grossRevenue * 0.15;
     const hotelShare = grossRevenue * 0.85;
 
     const pending = await knex('bookings')
-        .sum('totalprice as pending_revenue')
+        .sum('totalprice as pendingrevenue')
         .whereIn('status', ['pending', 'confirmed'])
         .first();
 
     return {
-        gross_revenue: grossRevenue,
-        aurelia_commission: aureliaShare,
-        hotel_payouts: hotelShare,
-        pending_revenue: parseFloat(pending.pending_revenue || 0)
+        grossrevenue: grossRevenue,
+        aureliacommission: aureliaShare,
+        hotelpayouts: hotelShare,
+        pendingrevenue: parseFloat(pending.pendingrevenue || 0)
     };
 };
 
