@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
     DollarSign, AlertTriangle, CheckCircle, TrendingUp, CreditCard, 
-    History, Mail, MessageCircle, Download, Calendar, X 
+    History, Mail, MessageCircle, Download, Calendar, X,
+    Smartphone, Lock, ChevronRight
 } from 'lucide-react';
 import './styles/manager-finance.css';
 
@@ -9,9 +10,9 @@ const ManagerFinance = () => {
   // --- MOCK DATA STATE ---
   const [stats, setStats] = useState({
     total_revenue: 125000,
-    unpaid_commission: 6250, // 5% of Revenue
+    unpaid_commission: 6250, 
     net_income: 118750,
-    has_overdue: true        // Simulating a warning
+    has_overdue: true
   });
 
   const [history, setHistory] = useState([
@@ -20,19 +21,52 @@ const ManagerFinance = () => {
     { id: 3, date: '2025-10-01', items_covered: 110, total_amount: 4100, status: 'paid' },
   ]);
 
-  const [loading, setLoading] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  // --- UI STATE ---
   const [showChat, setShowChat] = useState(false);
+  
+  // --- PAYMENT FLOW STATE ---
+  const [paymentStep, setPaymentStep] = useState(0); // 0: Closed, 1: Method, 2: OTP, 3: Processing
+  const [selectedMethod, setSelectedMethod] = useState('card-saved');
+  const [otp, setOtp] = useState(['', '', '', '']); // 4-digit OTP
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   // --- ACTIONS ---
 
-  // 1. Simulate Payment Process
-  const handlePayment = () => {
-    if (stats.unpaid_commission === 0) return;
-    
-    if(!window.confirm(`Confirm payment of $${stats.unpaid_commission.toLocaleString()} to Aurelia Travel?`)) return;
-    
-    setLoading(true);
+  // Step 1: Open Payment Modal
+  const initiatePayment = () => {
+    if (stats.unpaid_commission > 0) {
+        setPaymentStep(1); // Go to Method Selection
+    }
+  };
+
+  // Step 2: Handle Method Selection & Request OTP
+  const handleMethodConfirm = () => {
+      // Simulate sending OTP
+      setPaymentStep(2); // Go to OTP
+  };
+
+  // OTP Input Handler
+  const handleOtpChange = (element, index) => {
+    if (isNaN(element.value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = element.value;
+    setOtp(newOtp);
+
+    // Auto-focus next input
+    if (element.nextSibling && element.value) {
+        element.nextSibling.focus();
+    }
+  };
+
+  // Step 3: Verify OTP & Process Payment
+  const handleFinalPayment = () => {
+    // Check if OTP is filled (mock check)
+    if (otp.join('').length < 4) {
+        alert("Please enter the valid 4-digit code sent to your email.");
+        return;
+    }
+
+    setPaymentStep(3); // Show Processing Spinner inside Modal
 
     // Simulate Network Delay
     setTimeout(() => {
@@ -54,15 +88,16 @@ const ManagerFinance = () => {
             has_overdue: false
         }));
 
-        setLoading(false);
+        // 3. Reset Flow & Show Success
+        setPaymentStep(0); 
+        setOtp(['', '', '', '']);
         setPaymentSuccess(true);
-        
-        // Hide success toast after 3s
-        setTimeout(() => setPaymentSuccess(false), 3000);
-    }, 2000);
+        setTimeout(() => setPaymentSuccess(false), 4000);
+
+    }, 2500);
   };
 
-  // 2. Simulate Invoice Download
+  // Simulate Invoice Download
   const handleDownloadInvoice = (date) => {
     alert(`Downloading Invoice_${date}.pdf...`);
   };
@@ -87,6 +122,88 @@ const ManagerFinance = () => {
         </div>
       </div>
 
+      {/* --- PAYMENT MODAL (Multi-Step) --- */}
+      {paymentStep > 0 && (
+          <div className="modal-overlay">
+              <div className="payment-modal scale-up-center">
+                  <div className="modal-header">
+                      <h3>
+                          {paymentStep === 1 && "Select Payment Method"}
+                          {paymentStep === 2 && "Security Verification"}
+                          {paymentStep === 3 && "Processing Payment"}
+                      </h3>
+                      {paymentStep < 3 && <button onClick={() => setPaymentStep(0)}><X size={20}/></button>}
+                  </div>
+
+                  <div className="modal-body">
+                      {/* STEP 1: SELECT METHOD */}
+                      {paymentStep === 1 && (
+                          <div className="method-selection">
+                              <p className="modal-desc">Total Due: <strong>${stats.unpaid_commission.toLocaleString()}</strong></p>
+                              
+                              <label className={`method-option ${selectedMethod === 'card-saved' ? 'selected' : ''}`}>
+                                  <input type="radio" name="method" checked={selectedMethod === 'card-saved'} onChange={() => setSelectedMethod('card-saved')} />
+                                  <div className="method-icon"><CreditCard size={20}/></div>
+                                  <div className="method-info">
+                                      <span>Visa ending in 4242</span>
+                                      <small>Expires 12/28</small>
+                                  </div>
+                              </label>
+
+                              <label className={`method-option ${selectedMethod === 'card-new' ? 'selected' : ''}`}>
+                                  <input type="radio" name="method" checked={selectedMethod === 'card-new'} onChange={() => setSelectedMethod('card-new')} />
+                                  <div className="method-icon"><CreditCard size={20}/></div>
+                                  <div className="method-info">
+                                      <span>Use a new card</span>
+                                      <small>Credit or Debit</small>
+                                  </div>
+                              </label>
+
+                              <button className="btn-primary-full" onClick={handleMethodConfirm}>
+                                  Continue <ChevronRight size={18} />
+                              </button>
+                          </div>
+                      )}
+
+                      {/* STEP 2: OTP VERIFICATION */}
+                      {paymentStep === 2 && (
+                          <div className="otp-verification">
+                              <div className="otp-icon-circle"><Lock size={24} /></div>
+                              <p>Enter the 4-digit code sent to <strong>man***@hotel.com</strong></p>
+                              
+                              <div className="otp-inputs">
+                                  {otp.map((digit, index) => (
+                                      <input 
+                                          key={index}
+                                          type="text" 
+                                          maxLength="1" 
+                                          value={digit} 
+                                          onChange={e => handleOtpChange(e.target, index)}
+                                          onFocus={e => e.target.select()}
+                                      />
+                                  ))}
+                              </div>
+
+                              <button className="btn-primary-full" onClick={handleFinalPayment}>
+                                  Confirm Payment <CheckCircle size={18} />
+                              </button>
+                              <button className="btn-link" onClick={() => setPaymentStep(1)}>Change Method</button>
+                          </div>
+                      )}
+
+                      {/* STEP 3: PROCESSING SPINNER */}
+                      {paymentStep === 3 && (
+                          <div className="processing-state">
+                              <div className="spinner"></div>
+                              <p>Securely processing your payment...</p>
+                              <small>Please do not close this window.</small>
+                          </div>
+                      )}
+                  </div>
+              </div>
+          </div>
+      )}
+
       {/* MOCK CHAT BOX */}
       {showChat && (
           <div className="chat-box scale-up-center">
@@ -97,7 +214,7 @@ const ManagerFinance = () => {
                   <button onClick={() => setShowChat(false)}><X size={16}/></button>
               </div>
               <div className="chat-body">
-                  <p className="msg-received">Hello! I'm Sarah from Aurelia. How can I help you with your finances today?</p>
+                  <p className="msg-received">Hello! I'm Sarah. Need help with the new payment system?</p>
               </div>
               <div className="chat-footer">
                   <input type="text" placeholder="Type a message..." />
@@ -112,7 +229,6 @@ const ManagerFinance = () => {
           <AlertTriangle size={20} />
           <div>
             <strong>Action Required:</strong> You have pending commissions older than 30 days.
-            <div style={{fontSize:'0.85rem', opacity:0.9}}>Please settle your balance to maintain full access to booking features.</div>
           </div>
         </div>
       )}
@@ -127,7 +243,7 @@ const ManagerFinance = () => {
           <div className="stat-info">
             <span className="stat-label">Total Booking Revenue</span>
             <h2 className="stat-value">${stats.total_revenue.toLocaleString()}</h2>
-            <span className="stat-sub">Gross income before fees</span>
+            <span className="stat-sub">Gross income</span>
           </div>
         </div>
 
@@ -139,16 +255,12 @@ const ManagerFinance = () => {
           <div className="stat-info">
             <span className="stat-label">Commission Due (5%)</span>
             <h2 className="stat-value">${stats.unpaid_commission.toLocaleString()}</h2>
-            <span className="stat-sub">Payable to Aurelia Travel</span>
+            <span className="stat-sub">Payable to Aurelia</span>
           </div>
           
           {stats.unpaid_commission > 0 ? (
-            <button className="pay-btn" onClick={handlePayment} disabled={loading}>
-              {loading ? (
-                  <>Processing...</> 
-              ) : ( 
-                  <>Pay Now <CreditCard size={16} /></> 
-              )}
+            <button className="pay-btn" onClick={initiatePayment}>
+               Pay Now <CreditCard size={16} />
             </button>
           ) : (
              <div className="paid-badge"><CheckCircle size={16} /> All Settled</div>
@@ -160,7 +272,10 @@ const ManagerFinance = () => {
       {paymentSuccess && (
           <div className="success-toast">
               <CheckCircle size={20} /> 
-              <span>Payment Successful! Your balance is now clear.</span>
+              <div>
+                  <strong>Payment Successful!</strong>
+                  <div style={{fontSize: '0.8rem', opacity: 0.9}}>Transaction ID: #TXN-{Math.floor(Math.random()*10000)}</div>
+              </div>
           </div>
       )}
 
