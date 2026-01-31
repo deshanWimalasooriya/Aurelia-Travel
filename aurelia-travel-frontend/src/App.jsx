@@ -27,6 +27,7 @@ import DashboardHotel from './pages/admin/DashboardHotels'
 import DashboardBookings from './pages/admin/DashboardBookings'
 import DashboardAnalytics from './pages/admin/DashboardAnalytics'
 import DashboardCustomers from './pages/admin/DashboardCustomers'
+import ManagerFinance from './pages/admin/ManagerFinance'
 
 import './index.css'
 
@@ -49,6 +50,7 @@ const AppRoutes = () => {
           <Route path="bookings" element={<DashboardBookings />} />
           <Route path="analytics" element={<DashboardAnalytics />} />
           <Route path="customers" element={<DashboardCustomers />} />
+          <Route path="finance" element={<ManagerFinance />} />
       </Route>
 
       {/* --- MAIN APP ROUTES --- */}
