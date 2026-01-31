@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // 1. Import useCallback
 import api from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -10,9 +10,11 @@ import { useAuth } from '../../context/AuthContext';
 import './styles/dashboard-bookings.css';
 
 const DashboardBookings = () => {
-  const { checkAuth } = useAuth();
-  const user = checkAuth(); 
-  const isManager = user?.role === 'admin' || user?.role === 'manager';
+  const { user, loading: authLoading } = useAuth(); 
+  
+  // Safely derive isManager
+  const isManager = user?.role === 'admin' || user?.role === 'hotel_manager';
+  const userId = user?.id; // Extract ID for stable dependency
 
   const [bookings, setBookings] = useState([]);
   const [hotels, setHotels] = useState([]);
@@ -21,20 +23,16 @@ const DashboardBookings = () => {
   const [selectedHotelFilter, setSelectedHotelFilter] = useState('all');
   const [selectedBooking, setSelectedBooking] = useState(null);
 
-  // --- 1. INITIAL FETCH ---
-  useEffect(() => { 
-    if (isManager) fetchHotels(); 
-    fetchBookings(selectedHotelFilter); 
-  }, [selectedHotelFilter, isManager]);
-
-  const fetchHotels = async () => {
+  // --- 2. WRAP FETCH FUNCTIONS IN USECALLBACK ---
+  // This prevents the functions from being recreated on every render
+  const fetchHotels = useCallback(async () => {
     try {
       const res = await api.get('/hotels/mine');
       setHotels(Array.isArray(res.data) ? res.data : (res.data.data || []));
     } catch (err) { console.error(err); }
-  };
+  }, []); // No dependencies
 
-  const fetchBookings = async (hotelId) => {
+  const fetchBookings = useCallback(async (hotelId) => {
     setLoading(true);
     try {
       let url;
@@ -52,9 +50,18 @@ const DashboardBookings = () => {
     } finally { 
         setLoading(false); 
     }
-  };
+  }, [isManager]); // Re-create only if isManager changes
 
-  // --- 2. ACTIONS ---
+  // --- 3. FIX USE EFFECT DEPENDENCIES ---
+  useEffect(() => { 
+    if (userId) { // Check specific ID, not the whole user object
+        if (isManager) fetchHotels(); 
+        fetchBookings(selectedHotelFilter); 
+    }
+  }, [selectedHotelFilter, isManager, userId, fetchHotels, fetchBookings]); 
+  // Added fetch functions + used userId instead of user
+
+  // --- ACTIONS ---
   const handleStatusUpdate = async (id, newStatus) => {
     if(!window.confirm(`Are you sure you want to mark this booking as ${newStatus}?`)) return;
     try {
@@ -66,7 +73,7 @@ const DashboardBookings = () => {
 
   const filteredBookings = bookings.filter(b => filterStatus === 'all' ? true : b.status === filterStatus);
 
-  // --- 3. BADGES ---
+  // --- BADGES ---
   const getStatusBadge = (status) => {
     const styles = {
       confirmed: { bg: '#dcfce7', color: '#15803d', icon: <Check size={12}/> },
@@ -105,6 +112,10 @@ const DashboardBookings = () => {
         </span>
     );
   };
+
+  if (authLoading) {
+      return <div style={{padding:'50px', textAlign:'center', color:'#64748b'}}>Loading profile...</div>;
+  }
 
   return (
     <div className="bookings-page">
@@ -207,7 +218,7 @@ const DashboardBookings = () => {
                   <td>
                     <div style={{fontWeight:600, fontSize:'0.9rem'}}>{booking.room_title || 'Standard Room'}</div>
                     <div style={{fontSize:'0.8rem', color:'#64748b', display:'flex', alignItems:'center', gap:'6px', marginTop:'2px'}}>
-                         <Calendar size={12}/> {new Date(booking.check_in).toLocaleDateString()} - {new Date(booking.check_out).toLocaleDateString()}
+                          <Calendar size={12}/> {new Date(booking.check_in).toLocaleDateString()} - {new Date(booking.check_out).toLocaleDateString()}
                     </div>
                     <div style={{fontSize:'0.75rem', color:'#94a3b8', marginTop:'2px'}}>
                         {booking.number_of_nights} Nights • {booking.adults} Adults, {booking.children} Kids
