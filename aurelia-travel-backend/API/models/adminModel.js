@@ -1,12 +1,10 @@
 const knex = require('../../config/knex');
 
-// 1. DASHBOARD HEADER STATS
+// 1. DASHBOARD HEADER STATS (Global)
 exports.getGlobalStats = async () => {
-    // Parallel queries for speed
     const [bookings, revenue, users, hotels] = await Promise.all([
         knex('bookings').count('id as count').first(),
-        // Revenue: Sum of 'amount' from successful transactions
-        knex('payment_transactions').where('status', 'succeeded').sum('amount as total').first(),
+        knex('bookings').whereIn('status', ['confirmed', 'completed']).sum('total_price as total').first(),
         knex('users').where('role', 'user').count('id as count').first(),
         knex('hotels').where('is_active', true).count('id as count').first()
     ]);
@@ -19,7 +17,54 @@ exports.getGlobalStats = async () => {
     };
 };
 
-// 2. RECENT ACTIVITY
+// 2. REVENUE TRENDS (Last 6 Months)
+exports.getMonthlyRevenue = () => {
+    return knex('bookings')
+        .select(knex.raw("DATE_FORMAT(check_in, '%b') as name")) // Returns 'Jan', 'Feb'
+        .select(knex.raw("DATE_FORMAT(check_in, '%Y-%m') as sort_date"))
+        .sum('total_price as value')
+        .whereIn('status', ['confirmed', 'completed'])
+        .where('check_in', '>=', knex.raw('DATE_SUB(NOW(), INTERVAL 6 MONTH)'))
+        .groupBy('name', 'sort_date')
+        .orderBy('sort_date', 'asc');
+};
+
+// 3. BOOKINGS BY HOTEL (Pie Chart)
+exports.getBookingsByHotel = () => {
+    return knex('bookings')
+        .join('hotels', 'bookings.hotel_id', 'hotels.id')
+        .select('hotels.name')
+        .count('bookings.id as value')
+        .groupBy('hotels.name')
+        .orderBy('value', 'desc')
+        .limit(5);
+};
+
+// 4. BOOKING STATUS DISTRIBUTION (Pie Chart)
+exports.getBookingStatusStats = () => {
+    return knex('bookings')
+        .select('status as name')
+        .count('id as value')
+        .groupBy('status');
+};
+
+// 5. HOTEL FINANCIAL PERFORMANCE TABLE
+exports.getHotelFinancials = () => {
+    return knex('bookings')
+        .join('hotels', 'bookings.hotel_id', 'hotels.id')
+        .select(
+            'hotels.id',
+            'hotels.name',
+            'hotels.commission_rate'
+        )
+        .count('bookings.id as bookings')
+        .sum('bookings.total_price as revenue')
+        .whereIn('bookings.status', ['confirmed', 'completed'])
+        .groupBy('hotels.id', 'hotels.name', 'hotels.commission_rate')
+        .orderBy('revenue', 'desc');
+};
+
+// 6. RECENT ACTIVITY (Existing)
 exports.getRecentActivity = () => {
     return knex('bookings')
         .join('users', 'bookings.user_id', 'users.id')
@@ -29,15 +74,4 @@ exports.getRecentActivity = () => {
         )
         .orderBy('bookings.created_at', 'desc')
         .limit(10);
-};
-
-// 3. COMMISSION REPORT (Monthly)
-exports.getMonthlyRevenue = () => {
-    return knex('payment_transactions')
-        .select(knex.raw("DATE_FORMAT(created_at, '%Y-%m') as month"))
-        .sum('amount as total')
-        .where('status', 'succeeded')
-        .groupBy('month')
-        .orderBy('month', 'desc')
-        .limit(6);
 };

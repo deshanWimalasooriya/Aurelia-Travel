@@ -9,4 +9,7 @@ router.use(verifyToken, checkRole('admin', 'hotel_manager'));
 router.get('/dashboard', financeController.getDashboard);
 router.post('/pay', financeController.payCommission);
 
+// NEW ROUTE
+router.get('/analytics', financeController.getAnalytics);
+
 module.exports = router;

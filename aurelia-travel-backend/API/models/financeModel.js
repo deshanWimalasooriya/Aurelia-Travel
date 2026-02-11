@@ -124,3 +124,59 @@ exports.payCommission = async (managerId, paymentDetails) => {
         };
     });
 };
+
+// --- NEW ANALYTICS FUNCTIONS FOR MANAGER ---
+
+// 1. Manager Revenue Trends (Last 6 Months)
+exports.getManagerRevenueTrends = async (managerId) => {
+    return knex('bookings')
+        .join('hotels', 'bookings.hotel_id', 'hotels.id')
+        .where('hotels.manager_id', managerId) // Filter by Manager
+        .whereIn('bookings.status', ['confirmed', 'completed'])
+        .where('bookings.check_in', '>=', knex.raw('DATE_SUB(NOW(), INTERVAL 6 MONTH)'))
+        .select(
+            knex.raw("DATE_FORMAT(bookings.check_in, '%b') as name"),
+            knex.raw("DATE_FORMAT(bookings.check_in, '%Y-%m') as sort_date")
+        )
+        .sum('bookings.total_price as value')
+        .groupBy('name', 'sort_date')
+        .orderBy('sort_date', 'asc');
+};
+
+// 2. Manager's Hotels Breakdown
+exports.getManagerHotelsBreakdown = async (managerId) => {
+    return knex('bookings')
+        .join('hotels', 'bookings.hotel_id', 'hotels.id')
+        .where('hotels.manager_id', managerId)
+        .select('hotels.name')
+        .count('bookings.id as value')
+        .groupBy('hotels.name')
+        .orderBy('value', 'desc');
+};
+
+// 3. Manager's Booking Status
+exports.getManagerBookingStatus = async (managerId) => {
+    return knex('bookings')
+        .join('hotels', 'bookings.hotel_id', 'hotels.id')
+        .where('hotels.manager_id', managerId)
+        .select('bookings.status as name')
+        .count('bookings.id as value')
+        .groupBy('bookings.status');
+};
+
+// 4. Manager's Financial Table
+exports.getManagerFinancialTable = async (managerId) => {
+    return knex('bookings')
+        .join('hotels', 'bookings.hotel_id', 'hotels.id')
+        .where('hotels.manager_id', managerId)
+        .whereIn('bookings.status', ['confirmed', 'completed'])
+        .select(
+            'hotels.id',
+            'hotels.name',
+            'hotels.commission_rate'
+        )
+        .count('bookings.id as bookings')
+        .sum('bookings.total_price as revenue')
+        .groupBy('hotels.id', 'hotels.name', 'hotels.commission_rate')
+        .orderBy('revenue', 'desc');
+};
