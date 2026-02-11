@@ -3,7 +3,8 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   LayoutDashboard, BedDouble, CalendarDays, BarChart3, 
-  Users, LogOut, Menu, X, Building, ChevronRight 
+  Users, LogOut, Menu, X, Building, ChevronRight, 
+  DollarSign
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext'; 
 import './styles/dashboard-layout.css';
@@ -27,6 +28,7 @@ const DashboardLayout = () => {
     { path: '/admin/bookings', label: 'Reservations', icon: CalendarDays },
     { path: '/admin/customers', label: 'Guest List', icon: Users },
     { path: '/admin/analytics', label: 'Financials', icon: BarChart3 },
+    { path: '/admin/finance', label: 'Payments', icon: DollarSign},
   ];
 
   return (

@@ -6,7 +6,7 @@
 }
 
 .analytics-page { animation: fadeIn 0.4s ease-out; }
-@keyframes fadeIn { from { opacity: 0; y: 10px; } to { opacity: 1; y: 0; } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 .table-card {
   background: white; border-radius: var(--radius-lg); box-shadow: var(--shadow-card);
@@ -24,3 +24,23 @@
   display: flex; align-items: center; gap: 8px; cursor: pointer;
 }
 .btn-secondary:hover { background: #f8fafc; }
+
+/* --- NEW STYLES FOR SUMMARY CARDS --- */
+
+/* Target the h3 inside summary cards specifically to prevent large number overflow */
+.table-card h3 {
+  /* Use clamp to make it responsive: min 1.2rem, preferred 1.5rem, max 1.8rem */
+  font-size: clamp(1.2rem, 1.5vw, 1.6rem) !important; 
+  
+  /* Ensure it doesn't break layout if it's really long */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.2;
+}
+
+/* Optional: Adjust the icon box size slightly if needed */
+.table-card > div:first-child {
+  flex-shrink: 0; /* Prevent icon from shrinking when text is long */
+}
