@@ -1,106 +1,144 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
     DollarSign, AlertTriangle, CheckCircle, TrendingUp, CreditCard, 
     History, Mail, MessageCircle, Download, Calendar, X,
-    Smartphone, Lock, ChevronRight
+    Lock, ChevronRight, RefreshCw
 } from 'lucide-react';
 import './styles/manager-finance.css';
 
 const ManagerFinance = () => {
-  // --- MOCK DATA STATE ---
+  // --- STATE ---
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    total_revenue: 125000,
-    unpaid_commission: 6250, 
-    net_income: 118750,
-    has_overdue: true
+    total_revenue: 0,
+    unpaid_commission: 0, 
+    pending_bookings_count: 0,
+    has_overdue: false
   });
-
-  const [history, setHistory] = useState([
-    { id: 1, date: '2025-12-01', items_covered: 120, total_amount: 4500, status: 'paid' },
-    { id: 2, date: '2025-11-01', items_covered: 98, total_amount: 3200, status: 'paid' },
-    { id: 3, date: '2025-10-01', items_covered: 110, total_amount: 4100, status: 'paid' },
-  ]);
-
-  // --- UI STATE ---
+  const [history, setHistory] = useState([]);
+  
+  // UI State
   const [showChat, setShowChat] = useState(false);
   
-  // --- PAYMENT FLOW STATE ---
+  // Payment Flow State
   const [paymentStep, setPaymentStep] = useState(0); // 0: Closed, 1: Method, 2: OTP, 3: Processing
   const [selectedMethod, setSelectedMethod] = useState('card-saved');
-  const [otp, setOtp] = useState(['', '', '', '']); // 4-digit OTP
+  const [otp, setOtp] = useState(['', '', '', '']); 
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
-  // --- ACTIONS ---
+  // --- FETCH DATA (ROBUST VERSION) ---
+  const fetchFinanceData = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        
+        // We send BOTH credentials (cookie) and Authorization header (localStorage)
+        // This ensures it works regardless of your browser/server strictness
+        const response = await fetch('http://localhost:5000/api/finance/dashboard', {
+            method: 'GET',
+            credentials: 'include', 
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            }
+        });
 
-  // Step 1: Open Payment Modal
-  const initiatePayment = () => {
-    if (stats.unpaid_commission > 0) {
-        setPaymentStep(1); // Go to Method Selection
+        if (response.status === 401) {
+            console.error("Unauthorized: Please log in again.");
+            // Optional: window.location.href = '/login'; 
+            setLoading(false);
+            return;
+        }
+
+        const data = await response.json();
+        
+        if (data.success) {
+            setStats(data.stats);
+            setHistory(data.history);
+        }
+    } catch (error) {
+        console.error("Error fetching finance data:", error);
+    } finally {
+        setLoading(false);
     }
   };
 
-  // Step 2: Handle Method Selection & Request OTP
+  useEffect(() => {
+    fetchFinanceData();
+  }, []);
+
+  // --- ACTIONS ---
+
+  const initiatePayment = () => {
+    if (stats.unpaid_commission > 0) {
+        setPaymentStep(1); 
+    }
+  };
+
   const handleMethodConfirm = () => {
-      // Simulate sending OTP
       setPaymentStep(2); // Go to OTP
   };
 
-  // OTP Input Handler
   const handleOtpChange = (element, index) => {
     if (isNaN(element.value)) return;
     const newOtp = [...otp];
     newOtp[index] = element.value;
     setOtp(newOtp);
-
-    // Auto-focus next input
-    if (element.nextSibling && element.value) {
-        element.nextSibling.focus();
-    }
+    if (element.nextSibling && element.value) element.nextSibling.focus();
   };
 
-  // Step 3: Verify OTP & Process Payment
-  const handleFinalPayment = () => {
-    // Check if OTP is filled (mock check)
+  // --- PROCESS PAYMENT ---
+  const handleFinalPayment = async () => {
     if (otp.join('').length < 4) {
-        alert("Please enter the valid 4-digit code sent to your email.");
+        alert("Please enter the 4-digit code.");
         return;
     }
 
-    setPaymentStep(3); // Show Processing Spinner inside Modal
+    setPaymentStep(3); // Show Spinner
 
-    // Simulate Network Delay
-    setTimeout(() => {
-        // 1. Add new record to history
-        const newRecord = {
-            id: Date.now(),
-            date: new Date().toISOString().split('T')[0],
-            items_covered: 45, // Mock count
-            total_amount: stats.unpaid_commission,
-            status: 'paid'
-        };
+    try {
+        const token = localStorage.getItem('token');
 
-        setHistory([newRecord, ...history]);
+        const response = await fetch('http://localhost:5000/api/finance/pay', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                transaction_id: `TXN-${Date.now()}`, 
+                provider: 'credit_card'
+            })
+        });
 
-        // 2. Clear Debt
-        setStats(prev => ({
-            ...prev,
-            unpaid_commission: 0,
-            has_overdue: false
-        }));
+        const result = await response.json();
 
-        // 3. Reset Flow & Show Success
-        setPaymentStep(0); 
-        setOtp(['', '', '', '']);
-        setPaymentSuccess(true);
-        setTimeout(() => setPaymentSuccess(false), 4000);
+        if (result.success) {
+            setPaymentSuccess(true);
+            setPaymentStep(0); 
+            setOtp(['', '', '', '']);
+            
+            // Refresh Data
+            fetchFinanceData();
+            
+            setTimeout(() => setPaymentSuccess(false), 5000);
+        } else {
+            alert("Payment Failed: " + (result.message || result.error));
+            setPaymentStep(2); 
+        }
 
-    }, 2500);
+    } catch (error) {
+        console.error("Payment Error:", error);
+        alert("Network Error. Please try again.");
+        setPaymentStep(2);
+    }
   };
 
-  // Simulate Invoice Download
-  const handleDownloadInvoice = (date) => {
-    alert(`Downloading Invoice_${date}.pdf...`);
+  const handleDownloadInvoice = (id) => {
+    alert(`Downloading Invoice #${id}...`);
   };
+
+  if (loading) return <div className="loading-screen"><RefreshCw className="spin"/> Loading Financials...</div>;
 
   return (
     <div className="finance-page fade-in">
@@ -109,7 +147,7 @@ const ManagerFinance = () => {
       <div className="finance-header-row">
         <div>
             <h1>Financial Hub</h1>
-            <p>Manage earnings, pay platform fees, and view statements.</p>
+            <p>Manage earnings, pay platform fees (5%), and view statements.</p>
         </div>
         <div className="contact-actions">
              <button className="btn-contact" onClick={() => window.location.href = 'mailto:support@aureliatravel.com'}>
@@ -122,7 +160,7 @@ const ManagerFinance = () => {
         </div>
       </div>
 
-      {/* --- PAYMENT MODAL (Multi-Step) --- */}
+      {/* --- PAYMENT MODAL --- */}
       {paymentStep > 0 && (
           <div className="modal-overlay">
               <div className="payment-modal scale-up-center">
@@ -136,10 +174,13 @@ const ManagerFinance = () => {
                   </div>
 
                   <div className="modal-body">
-                      {/* STEP 1: SELECT METHOD */}
                       {paymentStep === 1 && (
                           <div className="method-selection">
-                              <p className="modal-desc">Total Due: <strong>${stats.unpaid_commission.toLocaleString()}</strong></p>
+                              <p className="modal-desc">
+                                  Total Due: <strong>${parseFloat(stats.unpaid_commission || 0).toLocaleString()}</strong>
+                                  <br/>
+                                  <small className="text-muted">Covering {stats.pending_bookings_count} bookings</small>
+                              </p>
                               
                               <label className={`method-option ${selectedMethod === 'card-saved' ? 'selected' : ''}`}>
                                   <input type="radio" name="method" checked={selectedMethod === 'card-saved'} onChange={() => setSelectedMethod('card-saved')} />
@@ -150,75 +191,34 @@ const ManagerFinance = () => {
                                   </div>
                               </label>
 
-                              <label className={`method-option ${selectedMethod === 'card-new' ? 'selected' : ''}`}>
-                                  <input type="radio" name="method" checked={selectedMethod === 'card-new'} onChange={() => setSelectedMethod('card-new')} />
-                                  <div className="method-icon"><CreditCard size={20}/></div>
-                                  <div className="method-info">
-                                      <span>Use a new card</span>
-                                      <small>Credit or Debit</small>
-                                  </div>
-                              </label>
-
                               <button className="btn-primary-full" onClick={handleMethodConfirm}>
                                   Continue <ChevronRight size={18} />
                               </button>
                           </div>
                       )}
 
-                      {/* STEP 2: OTP VERIFICATION */}
                       {paymentStep === 2 && (
                           <div className="otp-verification">
                               <div className="otp-icon-circle"><Lock size={24} /></div>
-                              <p>Enter the 4-digit code sent to <strong>man***@hotel.com</strong></p>
-                              
+                              <p>Enter 4-digit mock code (Any 4 digits)</p>
                               <div className="otp-inputs">
                                   {otp.map((digit, index) => (
-                                      <input 
-                                          key={index}
-                                          type="text" 
-                                          maxLength="1" 
-                                          value={digit} 
-                                          onChange={e => handleOtpChange(e.target, index)}
-                                          onFocus={e => e.target.select()}
-                                      />
+                                      <input key={index} type="text" maxLength="1" value={digit} onChange={e => handleOtpChange(e.target, index)} />
                                   ))}
                               </div>
-
                               <button className="btn-primary-full" onClick={handleFinalPayment}>
                                   Confirm Payment <CheckCircle size={18} />
                               </button>
-                              <button className="btn-link" onClick={() => setPaymentStep(1)}>Change Method</button>
                           </div>
                       )}
 
-                      {/* STEP 3: PROCESSING SPINNER */}
                       {paymentStep === 3 && (
                           <div className="processing-state">
                               <div className="spinner"></div>
-                              <p>Securely processing your payment...</p>
-                              <small>Please do not close this window.</small>
+                              <p>Updating records and generating invoice...</p>
                           </div>
                       )}
                   </div>
-              </div>
-          </div>
-      )}
-
-      {/* MOCK CHAT BOX */}
-      {showChat && (
-          <div className="chat-box scale-up-center">
-              <div className="chat-header">
-                  <div className="chat-title">
-                    <span className="online-dot"></span> Aurelia Support
-                  </div>
-                  <button onClick={() => setShowChat(false)}><X size={16}/></button>
-              </div>
-              <div className="chat-body">
-                  <p className="msg-received">Hello! I'm Sarah. Need help with the new payment system?</p>
-              </div>
-              <div className="chat-footer">
-                  <input type="text" placeholder="Type a message..." />
-                  <button>Send</button>
               </div>
           </div>
       )}
@@ -227,9 +227,7 @@ const ManagerFinance = () => {
       {stats.has_overdue && (
         <div className="alert-banner">
           <AlertTriangle size={20} />
-          <div>
-            <strong>Action Required:</strong> You have pending commissions older than 30 days.
-          </div>
+          <div><strong>Action Required:</strong> You have pending commissions older than 30 days.</div>
         </div>
       )}
 
@@ -242,8 +240,8 @@ const ManagerFinance = () => {
           </div>
           <div className="stat-info">
             <span className="stat-label">Total Booking Revenue</span>
-            <h2 className="stat-value">${stats.total_revenue.toLocaleString()}</h2>
-            <span className="stat-sub">Gross income</span>
+            <h2 className="stat-value">${parseFloat(stats.total_revenue || 0).toLocaleString()}</h2>
+            <span className="stat-sub">Gross income from completed stays</span>
           </div>
         </div>
 
@@ -254,8 +252,8 @@ const ManagerFinance = () => {
           </div>
           <div className="stat-info">
             <span className="stat-label">Commission Due (5%)</span>
-            <h2 className="stat-value">${stats.unpaid_commission.toLocaleString()}</h2>
-            <span className="stat-sub">Payable to Aurelia</span>
+            <h2 className="stat-value">${parseFloat(stats.unpaid_commission || 0).toLocaleString()}</h2>
+            <span className="stat-sub">{stats.pending_bookings_count} bookings pending payment</span>
           </div>
           
           {stats.unpaid_commission > 0 ? (
@@ -268,24 +266,10 @@ const ManagerFinance = () => {
         </div>
       </div>
 
-      {/* SUCCESS TOAST */}
-      {paymentSuccess && (
-          <div className="success-toast">
-              <CheckCircle size={20} /> 
-              <div>
-                  <strong>Payment Successful!</strong>
-                  <div style={{fontSize: '0.8rem', opacity: 0.9}}>Transaction ID: #TXN-{Math.floor(Math.random()*10000)}</div>
-              </div>
-          </div>
-      )}
-
       {/* HISTORY TABLE */}
       <div className="history-section">
         <div className="section-header">
             <h3><History size={20} /> Payment History</h3>
-            <button className="btn-text" onClick={() => alert("Simulating CSV Export...")}>
-                <Download size={16} /> Export CSV
-            </button>
         </div>
         
         <div className="table-responsive">
@@ -300,28 +284,43 @@ const ManagerFinance = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {history.map((item) => (
-                        <tr key={item.id}>
-                            <td>
-                                <div className="date-cell">
-                                    <Calendar size={14} />
-                                    {item.date}
-                                </div>
-                            </td>
-                            <td>{item.items_covered} bookings</td>
-                            <td className="amount-cell">${item.total_amount.toLocaleString()}</td>
-                            <td><span className="status-badge paid">Paid</span></td>
-                            <td>
-                                <button className="btn-icon" title="Download Invoice" onClick={() => handleDownloadInvoice(item.date)}>
-                                    <Download size={16} />
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
+                    {history.length === 0 ? (
+                        <tr><td colSpan="5" style={{textAlign: 'center', padding: '20px'}}>No payment history found.</td></tr>
+                    ) : (
+                        history.map((item) => (
+                            <tr key={item.id}>
+                                <td>
+                                    <div className="date-cell">
+                                        <Calendar size={14} />
+                                        {new Date(item.paid_at).toLocaleDateString()}
+                                    </div>
+                                </td>
+                                <td>{item.bookings_count} bookings</td>
+                                <td className="amount-cell">${parseFloat(item.amount_paid).toLocaleString()}</td>
+                                <td><span className="status-badge paid">Paid</span></td>
+                                <td>
+                                    <button className="btn-icon" onClick={() => handleDownloadInvoice(item.id)}>
+                                        <Download size={16} />
+                                    </button>
+                                </td>
+                            </tr>
+                        ))
+                    )}
                 </tbody>
             </table>
         </div>
       </div>
+
+      {/* SUCCESS TOAST */}
+      {paymentSuccess && (
+          <div className="success-toast">
+              <CheckCircle size={20} /> 
+              <div>
+                  <strong>Payment Successful!</strong>
+                  <div style={{fontSize: '0.8rem', opacity: 0.9}}>Database Updated.</div>
+              </div>
+          </div>
+      )}
 
     </div>
   );
