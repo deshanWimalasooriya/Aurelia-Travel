@@ -180,3 +180,126 @@ exports.getManagerFinancialTable = async (managerId) => {
         .groupBy('hotels.id', 'hotels.name', 'hotels.commission_rate')
         .orderBy('revenue', 'desc');
 };
+
+// Helper to get percentage change
+const calculateTrend = (current, previous) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - previous) / previous) * 100);
+};
+
+// 5. MANAGER OVERVIEW (Real KPIs + Gap-Filled Chart)
+exports.getManagerOverviewStats = async (managerId) => {
+    const hotels = await knex('hotels').where({ manager_id: managerId }).select('id');
+    const hotelIds = hotels.map(h => h.id);
+
+    // Initial State if no hotels
+    if (hotelIds.length === 0) {
+        return {
+            kpi: { 
+                revenue: { value: 0, trend: 0 },
+                bookings: { value: 0, trend: 0 },
+                occupancy: { value: 0, trend: 0 },
+                guests: { value: 0, trend: 0 }
+            },
+            chart: []
+        };
+    }
+
+    // --- A. KPI CALCULATIONS (Current Month vs Last Month) ---
+    
+    // 1. Current Month Stats
+    const currentMonth = await knex('bookings')
+        .whereIn('hotel_id', hotelIds)
+        .whereIn('status', ['confirmed', 'completed'])
+        .whereRaw('MONTH(check_in) = MONTH(CURRENT_DATE())')
+        .whereRaw('YEAR(check_in) = YEAR(CURRENT_DATE())')
+        .select(
+            knex.raw('COALESCE(SUM(total_price), 0) as revenue'),
+            knex.raw('COUNT(id) as bookings'),
+            knex.raw('COALESCE(SUM(adults + children), 0) as guests')
+        ).first();
+
+    // 2. Last Month Stats (For Trend Comparison)
+    const lastMonth = await knex('bookings')
+        .whereIn('hotel_id', hotelIds)
+        .whereIn('status', ['confirmed', 'completed'])
+        .whereRaw('MONTH(check_in) = MONTH(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH))')
+        .whereRaw('YEAR(check_in) = YEAR(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH))')
+        .select(
+            knex.raw('COALESCE(SUM(total_price), 0) as revenue'),
+            knex.raw('COUNT(id) as bookings'),
+            knex.raw('COALESCE(SUM(adults + children), 0) as guests')
+        ).first();
+
+    // 3. Occupancy (Live)
+    const inventory = await knex('rooms').whereIn('hotel_id', hotelIds).sum('total_quantity as total').first();
+    const totalRooms = parseInt(inventory.total || 0);
+
+    const occupiedToday = await knex('bookings')
+        .whereIn('hotel_id', hotelIds)
+        .whereIn('status', ['confirmed', 'active']) 
+        .where('check_in', '<=', knex.raw('CURRENT_DATE()'))
+        .where('check_out', '>', knex.raw('CURRENT_DATE()'))
+        .count('id as count')
+        .first();
+    
+    const occupiedCount = parseInt(occupiedToday.count || 0);
+    const occupancyRate = totalRooms > 0 ? Math.round((occupiedCount / totalRooms) * 100) : 0;
+
+    // --- B. CHART DATA (Last 7 Days with 0-filling) ---
+    
+    // 1. Generate last 7 days array (dates)
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        days.push({
+            date: d.toISOString().split('T')[0], // "2023-10-27"
+            name: d.toLocaleDateString('en-US', { weekday: 'short' }), // "Fri"
+            revenue: 0 // Default
+        });
+    }
+
+    // 2. Fetch Actual Data
+    const rawDailyRevenue = await knex('bookings')
+        .whereIn('hotel_id', hotelIds)
+        .whereIn('status', ['confirmed', 'completed'])
+        .where('check_in', '>=', days[0].date) // Start from 7 days ago
+        .select(
+            knex.raw("DATE(check_in) as date"),
+            knex.raw("SUM(total_price) as revenue")
+        )
+        .groupBy('date');
+
+    // 3. Merge DB Data into the 7-Day Template
+    rawDailyRevenue.forEach(record => {
+        // Convert DB date string to YYYY-MM-DD
+        const dbDate = new Date(record.date).toISOString().split('T')[0];
+        const dayEntry = days.find(d => d.date === dbDate);
+        if (dayEntry) {
+            dayEntry.revenue = parseFloat(record.revenue);
+        }
+    });
+
+    return {
+        kpi: {
+            revenue: { 
+                value: parseFloat(currentMonth.revenue), 
+                trend: calculateTrend(parseFloat(currentMonth.revenue), parseFloat(lastMonth.revenue)) 
+            },
+            bookings: { 
+                value: parseInt(currentMonth.bookings), 
+                trend: calculateTrend(parseInt(currentMonth.bookings), parseInt(lastMonth.bookings)) 
+            },
+            guests: { 
+                value: parseInt(currentMonth.guests), 
+                trend: calculateTrend(parseInt(currentMonth.guests), parseInt(lastMonth.guests)) 
+            },
+            occupancy: { 
+                value: occupancyRate, 
+                trend: 0 // Occupancy trend is complex, keeping 0 for now or remove trend UI
+            }
+        },
+        chart: days // Returns clean array: [{name: 'Mon', revenue: 0}, {name: 'Tue', revenue: 500}...]
+    };
+};

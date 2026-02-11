@@ -75,3 +75,16 @@ exports.getAnalytics = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// NEW ENDPOINT: /api/finance/overview
+exports.getOverview = async (req, res) => {
+    try {
+        const managerId = req.user.userId;
+        const data = await financeModel.getManagerOverviewStats(managerId);
+        
+        res.json({ success: true, data });
+    } catch (err) {
+        console.error("Overview Error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};

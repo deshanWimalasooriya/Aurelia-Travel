@@ -8,8 +8,7 @@ router.use(verifyToken, checkRole('admin', 'hotel_manager'));
 
 router.get('/dashboard', financeController.getDashboard);
 router.post('/pay', financeController.payCommission);
-
-// NEW ROUTE
 router.get('/analytics', financeController.getAnalytics);
+router.get('/overview', financeController.getOverview);
 
 module.exports = router;
