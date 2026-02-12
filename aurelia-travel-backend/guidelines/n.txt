@@ -1,0 +1,3 @@
+npm install -g pm2
+npx pm2 start server.js --name "aurelia-api"
+npx pm2 stop aurelia-api
