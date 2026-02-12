@@ -68,7 +68,7 @@ exports.up = async function(knex) {
     table.string('name').notNullable().unique(); 
     table.string('slug').notNullable().unique();// 'WiFi', 'Pool'
     table.string('icon'); // FontAwesome class or Emoji
-    table.enu('category', ['general', 'room', 'safety', 'accessibility', 'dining']).defaultTo('general');
+    table.enu('category', ['general', 'room', 'safety', 'accessibility', 'dining', 'recreation']).defaultTo('general');
     table.timestamps(true, true);
   });
 

@@ -39,11 +39,21 @@ exports.up = async function(knex) {
 };
 
 exports.down = async function(knex) {
+  // 1. Revert Bookings Table changes
   await knex.schema.table('bookings', (table) => {
+    // FIX: Drop the Foreign Key constraint FIRST
+    // This prevents the "Cannot drop column... needed in foreign key" error
+    table.dropForeign('commission_payment_id');
+    
+    // THEN drop the columns
     table.dropColumn('commission_payment_id');
     table.dropColumn('commission_status');
   });
+
+  // 2. Drop the Commission Payments Table
   await knex.schema.dropTableIfExists('commission_payments');
+
+  // 3. Revert Hotels Table changes
   await knex.schema.table('hotels', (table) => {
     table.dropColumn('commission_rate');
   });
