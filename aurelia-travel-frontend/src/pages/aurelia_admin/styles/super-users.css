@@ -1,0 +1,70 @@
+@import './super-common.css';
+
+.sa-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sa-user-avatar {
+  width: 40px;
+  height: 40px;
+  background: #e0e7ff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4338ca;
+}
+
+.sa-user-name {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.sa-user-email {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.sa-role-badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.sa-role-admin {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.sa-role-user {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.sa-status-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.sa-text-active { color: #16a34a; }
+.sa-text-banned { color: #dc2626; }
+
+.sa-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.sa-action-ban { color: #f59e0b; }
+.sa-action-delete { color: #ef4444; }
+.sa-action-btn:hover { background: #f1f5f9; }
