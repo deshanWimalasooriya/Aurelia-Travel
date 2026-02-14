@@ -1,4 +1,4 @@
-const knex = require('../../config/knex');
+const knex = require('../../config/db');
 
 // Helper: Generate Ticket Number (e.g., TKT-2026-992)
 const generateTicketNumber = () => {

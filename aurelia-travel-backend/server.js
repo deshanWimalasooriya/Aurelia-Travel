@@ -2,7 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const connection = require('./config/db'); // Your existing MySQL connection
+const connection = require('./config/db'); // This is now your Knex instance
 
 // Load Env Variables
 dotenv.config();
@@ -59,18 +59,19 @@ app.use('/api/support', verifyToken, crmRoutes); // Matches your frontend calls
 app.use('/api/finance', verifyToken, financeRoutes);
 app.use('/api/admin', verifyToken, adminRoutes); // Legacy Manager routes
 
-// ✅ SUPER ADMIN ROUTES (The one giving 404)
-// We mount it at /api/platform. The router file itself handles the 'admin' check.
+// ✅ SUPER ADMIN ROUTES
 app.use('/api/platform', platformRoutes); 
 
-// --- 4. DATABASE CONNECTION (MySQL) ---
-connection.connect((err) => {
-    if (err) {
+// --- 4. DATABASE CONNECTION (MySQL via Knex) ---
+// Knex connects automatically when queries are run.
+// We run a simple query here just to test the connection on startup.
+connection.raw('SELECT 1')
+    .then(() => {
+        console.log('✅ Connected to MySQL Database (via Knex)');
+    })
+    .catch((err) => {
         console.error('❌ Error connecting to MySQL:', err);
-        return;
-    }
-    console.log('✅ Connected to MySQL Database');
-});
+    });
 
 // --- 5. START SERVER ---
 const PORT = process.env.PORT || 5000;

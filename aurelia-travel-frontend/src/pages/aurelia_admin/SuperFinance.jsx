@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import api from '../../services/api';
-import { Search, Download, DollarSign, TrendingUp, CreditCard, Calendar, Loader2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import api from '../../services/api'; 
+import { Search, Download, DollarSign, TrendingUp, CreditCard, Calendar, Loader2 } from 'lucide-react';
 import './styles/super-finance.css';
 
 const SuperFinance = () => {
@@ -16,13 +16,15 @@ const SuperFinance = () => {
     const fetchFinanceData = async () => {
         setLoading(true);
         try {
-            // 1. Fetch Transaction History (List)
-            const transRes = await api.get('/admin/finance');
-            if (transRes.data.success) {
-                setTransactions(transRes.data.data);
+            // 1. Fetch Transaction History (Uses the FIXED Platform Route)
+            const transRes = await api.get('/platform/finance');
+            if (transRes.data && Array.isArray(transRes.data)) {
+                 setTransactions(transRes.data);
+            } else if (transRes.data && transRes.data.data) {
+                 setTransactions(transRes.data.data);
             }
 
-            // 2. Fetch High-Level Summary (Calculated from Analytics)
+            // 2. Fetch Summary Stats (Uses the WORKING Admin Analytics endpoint)
             const analyticsRes = await api.get('/admin/analytics');
             if (analyticsRes.data && analyticsRes.data.summary) {
                 setSummary(analyticsRes.data.summary);
@@ -35,9 +37,17 @@ const SuperFinance = () => {
     };
 
     const exportCSV = () => {
-        const headers = ["ID", "Hotel", "Manager", "Amount", "Date", "Status"];
+        if (transactions.length === 0) return;
+
+        const headers = ["ID", "Ref", "Hotel", "Manager", "Amount", "Date", "Status"];
         const rows = transactions.map(t => [
-            t.id, t.hotel_name, t.manager_name, t.amount_paid, new Date(t.payment_date).toLocaleDateString(), t.status
+            t.id,
+            t.transaction_id || '-',
+            t.hotel_name || 'Unknown',
+            t.manager_email || '-',
+            t.amount_paid,
+            t.payment_date ? new Date(t.payment_date).toLocaleDateString() : '-',
+            t.status
         ]);
         
         const csvContent = "data:text/csv;charset=utf-8," 
@@ -46,24 +56,40 @@ const SuperFinance = () => {
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "platform_finance.csv");
+        link.setAttribute("download", `finance_report_${new Date().toISOString().split('T')[0]}.csv`);
         document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
     };
 
+    // Filter Logic
     const filtered = transactions.filter(t => 
         (t.hotel_name && t.hotel_name.toLowerCase().includes(search.toLowerCase())) ||
-        (t.transaction_reference && t.transaction_reference.toLowerCase().includes(search.toLowerCase()))
+        (t.transaction_id && t.transaction_id.toLowerCase().includes(search.toLowerCase())) ||
+        (t.manager_email && t.manager_email.toLowerCase().includes(search.toLowerCase()))
     );
 
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2
+        }).format(amount || 0);
+    };
+
     return (
-        <div>
+        <div className="super-finance-container">
             <div className="sa-header-row">
                 <div>
                     <h1 className="sa-page-title" style={{marginBottom:'5px'}}>Financial Overview</h1>
                     <p style={{margin:0, color:'#64748b', fontSize:'0.9rem'}}>Track platform revenue and commission payments.</p>
                 </div>
-                <button className="sa-btn-export" onClick={exportCSV} disabled={transactions.length === 0}>
+                <button 
+                    className="sa-btn-export" 
+                    onClick={exportCSV} 
+                    disabled={transactions.length === 0 || loading}
+                    style={{ opacity: transactions.length === 0 ? 0.6 : 1 }}
+                >
                     <Download size={18}/> Export CSV
                 </button>
             </div>
@@ -74,14 +100,14 @@ const SuperFinance = () => {
                     <div className="f-icon"><DollarSign size={24}/></div>
                     <div>
                         <p className="f-label">Total Booking Value</p>
-                        <h3 className="f-value">${summary.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}</h3>
+                        <h3 className="f-value">{formatCurrency(summary.totalRevenue)}</h3>
                     </div>
                 </div>
                 <div className="f-card bg-green">
                     <div className="f-icon"><TrendingUp size={24}/></div>
                     <div>
                         <p className="f-label">Total Commission</p>
-                        <h3 className="f-value">${summary.totalCommission.toLocaleString(undefined, {minimumFractionDigits: 2})}</h3>
+                        <h3 className="f-value">{formatCurrency(summary.totalCommission)}</h3>
                     </div>
                 </div>
                 <div className="f-card bg-purple">
@@ -101,58 +127,81 @@ const SuperFinance = () => {
                         <Search size={16} className="sa-search-icon"/>
                         <input 
                             className="sa-search-input compact" 
-                            placeholder="Search hotel or ref ID..." 
+                            placeholder="Search hotel, ref, or email..." 
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                         />
                     </div>
                 </div>
 
-                <table className="sa-table">
-                    <thead>
-                        <tr>
-                            <th>Transaction Ref</th>
-                            <th>Hotel / Manager</th>
-                            <th>Date</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr><td colSpan="5" style={{textAlign:'center', padding:'40px'}}><Loader2 className="animate-spin"/> Loading...</td></tr>
-                        ) : filtered.length > 0 ? (
-                            filtered.map(txn => (
-                                <tr key={txn.id}>
-                                    <td>
-                                        <div className="txn-ref">
-                                            <span className="ref-id">{txn.transaction_reference || `TXN-${txn.id}`}</span>
-                                            <span className="txn-type">Commission Payout</span>
+                <div className="table-responsive">
+                    <table className="sa-table">
+                        <thead>
+                            <tr>
+                                <th>Transaction Ref</th>
+                                <th>Hotel / Manager</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {loading ? (
+                                <tr>
+                                    <td colSpan="5" style={{textAlign:'center', padding:'40px'}}>
+                                        <div style={{display:'flex', justifyContent:'center', alignItems:'center', gap:'10px'}}>
+                                            <Loader2 className="animate-spin"/> Loading Financial Data...
                                         </div>
                                     </td>
-                                    <td>
-                                        <div className="txn-hotel">{txn.hotel_name}</div>
-                                        <div className="txn-manager">{txn.manager_email}</div>
-                                    </td>
-                                    <td>
-                                        <div className="txn-date"><Calendar size={12}/> {new Date(txn.payment_date).toLocaleDateString()}</div>
-                                        <div className="txn-time">{new Date(txn.payment_date).toLocaleTimeString()}</div>
-                                    </td>
-                                    <td>
-                                        <span className="amount-positive">+ ${parseFloat(txn.amount_paid).toFixed(2)}</span>
-                                    </td>
-                                    <td>
-                                        <span className={`status-badge ${txn.status === 'succeeded' || txn.status === 'paid' ? 'success' : 'pending'}`}>
-                                            {txn.status || 'Paid'}
-                                        </span>
+                                </tr>
+                            ) : filtered.length > 0 ? (
+                                filtered.map(txn => (
+                                    <tr key={txn.id || Math.random()}>
+                                        <td>
+                                            <div className="txn-ref">
+                                                <span className="ref-id">{txn.transaction_id || `TXN-${txn.id}`}</span>
+                                                <span className="txn-type">Commission</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="txn-hotel">{txn.hotel_name || 'Unknown Hotel'}</div>
+                                            <div className="txn-manager" style={{fontSize:'0.8rem', color:'#64748b'}}>
+                                                {txn.manager_email || 'No Email'}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="txn-date">
+                                                <Calendar size={12} style={{marginRight:'4px', display:'inline'}}/> 
+                                                {txn.payment_date ? new Date(txn.payment_date).toLocaleDateString() : 'N/A'}
+                                            </div>
+                                            <div className="txn-time" style={{fontSize:'0.75rem', color:'#94a3b8', marginLeft:'18px'}}>
+                                                {txn.payment_date ? new Date(txn.payment_date).toLocaleTimeString() : ''}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className="amount-positive">
+                                                + {formatCurrency(txn.amount_paid)}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className={`status-badge ${
+                                                (txn.status === 'succeeded' || txn.status === 'paid') ? 'success' : 'warning'
+                                            }`}>
+                                                {txn.status || 'Pending'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="5" style={{textAlign:'center', padding:'30px', color: '#64748b'}}>
+                                        No transactions found.
                                     </td>
                                 </tr>
-                            ))
-                        ) : (
-                            <tr><td colSpan="5" style={{textAlign:'center', padding:'30px', color: '#64748b'}}>No transactions found.</td></tr>
-                        )}
-                    </tbody>
-                </table>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

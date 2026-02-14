@@ -1,4 +1,4 @@
-const knex = require('../../config/knex');
+const knex = require('../../config/db');
 
 // 1. STANDARD CRUD
 exports.getAllUsers = () => knex('users').where('is_active', true).select('id', 'username', 'email', 'role', 'is_active');

@@ -1,23 +1,19 @@
-const knex = require('../../config/knex');
+const knex = require('../../config/db');
 
 // 1. Platform Stats
 exports.getPlatformRevenue = () => {
-    return knex('commission_payments')
-        .sum('amount_paid as total')
-        .first();
+    return knex.schema.hasTable('commission_payments').then(exists => {
+        if (!exists) return { total: 0 };
+        return knex('commission_payments').sum('amount_paid as total').first();
+    });
 };
 
 exports.getUserCount = () => {
-    return knex('users')
-        .where('role', 'user')
-        .count('id as count')
-        .first();
+    return knex('users').where('role', 'user').count('id as count').first();
 };
 
 exports.getHotelCount = () => {
-    return knex('hotels')
-        .count('id as count')
-        .first();
+    return knex('hotels').count('id as count').first();
 };
 
 exports.getRecentActivity = () => {
@@ -68,26 +64,32 @@ exports.updateUserStatus = (id, isActive) => {
     return knex('users').where({ id }).update({ is_active: isActive });
 };
 
-// ✅ NEW: Full Update for Admins
 exports.updateUser = (id, data) => {
     return knex('users').where({ id }).update(data);
 };
 
 exports.deleteUser = (id) => knex('users').where({ id }).del();
 
-// 4. Finance
-exports.getAllTransactions = () => {
+// 4. Finance (FIXED: Uses 'paid_at' to match your database)
+exports.getAllTransactions = async () => {
+    const exists = await knex.schema.hasTable('commission_payments');
+    if (!exists) return [];
+
     return knex('commission_payments')
         .join('hotels', 'commission_payments.hotel_id', 'hotels.id')
+        .leftJoin('users', 'commission_payments.manager_id', 'users.id')
         .select(
             'commission_payments.id',
+            'commission_payments.transaction_id', // Matched your screenshot
             'commission_payments.amount_paid',
-            'commission_payments.transaction_id',
-            'commission_payments.payment_date',
+            'commission_payments.bookings_count',
             'commission_payments.status',
-            'hotels.name as hotel_name'
+            'commission_payments.paid_at as payment_date', // ✅ RENAMED HERE to match frontend expectation
+            'hotels.name as hotel_name',
+            'users.username as manager_name',
+            'users.email as manager_email'
         )
-        .orderBy('payment_date', 'desc');
+        .orderBy('commission_payments.paid_at', 'desc'); // ✅ FIXED SORT COLUMN
 };
 
 // 5. Reviews

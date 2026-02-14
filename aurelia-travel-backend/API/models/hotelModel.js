@@ -1,4 +1,4 @@
-const knex = require('../../config/knex');
+const knex = require('../../config/db');
 const hotelModel = require('../models/hotelModel');
 
 // --- Helper: Resolve Mixed Amenities (IDs & New Strings) ---

@@ -1,4 +1,4 @@
-const knex = require('../../config/knex');
+const knex = require('../../config/db');
 
 // 1. DASHBOARD HEADER STATS (Global)
 exports.getGlobalStats = async () => {

@@ -1,4 +1,4 @@
-const knex = require('../../config/knex');
+const knex = require('../../config/db');
 
 // 1. Get Stats for Manager Dashboard (Aggregated for ALL their hotels)
 exports.getHotelStats = async (managerId) => {
@@ -105,7 +105,7 @@ exports.payCommission = async (managerId, paymentDetails) => {
             manager_id: managerId,
             amount_paid: totalCommission,
             bookings_count: eligibleBookings.length,
-            transaction_reference: paymentDetails.transaction_id || `MANUAL-${Date.now()}`
+            transaction_id: paymentDetails.transaction_id || `MANUAL-${Date.now()}`
         });
 
         // 5. Update ALL these Bookings to 'paid'
