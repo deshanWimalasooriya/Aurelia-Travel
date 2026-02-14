@@ -1,0 +1,123 @@
+.sa-settings-container {
+  max-width: 800px;
+}
+
+.sa-settings-form {
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+}
+
+.sa-setting-section {
+  margin-bottom: 30px;
+}
+
+.sa-setting-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #0f172a;
+  margin-bottom: 15px;
+}
+
+.sa-setting-icon {
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sa-icon-finance { background: #ecfdf5; color: #10b981; }
+.sa-icon-support { background: #eff6ff; color: #3b82f6; }
+.sa-icon-system { background: #fef2f2; color: #ef4444; }
+
+.sa-setting-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.sa-setting-content {
+  margin-left: 44px;
+}
+
+.sa-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  color: #475569;
+}
+
+.sa-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+}
+
+.sa-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.sa-input-sm { max-width: 200px; }
+.sa-input-md { max-width: 400px; }
+
+.sa-helper-text {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-top: 6px;
+}
+
+.sa-checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.sa-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.sa-divider {
+  border: none;
+  border-top: 1px solid #f1f5f9;
+  margin: 30px 0;
+}
+
+.sa-btn-save {
+  background: #1e1b4b;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+}
+
+.sa-btn-save:hover {
+  background: #312e81;
+}
+
+.sa-btn-save:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.sa-msg-success { margin-top: 15px; color: #166534; font-weight: 600; }
+.sa-msg-error { margin-top: 15px; color: #991b1b; font-weight: 600; }

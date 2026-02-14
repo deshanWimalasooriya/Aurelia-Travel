@@ -7,12 +7,30 @@ const bcrypt = require('bcrypt');
 exports.seed = async function(knex) {
   console.log('👤 Seeding Users...');
 
-  // 1. Clean up
+  // 1. Clean up DEPENDENT tables first
+  // We must delete data in child tables before we can delete the parent (users)
+  
+  // Financials & CRM linked to users/bookings
+  await knex('payment_transactions').del();
+  const hasComm = await knex.schema.hasTable('commission_payments');
+  if(hasComm) await knex('commission_payments').del();
+  
+  // User interactions
+  await knex('reviews').del();
+  await knex('complaints_suggestions').del();
+  await knex('notifications').del();
+  await knex('wishlists').del();
+  
+  // Core Dependencies (The source of your error)
+  await knex('bookings').del(); 
+  await knex('payment_methods').del();
+
+  // 2. Now it is safe to delete Users
   await knex('users').del();
 
   const hashedPassword = await bcrypt.hash('password123', 10);
 
-  // 2. Insert Users
+  // 3. Insert Users
   await knex('users').insert([
     {
       username: 'admin_master',
@@ -31,7 +49,8 @@ exports.seed = async function(knex) {
       first_name: 'Rajitha',
       last_name: 'Perera',
       phone: '+94771122334',
-      bio: 'Experienced hotelier with 15 years in luxury hospitality.'
+      bio: 'Experienced hotelier with 15 years in luxury hospitality.',
+      is_active: true
     },
     {
       username: 'traveler_jane',
@@ -42,7 +61,8 @@ exports.seed = async function(knex) {
       last_name: 'Doe',
       address_line_1: '123 Flower Road',
       city: 'Colombo',
-      country: 'Sri Lanka'
+      country: 'Sri Lanka',
+      is_active: true
     }
   ]);
   

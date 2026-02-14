@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { UserProvider, useUser } from './context/userContext'
 import Layout from './components/layout/Layout'
+import ProtectedRoute from './components/ProtectedRoute'; // Your auth guard
 
 // --- Import Pages ---
 import Home from './pages/Home'
@@ -29,6 +30,15 @@ import DashboardAnalytics from './pages/admin/DashboardAnalytics'
 import DashboardCustomers from './pages/admin/DashboardCustomers'
 import ManagerFinance from './pages/admin/ManagerFinance'
 
+import SuperAdminLayout from './pages/aurelia_admin/SuperAdminLayout'; // Super Admin
+// Super Admin Pages
+import SuperOverview from './pages/aurelia_admin/SuperOverview';
+import SuperHotels from './pages/aurelia_admin/SuperHotels';
+import SuperUsers from './pages/aurelia_admin/SuperUsers';
+import SuperFinance from './pages/aurelia_admin/SuperFinance';
+import SuperReviews from './pages/aurelia_admin/SuperReviews';
+import SuperSettings from './pages/aurelia_admin/SuperSettings';
+
 import './index.css'
 
 // Helper component to access Context safely inside the Provider
@@ -40,7 +50,17 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      
+      {/* SUPER ADMIN ROUTES (New) */}
+      <Route path="/superAdmin" element={<ProtectedRoute role="admin"><SuperAdminLayout /></ProtectedRoute>}>
+          <Route index element={<SuperOverview />} />
+          <Route path="hotels" element={<SuperHotels />} />
+          <Route path="users" element={<SuperUsers />} />
+          <Route path="finance" element={<SuperFinance />} />
+          <Route path="reviews" element={<SuperReviews />} />   {/* NEW */}
+          <Route path="settings" element={<SuperSettings />} /> {/* NEW */}
+      </Route>
+
+
       {/* --- HOTEL MANAGEMENT DASHBOARD ROUTES --- */}
       {/* Guard: Allow if user is Admin OR HotelManager */}
       <Route path="/admin" element={(isAdmin || isManager) ? <DashboardLayout /> : <Navigate to="/" />}>

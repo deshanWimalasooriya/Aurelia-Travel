@@ -1,4 +1,4 @@
-const knex = require('../../config/knex');
+const knex = require('../../config/db');
 
 // Helper: Generate unique reference (e.g., "BKG-8X92")
 const generateReference = () => {

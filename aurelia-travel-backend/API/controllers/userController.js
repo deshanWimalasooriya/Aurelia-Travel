@@ -31,10 +31,16 @@ exports.updateUser = async (req, res) => {
         const { 
             first_name, last_name, phone, bio,
             address_line_1, city, country, postal_code, profile_image,
-            password // Optional
+            password, role, is_active // Optional
         } = req.body;
 
         const updateData = {};
+
+        // ✅ Add Admin-Only Fields Logic
+        if (currentUserRole === 'admin') {
+            if (role) updateData.role = role;
+            if (is_active !== undefined) updateData.is_active = is_active;
+        }
 
         // Profile Fields
         if (first_name) updateData.first_name = first_name;

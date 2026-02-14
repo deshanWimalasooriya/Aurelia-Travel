@@ -13,6 +13,8 @@ router.get("/mine", verifyToken, checkRole('admin', 'hotel_manager'), hotelContr
 
 // Dynamic ID Routes
 router.get("/:id", hotelController.getHotelById);
+// ✅ NEW: Admin Route to get hotels by specific Manager ID
+router.get("/manager/:managerId", verifyToken, checkRole('admin'), hotelController.getHotelsByManagerId);
 
 // Protected CRUD
 router.post("/", verifyToken, checkRole('admin', 'hotel_manager'), hotelController.create);
