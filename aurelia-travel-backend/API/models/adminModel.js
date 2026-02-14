@@ -75,3 +75,17 @@ exports.getRecentActivity = () => {
         .orderBy('bookings.created_at', 'desc')
         .limit(10);
 };
+
+// ✅ NEW: Get All Commission Transactions (For Super Admin Finance Page)
+exports.getAllTransactions = () => {
+    return knex('commission_payments')
+        .join('hotels', 'commission_payments.hotel_id', 'hotels.id')
+        .leftJoin('users', 'commission_payments.manager_id', 'users.id') // Join manager info
+        .select(
+            'commission_payments.*',
+            'hotels.name as hotel_name',
+            'users.username as manager_name',
+            'users.email as manager_email'
+        )
+        .orderBy('commission_payments.payment_date', 'desc');
+};

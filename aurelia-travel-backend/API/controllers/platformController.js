@@ -1,6 +1,8 @@
 const platformModel = require('../models/platformModel');
+const bcrypt = require('bcrypt'); // ✅ Ensure bcrypt is imported
 
-// 1. Platform Overview (KPIs)
+// ... (Existing Overview and Hotel functions) ...
+
 exports.getPlatformOverview = async (req, res) => {
     try {
         const [revenueResult, userResult, hotelResult, recentBookings] = await Promise.all([
@@ -25,13 +27,11 @@ exports.getPlatformOverview = async (req, res) => {
     }
 };
 
-// 2. Manage All Hotels
 exports.getAllHotels = async (req, res) => {
     try {
         const hotels = await platformModel.getAllHotelsWithManagers();
-        res.json(hotels); // Returns array directly
+        res.json(hotels);
     } catch (err) {
-        console.error(err);
         res.status(500).json({ error: 'Failed to fetch hotels' });
     }
 };
@@ -45,13 +45,33 @@ exports.updateHotelStatus = async (req, res) => {
     }
 };
 
-// 3. Manage Users
+// --- User Management ---
+
 exports.getAllUsers = async (req, res) => {
     try {
         const users = await platformModel.getAllUsers();
         res.json(users);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch users' });
+    }
+};
+
+// ✅ NEW: Fully update user (Role, Password, Details)
+exports.updateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { password, ...updateData } = req.body;
+
+        // If password is provided, hash it
+        if (password && password.trim() !== "") {
+            updateData.password = await bcrypt.hash(password, 10);
+        }
+
+        await platformModel.updateUser(id, updateData);
+        res.json({ success: true, message: 'User updated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Update failed' });
     }
 };
 
@@ -77,7 +97,7 @@ exports.manageUser = async (req, res) => {
     }
 };
 
-// 4. Finance
+// ... (Rest of Finance, Reviews, Settings functions remain unchanged) ...
 exports.getPlatformTransactions = async (req, res) => {
     try {
         const transactions = await platformModel.getAllTransactions();
@@ -88,7 +108,6 @@ exports.getPlatformTransactions = async (req, res) => {
     }
 };
 
-// 5. Reviews
 exports.getAllReviews = async (req, res) => {
     try {
         const reviews = await platformModel.getRecentReviews();
@@ -107,7 +126,6 @@ exports.deleteReview = async (req, res) => {
     }
 };
 
-// 6. Settings
 exports.getSettings = async (req, res) => {
     try {
         const settings = await platformModel.getSettings();

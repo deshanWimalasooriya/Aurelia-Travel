@@ -55,3 +55,315 @@
   background: #dcfce7;
   color: #166534;
 }
+
+/* ... Keep existing styles ... */
+
+/* --- WIDE MODAL FOR HOTEL VIEW --- */
+.sa-modal-content.wide-modal {
+    max-width: 800px;
+    width: 95%;
+}
+
+.sa-divider {
+    border: 0;
+    border-top: 1px solid #e2e8f0;
+    margin: 20px 0;
+}
+
+/* Hotel Header */
+.hotel-view-header {
+    display: flex;
+    gap: 20px;
+}
+
+.hotel-view-img {
+    width: 150px;
+    height: 100px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1px solid #e2e8f0;
+}
+
+.hotel-view-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.placeholder-img {
+    width: 100%;
+    height: 100%;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+}
+
+.hotel-view-info h2 {
+    margin: 0 0 5px 0;
+    font-size: 1.4rem;
+    color: #1e293b;
+}
+
+.hotel-view-info .location {
+    color: #64748b;
+    margin: 0 0 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9rem;
+}
+
+.badges {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.sa-badge-neutral {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.contact-info {
+    font-size: 0.85rem;
+    color: #334155;
+    display: flex;
+    gap: 15px;
+}
+
+.contact-info p {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Rooms Grid */
+.section-title {
+    margin: 0 0 15px 0;
+    font-size: 1rem;
+    color: #1e293b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.rooms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 15px;
+}
+
+.room-card-mini {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+    transition: transform 0.2s;
+}
+
+.room-card-mini:hover {
+    border-color: #cbd5e1;
+    transform: translateY(-2px);
+}
+
+.room-img {
+    height: 120px;
+    background: #f8fafc;
+    overflow: hidden;
+}
+
+.room-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.no-img {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #cbd5e1;
+}
+
+.room-details {
+    padding: 10px;
+}
+
+.room-details h5 {
+    margin: 0 0 2px 0;
+    font-size: 0.95rem;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.room-type {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin: 0 0 8px 0;
+}
+
+.room-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #334155;
+    font-weight: 600;
+}
+
+.room-stats span {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.loading-state, .empty-state {
+    text-align: center;
+    padding: 20px;
+    color: #94a3b8;
+    font-size: 0.9rem;
+}
+
+/* ... Existing styles ... */
+
+/* --- NARROW MODAL (OTP) --- */
+.sa-modal-content.narrow-modal {
+    max-width: 400px;
+}
+
+.text-center { text-align: center; }
+
+.otp-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    background: #e0e7ff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+}
+
+.modal-text {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+/* BUTTONS */
+.btn-primary-large {
+    width: 100%;
+    padding: 12px;
+    background: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+}
+.btn-primary-large:hover { background: #4338ca; }
+
+.btn-danger-large {
+    width: 100%;
+    padding: 12px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+}
+.btn-danger-large:disabled { background: #fca5a5; cursor: not-allowed; }
+
+.btn-preview-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+}
+.btn-preview-link:hover { background: #dbeafe; }
+
+/* OTP INPUT */
+.otp-input {
+    width: 100%;
+    padding: 12px;
+    font-size: 1.5rem;
+    letter-spacing: 5px;
+    text-align: center;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+}
+.otp-input:focus {
+    border-color: #4f46e5;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* --- TABS --- */
+.sa-tabs-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 1px;
+}
+
+.sa-tab {
+    background: transparent;
+    border: none;
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.sa-tab:hover {
+    color: #334155;
+    background-color: #f8fafc;
+    border-radius: 6px 6px 0 0;
+}
+
+.sa-tab.active {
+    color: #1e1b4b; /* Navy Blue */
+    border-bottom: 2px solid #1e1b4b;
+    background: transparent;
+}
+
+/* --- BADGES (Updates) --- */
+.sa-role-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: capitalize;
+    display: inline-block;
+}
+/* Ensure the hotel manager badge is distinct */
+.sa-role-hotel_manager { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }

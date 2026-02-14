@@ -10,4 +10,7 @@ router.get('/stats', adminController.getDashboardStats);
 router.get('/bookings', adminController.getRecentBookings);
 router.get('/analytics', adminController.getAnalyticsData);
 
+// ✅ NEW ROUTE
+router.get('/finance', adminController.getFinanceRecords);
+
 module.exports = router;

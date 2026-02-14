@@ -3,22 +3,31 @@ const router = express.Router();
 const platformController = require('../controllers/platformController');
 const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 
-// Debug check
-console.log('✅ Platform Routes Loaded');
+// Prefix: /api/platform
 
-// Apply Middleware
 router.use(verifyToken);
 router.use(checkRole('admin'));
 
-// Routes
+// Overview
 router.get('/overview', platformController.getPlatformOverview);
+
+// Hotels
 router.get('/hotels', platformController.getAllHotels);
 router.put('/hotels/:id/status', platformController.updateHotelStatus);
+
+// Users
 router.get('/users', platformController.getAllUsers);
-router.post('/users/:id/action', platformController.manageUser);
+router.put('/users/:id', platformController.updateUser); // ✅ NEW: Edit User Route
+router.post('/users/:id/action', platformController.manageUser); // Ban/Delete
+
+// Finance
 router.get('/finance', platformController.getPlatformTransactions);
+
+// Reviews
 router.get('/reviews', platformController.getAllReviews);
 router.delete('/reviews/:id', platformController.deleteReview);
+
+// Settings
 router.get('/settings', platformController.getSettings);
 router.put('/settings', platformController.updateSettings);
 

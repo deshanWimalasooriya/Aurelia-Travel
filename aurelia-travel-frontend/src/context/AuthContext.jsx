@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
   // 2. LOGIN FUNCTION (Auto-Redirects to Profile)
   const login = async (credentials) => {
     try {
-      const res = await axios.post(`${API_URL}/login`, credentials, {
+      const res = await axios.post(`${API_URL}/auth`, credentials, {
         withCredentials: true 
       });
 

@@ -1,4 +1,4 @@
-const knex = require('../../config/knex'); // Links to the file in Step 1
+const knex = require('../../config/knex');
 
 // 1. Platform Stats
 exports.getPlatformRevenue = () => {
@@ -54,7 +54,11 @@ exports.updateHotelStatus = (id, isActive) => {
 // 3. User Management
 exports.getAllUsers = () => {
     return knex('users')
-        .select('id', 'username', 'email', 'role', 'is_active', 'created_at')
+        .select(
+            'id', 'username', 'email', 'role', 'is_active', 'created_at',
+            'first_name', 'last_name', 'phone', 'bio', 'profile_image',
+            'address_line_1', 'city', 'country', 'postal_code'
+        )
         .orderBy('created_at', 'desc');
 };
 
@@ -62,6 +66,11 @@ exports.getUserById = (id) => knex('users').where({ id }).first();
 
 exports.updateUserStatus = (id, isActive) => {
     return knex('users').where({ id }).update({ is_active: isActive });
+};
+
+// ✅ NEW: Full Update for Admins
+exports.updateUser = (id, data) => {
+    return knex('users').where({ id }).update(data);
 };
 
 exports.deleteUser = (id) => knex('users').where({ id }).del();

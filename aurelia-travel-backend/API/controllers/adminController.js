@@ -85,3 +85,13 @@ exports.getRecentBookings = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// ✅ NEW: Finance Endpoint
+exports.getFinanceRecords = async (req, res) => {
+    try {
+        const transactions = await adminModel.getAllTransactions();
+        res.json({ success: true, data: transactions });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
