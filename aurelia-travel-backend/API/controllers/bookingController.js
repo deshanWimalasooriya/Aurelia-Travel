@@ -2,6 +2,9 @@ const bookingModel = require('../models/bookingModel');
 const roomModel = require('../models/roomModel');
 const hotelModel = require('../models/hotelModel');
 
+// Import the helper
+const { sendNotification } = require('./notificationController');
+
 // 1. CREATE BOOKING (Consumer)
 exports.createBooking = async (req, res) => {
     try {
@@ -64,6 +67,27 @@ exports.createBooking = async (req, res) => {
             bookingId: result.bookingId,
             reference: result.reference
         });
+
+        // 1. Notify User
+        await sendNotification(
+            req.user.userId,
+            "Booking Confirmed",
+            `Your stay at ${room.hotel_name || 'the hotel'} is confirmed!`,
+            "success",
+            `/profile`
+        );
+
+        // 2. Notify Hotel Manager (if exists)
+        const hotel = await hotelModel.getById(room.hotel_id);
+        if (hotel && hotel.manager_id) {
+            await sendNotification(
+                hotel.manager_id,
+                "New Reservation",
+                `You have a new booking for ${room.title}.`,
+                "info",
+                "/admin/bookings"
+            );
+        }
 
     } catch (err) {
         console.error("Booking Error:", err);

@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { NotificationProvider } from './context/NotificationContext';
 import { UserProvider, useUser } from './context/userContext'
 import Layout from './components/layout/Layout'
 
@@ -89,7 +90,9 @@ function App() {
   return (
     <UserProvider>
       <AuthProvider>
-         <AppRoutes />
+        <NotificationProvider>
+          <AppRoutes />
+        </NotificationProvider>
       </AuthProvider>
     </UserProvider>
   )

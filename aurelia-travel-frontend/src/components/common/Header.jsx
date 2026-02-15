@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Search, Heart, User, LogOut, Settings, LayoutDashboard, Building2 } from 'lucide-react' 
 import { useUser } from '../../context/userContext'
+import { useNotifications } from '../../context/NotificationContext'
+import NotificationBell from '../ui/NotificationBell'
 import axios from 'axios'
 import './styles/header.css'
 
@@ -78,6 +80,9 @@ const Header = () => {
           <button className="header-action">
             <Heart className="header-icon" />
           </button>
+          <div style={{ marginRight: '15px' }}>
+            <NotificationBell />
+          </div>
           
           {user ? (
             <>
