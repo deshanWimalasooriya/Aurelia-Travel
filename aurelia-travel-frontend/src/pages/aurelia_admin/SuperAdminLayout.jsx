@@ -21,7 +21,7 @@ const SuperAdminLayout = () => {
         localStorage.removeItem('user');
         
         // Redirect to login
-        navigate('/login');
+        navigate('/profile');
     };
 
     // Helper to check active state
@@ -71,7 +71,7 @@ const SuperAdminLayout = () => {
                     </Link>
                 </nav>
 
-                <div className="sa-sidebar-footer" style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                <div className="sa-sidebar-footer">
                     <button onClick={handleLogout} className="sa-logout-btn">
                         <LogOut size={20}/> Sign Out
                     </button>

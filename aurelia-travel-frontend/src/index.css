@@ -10,6 +10,13 @@ body {
   color: #333;
 }
 
+/* --- FIX: Force Inputs to be Visible --- */
+input, select, textarea {
+  color: #000000 !important;       /* Forces text to be black */
+  background-color: #ffffff !important; /* Forces background to be white */
+  color-scheme: light;             /* Tells browser to use light-mode defaults for this element */
+}
+
 .container {
   max-width: 1200px;
   margin: 0 auto;
@@ -51,11 +58,20 @@ body {
 
 .form-input {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 16px;
   transition: all 0.2s;
+  
+  /* FIX: Ensure visibility here as well */
+  background-color: #ffffff;
+  color: #1f2937;
+}
+
+/* --- FIX: Add this class to your inputs in React to stop overlap --- */
+.input-with-icon {
+  padding-left: 45px !important; /* Makes space for the icon */
 }
 
 .form-input:focus {
