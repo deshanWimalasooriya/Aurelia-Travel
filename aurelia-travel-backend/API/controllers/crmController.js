@@ -1,5 +1,6 @@
 const complaintModel = require('../models/complaintModel');
 const hotelModel = require('../models/hotelModel');
+const { sendNotification } = require('./notificationController'); // Import helper
 
 // 1. USER: Create Complaint/Suggestion
 exports.createTicket = async (req, res) => {
@@ -20,6 +21,19 @@ exports.createTicket = async (req, res) => {
             description,
             priority: 'normal'
         });
+
+        // --- TRIGGER: Notify Hotel Manager ---
+        const hotel = await hotelModel.getById(hotel_id);
+        if (hotel && hotel.manager_id) {
+            await sendNotification(
+                hotel.manager_id,
+                "New Support Ticket",
+                `User submitted a ticket: ${subject}`,
+                "warning",
+                "/admin/support"
+            );
+        }
+        // -------------------------------------
 
         res.status(201).json({ success: true, message: "Ticket created", data: newTicket });
     } catch (err) {
@@ -63,6 +77,18 @@ exports.resolveTicket = async (req, res) => {
         }
 
         await complaintModel.updateStatus(id, status, resolution_notes);
+
+        // --- TRIGGER: Notify User ---
+        if (ticket) {
+            await sendNotification(
+                ticket.user_id,
+                `Ticket Resolved`,
+                `Your ticket #${ticket.ticket_number} is now ${status}.`,
+                "success",
+                "/profile"
+            );
+        }
+        // ----------------------------
         res.json({ success: true, message: `Ticket marked as ${status}` });
 
     } catch (err) {

@@ -2,7 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const userModel = require('../models/userModel'); // Uses the new Phase 1 Model
 // Import the helper
-const { sendNotification } = require('./notificationController');
+const { sendNotification, notifyAdmins } = require('./notificationController'); // Import both
 
 // 1. REGISTER
 exports.register = async (req, res) => {
@@ -32,6 +32,15 @@ exports.register = async (req, res) => {
       is_active: true
     });
 
+
+    // 2. ✅ ADD THIS: Notify Admins
+    await notifyAdmins(
+        "New User Registration",
+        `User ${newUser.username} (${newUser.email}) just registered as a ${newUser.role}.`,
+        "info",
+        "/superAdmin/users" // This links to your User Base page
+    );
+    
     // ✅ ADD THIS:
     await sendNotification(
         newUser.id,

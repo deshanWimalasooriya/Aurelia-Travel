@@ -20,6 +20,7 @@ import HotelPage from './pages/HotelPage'
 import AdminDashboard from './pages/AdminDashboard' 
 import HotelSearch from './pages/HotelSearch'
 import HotelShowcase from './pages/HotelShowcase'
+import NotificationsPage from './pages/NotificationsPage'
 
 // --- Import Admin/Manager Components ---
 import DashboardLayout from './pages/admin/DashboardLayout'
@@ -86,6 +87,7 @@ const AppRoutes = () => {
             <Route path="/hotels" element={<HotelPage />} />
             <Route path="/hotel-search" element={<HotelSearch />} />
             <Route path="/hotel-showcase" element={<HotelShowcase />} />
+            <Route path="/notifications" element={user ? <NotificationsPage /> : <Navigate to="/auth" />} />
 
             {/* Auth Routes */}
             <Route path="/auth" element={!user ? <LoginRegister /> : <Navigate to="/profile" />} />

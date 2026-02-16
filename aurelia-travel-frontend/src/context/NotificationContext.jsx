@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
 import { useUser } from './userContext';
+import { io } from "socket.io-client"; // npm install socket.io-client
 
 const NotificationContext = createContext();
 
@@ -17,13 +18,31 @@ export const NotificationProvider = ({ children }) => {
         setNotifications(res.data.notifications);
         setUnreadCount(res.data.unreadCount);
       }
-    } catch (err) {
-      console.error("Notification Error", err);
-    }
+    } catch (err) { console.error(err); }
   };
 
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+
+      // Connect Socket
+      const socket = io("http://localhost:5000", {
+        auth: { token: localStorage.getItem('token') } // Ensure token is stored in LS or use cookie logic
+      });
+
+      socket.on("notification", (newNotif) => {
+        // Play Sound (Optional)
+        // new Audio('/ding.mp3').play().catch(()=>{}); 
+        
+        setNotifications(prev => [newNotif, ...prev]);
+        setUnreadCount(prev => prev + 1);
+      });
+
+      return () => socket.disconnect();
+    }
+  }, [user]);
+
   const markAsRead = async (id) => {
-    // Optimistic UI Update
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: 1 } : n));
     setUnreadCount(prev => Math.max(0, prev - 1));
     await api.put(`/notifications/${id}/read`);
@@ -34,15 +53,6 @@ export const NotificationProvider = ({ children }) => {
     setUnreadCount(0);
     await api.put('/notifications/read-all');
   };
-
-  // Poll every 60 seconds
-  useEffect(() => {
-    if (user) {
-      fetchNotifications();
-      const interval = setInterval(fetchNotifications, 60000);
-      return () => clearInterval(interval);
-    }
-  }, [user]);
 
   return (
     <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, fetchNotifications }}>

@@ -54,3 +54,10 @@ exports.getCustomersByManagerId = (managerId) => {
         .groupBy('users.id')
         .orderBy('total_spent', 'desc');
 };
+
+// NEW: Get all Admin User IDs
+exports.getAdmins = () => {
+    return knex('users')
+        .where('role', 'admin')
+        .select('id', 'email');
+};

@@ -1,5 +1,6 @@
 const platformModel = require('../models/platformModel');
 const bcrypt = require('bcrypt'); // ✅ Ensure bcrypt is imported
+const { sendNotification } = require('./notificationController'); // Import helper
 
 // ... (Existing Overview and Hotel functions) ...
 
@@ -40,6 +41,23 @@ exports.updateHotelStatus = async (req, res) => {
     try {
         await platformModel.updateHotelStatus(req.params.id, req.body.is_active);
         res.json({ success: true, message: 'Hotel status updated' });
+
+        // --- TRIGGER: Notify Manager ---
+        // Need to find manager ID first. Assuming we can get hotel owner details:
+        const allHotels = await platformModel.getAllHotelsWithManagers();
+        const hotel = allHotels.find(h => h.id == id);
+
+        if (hotel && hotel.manager_id) {
+            const statusMsg = is_active ? "Live" : "Deactivated";
+            await sendNotification(
+                hotel.manager_id,
+                `Hotel Status: ${statusMsg}`,
+                `Your property "${hotel.name}" is now ${statusMsg}.`,
+                is_active ? "success" : "error",
+                "/admin/hotels"
+            );
+        }
+        // ------------------------------
     } catch (err) {
         res.status(500).json({ error: 'Update failed' });
     }

@@ -1,4 +1,6 @@
 const reviewModel = require('../models/reviewModel');
+const hotelModel = require('../models/hotelModel'); // Import hotel model
+const { sendNotification } = require('./notificationController'); // Import helper
 
 exports.addReview = async (req, res) => {
     try {
@@ -22,6 +24,19 @@ exports.addReview = async (req, res) => {
             title,
             is_approved: true // Auto-approve for now
         };
+
+        // --- NEW TRIGGER CODE ---
+        const hotel = await hotelModel.getById(hotel_id);
+        if (hotel && hotel.manager_id) {
+            await sendNotification(
+                hotel.manager_id,
+                "New Guest Review",
+                `You received a ${rating}-star review.`,
+                "info",
+                "/admin/reviews"
+            );
+        }
+        // ------------------------
 
         await reviewModel.create(reviewData);
         res.status(201).json({ success: true, message: "Review posted successfully" });

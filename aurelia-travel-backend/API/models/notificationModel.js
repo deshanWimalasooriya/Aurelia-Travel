@@ -1,4 +1,4 @@
-const knex = require('../../config/knex');
+const knex = require('../../config/db');
 
 // Create a new notification
 exports.create = async (data) => {
