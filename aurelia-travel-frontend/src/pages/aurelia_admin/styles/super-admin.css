@@ -1,0 +1,206 @@
+/* =========================================
+   1. CORE VARIABLES & RESET
+   ========================================= */
+:root {
+  /* Core Colors */
+  --sa-primary: #1e1b4b;       /* Indigo 950 (Sidebar BG) */
+  --sa-primary-light: #2e2a5b; /* Slightly lighter for hover states */
+  --sa-accent: #f43f5e;        /* Rose 500 (Action Color) */
+  --sa-accent-dim: rgba(244, 63, 94, 0.15); /* Rose transparent */
+  --sa-bg: #f3f4f6;            /* Gray 100 (Main BG) */
+  
+  /* Text Colors */
+  --sa-text-muted: #a5b4fc;    /* Indigo 200 */
+  --sa-text-light: #ffffff;
+  
+  /* Dimensions */
+  --sidebar-width: 260px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* =========================================
+   2. LAYOUT WRAPPERS
+   ========================================= */
+.super-dashboard-wrapper {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background: var(--sa-bg);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.sa-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 40px;
+  background: var(--sa-bg);
+}
+
+/* =========================================
+   3. SIDEBAR STYLING
+   ========================================= */
+.sa-sidebar {
+  width: var(--sidebar-width);
+  background: var(--sa-primary);
+  color: white;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  z-index: 10;
+}
+
+/* Brand/Logo Area */
+.sa-brand {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 40px;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  letter-spacing: -0.5px;
+}
+
+.sa-brand span {
+  color: var(--sa-accent);
+}
+
+/* Navigation Section */
+.sa-nav-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sa-nav-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #6366f1; /* Slightly brighter indigo for labels */
+  font-weight: 700;
+  margin-bottom: 8px;
+  margin-top: 8px;
+  padding-left: 12px;
+  opacity: 0.8;
+}
+
+/* =========================================
+   4. NAVIGATION TABS (ENHANCED EFFECTS)
+   ========================================= */
+.sa-nav-item {
+  position: relative;
+  padding: 12px 16px;
+  color: var(--sa-text-muted);
+  text-decoration: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth physics */
+  overflow: hidden; /* Keeps effects inside the rounded corners */
+}
+
+/* Hover State: Slide Right & Brighten */
+.sa-nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--sa-text-light);
+  transform: translateX(5px); /* Gentle slide effect */
+}
+
+/* Active State: Glow & Accent Border */
+.sa-nav-item.active {
+  background: linear-gradient(90deg, var(--sa-accent-dim) 0%, transparent 100%);
+  color: var(--sa-text-light);
+  font-weight: 600;
+}
+
+/* The vertical accent bar for active items */
+.sa-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 60%; /* Doesn't touch top/bottom */
+  width: 4px;
+  background-color: var(--sa-accent);
+  border-radius: 0 4px 4px 0;
+  box-shadow: 0 0 10px var(--sa-accent); /* Glow effect */
+}
+
+.sa-nav-item svg {
+  transition: transform 0.3s ease;
+}
+
+.sa-nav-item:hover svg {
+  transform: scale(1.1); /* Icons pop slightly on hover */
+}
+
+/* =========================================
+   5. FOOTER & LOGOUT BUTTON
+   ========================================= */
+.sa-sidebar-footer {
+  margin-top: auto; /* Pushes to bottom */
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sa-logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94a3b8; /* Slate 400 */
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit; /* Ensure button inherits font */
+}
+
+.sa-logout-btn:hover {
+  background: rgba(244, 63, 94, 0.1); /* Rose tint */
+  color: var(--sa-accent); /* Rose text */
+  border-color: rgba(244, 63, 94, 0.2);
+}
+
+.sa-version-text {
+  margin-top: 15px;
+  font-size: 0.7rem;
+  color: #64748b;
+  text-align: center;
+  font-family: monospace;
+  opacity: 0.6;
+}
+
+/* =========================================
+   6. UTILITY BADGES
+   ========================================= */
+.badge-active { 
+  background: #dcfce7; 
+  color: #166534; 
+  padding: 4px 10px; 
+  border-radius: 20px; 
+  font-size: 0.75rem; 
+  font-weight: 700;
+  display: inline-block;
+}
+
+.badge-banned { 
+  background: #fee2e2; 
+  color: #991b1b; 
+  padding: 4px 10px; 
+  border-radius: 20px; 
+  font-size: 0.75rem; 
+  font-weight: 700;
+  display: inline-block;
+}

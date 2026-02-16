@@ -16,6 +16,19 @@ exports.getAllHotels = async (req, res) => {
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 };
 
+// --- NEW FUNCTION: ADMIN GET HOTELS BY MANAGER ID ---
+exports.getHotelsByManagerId = async (req, res) => {
+    try {
+        const { managerId } = req.params;
+        // Re-use existing model function 'getByManagerId' which returns ALL hotels (active & inactive)
+        const hotels = await hotelModel.getByManagerId(managerId);
+        res.json({ success: true, data: hotels.map(parseHotelData) });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
 exports.getHotelById = async (req, res) => {
     try {
         const hotel = await hotelModel.getById(req.params.id);

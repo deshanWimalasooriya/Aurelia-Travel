@@ -2,12 +2,14 @@
 :root {
   --primary-color: #3b82f6; /* Standard Blue */
   --bg-color: #ffffff;
+  --text-color: #111827;    /* Added: Dark text color */
   --accent-color: #f1f3f4;
 }
 
 [data-theme='december'] {
   --primary-color: #d42426; /* Christmas Red */
   --bg-color: #f8f9fa;
+  --text-color: #0f172a;
   --accent-color: #165b33; /* Christmas Green */
   --hero-bg: url('/images/christmas-hero.jpg');
 }
@@ -15,5 +17,6 @@
 [data-theme='january'] {
   --primary-color: #00b4d8; /* Winter Blue */
   --bg-color: #f0f8ff;
+  --text-color: #164e63;
   --accent-color: #caf0f8;
 }

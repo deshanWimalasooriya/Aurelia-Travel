@@ -136,7 +136,7 @@ const Header = () => {
                     {/* --- SYSTEM ADMIN LINK (Superuser only) --- */}
                     {isAdmin && (
                       <Link 
-                        to="/adminDashboard" 
+                        to="/superAdmin" 
                         className="dropdown-item"
                         onClick={() => setDropdownOpen(false)}
                       >

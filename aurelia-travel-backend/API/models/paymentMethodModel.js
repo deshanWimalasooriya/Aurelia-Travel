@@ -1,4 +1,4 @@
-const knex = require('../../config/knex');
+const knex = require('../../config/db');
 
 exports.create = async (data) => {
     const [id] = await knex('payment_methods').insert(data);
