@@ -40,6 +40,7 @@ import SuperUsers from './pages/aurelia_admin/SuperUsers';
 import SuperFinance from './pages/aurelia_admin/SuperFinance';
 import SuperReviews from './pages/aurelia_admin/SuperReviews';
 import SuperSettings from './pages/aurelia_admin/SuperSettings';
+import SuperLogs from './pages/aurelia_admin/SuperLogs'; // <--- IMPORT NEW PAGE
 
 import './index.css'
 
@@ -60,6 +61,7 @@ const AppRoutes = () => {
           <Route path="finance" element={<SuperFinance />} />
           <Route path="reviews" element={<SuperReviews />} />   {/* NEW */}
           <Route path="settings" element={<SuperSettings />} /> {/* NEW */}
+          <Route path="logs" element={<SuperLogs />} /> {/* <--- ADD ROUTE HERE */}
       </Route>
 
 

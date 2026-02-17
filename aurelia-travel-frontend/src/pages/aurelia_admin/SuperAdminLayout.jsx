@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Building2, Users, DollarSign, 
-  MessageSquare, Settings, LogOut, ShieldCheck, Search 
+  MessageSquare, Settings, LogOut, ShieldCheck, Search, ClipboardList
 } from 'lucide-react';
 import NotificationBell from '../../components/ui/NotificationBell'; // ✅ Import Bell
 import { useUser } from '../../context/userContext'; // ✅ Import User Context
@@ -29,6 +29,7 @@ const SuperAdminLayout = () => {
         if(location.pathname.includes('users')) return 'User Base';
         if(location.pathname.includes('finance')) return 'Financial Overview';
         if(location.pathname.includes('reviews')) return 'Moderation';
+        if(location.pathname.includes('logs')) return 'System Logs'; // <--- NEW TITLE
         if(location.pathname.includes('settings')) return 'Platform Settings';
         return 'Dashboard Overview';
     };
@@ -60,6 +61,11 @@ const SuperAdminLayout = () => {
                     </Link>
                     <Link to="/superAdmin/reviews" className={`sa-nav-item ${isActive('reviews') ? 'active' : ''}`}>
                         <MessageSquare size={20}/> Moderation
+                    </Link>
+
+                    {/* --- NEW LOGS LINK --- */}
+                    <Link to="/superAdmin/logs" className={`sa-nav-item ${isActive('logs') ? 'active' : ''}`}>
+                        <ClipboardList size={20}/> Activity Logs
                     </Link>
                     <Link to="/superAdmin/settings" className={`sa-nav-item ${isActive('settings') ? 'active' : ''}`}>
                         <Settings size={20}/> Platform Settings
