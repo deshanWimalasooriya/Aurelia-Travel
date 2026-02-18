@@ -166,11 +166,26 @@ exports.getAllBookings = async (req, res) => {
 
 exports.getBookingById = async (req, res) => {
     try {
-        const booking = await bookingModel.getBookingById(req.params.id);
-        if (!booking) return res.status(404).json({ message: "Booking not found" });
-        // Security logic can be added here (check if user owns booking)
-        res.json(booking); 
-    } catch (err) { res.status(500).json({ error: err.message }); }
+        const bookingId = req.params.id;
+        const userId = req.user.userId; // Extracted from the JWT token
+
+        const booking = await bookingModel.getBookingById(bookingId);
+
+        if (!booking) {
+            return res.status(404).json({ message: 'Booking not found' });
+        }
+
+        // SECURITY FIX: Check if the logged-in user owns this booking
+        // OR if the user is an admin (assuming you have an 'admin' role check)
+        if (booking.user_id !== userId && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access denied: You do not own this booking' });
+        }
+
+        res.json(booking);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error fetching booking' });
+    }
 };
 
 exports.deleteBooking = async (req, res) => {
