@@ -1,40 +1,57 @@
-// knexfile.js
 require('dotenv').config();
 
 module.exports = {
   development: {
     client: 'mysql2',
     connection: {
-      // Use the variables from .env, or fallback to local defaults if missing
       host: process.env.DB_HOST || '127.0.0.1',
       
-      // IMPORTANT: TiDB uses port 4000, XAMPP uses 3306. 
+      // Fixed: Ensure port is a number
       port: Number(process.env.DB_PORT) || 3306,
       
       user: process.env.DB_USER || 'root',
       
-      // Fixed: Now looks for 'DB_PASS' to match your .env file
       password: process.env.DB_PASS || process.env.DB_PASSWORD || '',
       
       database: process.env.DB_NAME || 'aurelia_travel',
       
-      // REQUIRED for TiDB Cloud:
-      ssl: {
-        rejectUnauthorized: true,
-        minVersion: 'TLSv1.2'
+      // ✅ WEAKNESS RESOLVED: Smart SSL
+      // If you are on localhost (XAMPP), SSL is disabled.
+      // If you are on TiDB/Cloud, SSL is enabled.
+      ssl: (process.env.DB_HOST === '127.0.0.1' || process.env.DB_HOST === 'localhost') 
+        ? false 
+        : {
+            rejectUnauthorized: true,
+            minVersion: 'TLSv1.2'
+          },
+
+      // ✅ WEAKNESS RESOLVED: Type Casting
+      // Forces MySQL 'DECIMAL' (Prices) to return as Numbers in JS.
+      // Prevents logic errors like "10.00" + 5 = "10.005"
+      typeCast: function (field, next) {
+        if (field.type === 'DECIMAL' || field.type === 'NEWDECIMAL') {
+          const value = field.string();
+          return (value === null) ? null : Number(value);
+        }
+        return next();
       }
     },
     
-    // ✅ RESOLVED: CONNECTION POOLING (Fixes Multi-User Crashes)
+    // ✅ RESOLVED: CONNECTION POOLING
     pool: {
       min: 2, 
-      max: 40, // Increased from default 10 to 40 for higher traffic
+      max: 40, // Optimized for 50-100 concurrent users
       
-      // If a connection is idle for 30s, close it to free up RAM
+      // Free up memory if connection is idle for 30s
       idleTimeoutMillis: 30000, 
       
-      // If the database is busy, wait 5s for a slot, then fail (don't hang forever)
-      acquireTimeoutMillis: 5000 
+      // Fail fast if DB is overloaded (prevents infinite loading spinners)
+      acquireTimeoutMillis: 5000,
+
+      // ✅ WEAKNESS RESOLVED: Startup Safety
+      // If the DB is down when you start the server, don't crash the app immediately.
+      // Keep trying to connect in the background.
+      propagateCreateError: false 
     },
 
     migrations: {
