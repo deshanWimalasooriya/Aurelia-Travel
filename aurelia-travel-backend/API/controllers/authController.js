@@ -7,49 +7,56 @@ const { sendNotification, notifyAdmins } = require('./notificationController'); 
 // 1. REGISTER
 exports.register = async (req, res) => {
   try {
+    // 1. Input Validation
     const { username, email, password, role, first_name, last_name } = req.body;
 
     if (!username || !email || !password) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    // Check existing
-    const existingUser = await userModel.findByEmail(email);
-    if (existingUser) {
-      return res.status(409).json({ success: false, message: 'Email already exists' });
-    }
+    console.time("ProcessTime"); // Start timer for performance debugging
 
+    // 2. Hash Password
+    // We do this BEFORE the DB call. Yes, it costs CPU, but it prevents the "Scope Error"
+    // and is necessary for the atomic "Try-Catch" pattern below.
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create User (PCI Compliant: No card data here)
+    // 3. ATOMIC CREATION (Fixes Race Condition)
+    // We removed "findByEmail". We try to create immediately.
+    // If the email exists, the Database will throw a specific error (Code 1062).
+    // This guarantees no two users can register the same email, even if they click at the same millisecond.
     const newUser = await userModel.create({
       username,
       email,
-      password: hashedPassword,
-      role: role || 'user', // Default to user
+      password: hashedPassword, // Now this variable is accessible!
+      role: role || 'user',
       first_name,
       last_name,
       is_active: true
     });
 
+    console.timeEnd("ProcessTime"); // End timer
 
-    // 2. ✅ ADD THIS: Notify Admins
-    await notifyAdmins(
-        "New User Registration",
-        `User ${newUser.username} (${newUser.email}) just registered as a ${newUser.role}.`,
-        "info",
-        "/superAdmin/users" // This links to your User Base page
-    );
-    
-    // ✅ ADD THIS:
-    await sendNotification(
-        newUser.id,
-        "Welcome to Aurelia!",
-        "Your account has been created. Complete your profile to get started.",
-        "success",
-        "/profile"
-    );
+    // 4. NON-BLOCKING NOTIFICATIONS
+    // We use Promise.allSettled() but do NOT 'await' the result.
+    // This allows the response to be sent to the user IMMEDIATELY without waiting for emails to send.
+    Promise.allSettled([
+        notifyAdmins(
+            "New User Registration",
+            `User ${newUser.username} (${newUser.email}) just registered as a ${newUser.role}.`,
+            "info",
+            "/superAdmin/users"
+        ),
+        sendNotification(
+            newUser.id,
+            "Welcome to Aurelia!",
+            "Your account has been created. Complete your profile to get started.",
+            "success",
+            "/profile"
+        )
+    ]).catch(err => console.error("Background Notification Error:", err));
 
+    // 5. Send Success Response Immediately
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
@@ -57,8 +64,17 @@ exports.register = async (req, res) => {
     });
 
   } catch (err) {
+    // 6. CATCH DUPLICATES (The Safety Net)
+    // If the DB says "Duplicate Entry" (Error 1062), we tell the user the email is taken.
+    if (err.code === 'ER_DUP_ENTRY' || err.errno === 1062) {
+      return res.status(409).json({ 
+          success: false, 
+          message: 'Email or Username already exists' 
+      });
+    }
+
     console.error("Register Error:", err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: "Registration failed." });
   }
 };
 
