@@ -33,6 +33,7 @@ import DashboardBookings from './pages/admin/DashboardBookings'
 import DashboardAnalytics from './pages/admin/DashboardAnalytics'
 import DashboardCustomers from './pages/admin/DashboardCustomers'
 import ManagerFinance from './pages/admin/ManagerFinance'
+import ManagerReviews from './pages/admin/ManagerReviews'
 
 import SuperAdminLayout from './pages/aurelia_admin/SuperAdminLayout'; // Super Admin
 // Super Admin Pages
@@ -76,6 +77,7 @@ const AppRoutes = () => {
           <Route path="bookings" element={<DashboardBookings />} />
           <Route path="analytics" element={<DashboardAnalytics />} />
           <Route path="customers" element={<DashboardCustomers />} />
+          <Route path="reviews" element={<ManagerReviews />} />
           <Route path="finance" element={<ManagerFinance />} />
       </Route>
 

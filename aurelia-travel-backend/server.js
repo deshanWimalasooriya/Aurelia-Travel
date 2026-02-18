@@ -60,6 +60,7 @@ app.use('/api/amenities', amenityRoutes);
 app.use('/api/finance', financeRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/wishlist', wishlistRoutes); // <--- ADD THIS
+app.use('/api/reviews', reviewRoutes);
 
 // Protected User Routes (Applied verifyToken here globally for safety)
 app.use('/api/users', verifyToken, userRoutes);

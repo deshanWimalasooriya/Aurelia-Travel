@@ -96,6 +96,9 @@ exports.createBooking = async (req, res) => {
 };
 
 // 2. GET MY BOOKINGS (Consumer)
+// API/controllers/bookingController.js
+
+// 2. GET MY BOOKINGS (Consumer)
 exports.getMyBookings = async (req, res) => {
     try {
         const bookings = await bookingModel.getDetailedBookingsByUserId(req.user.userId);
@@ -108,7 +111,12 @@ exports.getMyBookings = async (req, res) => {
             checkOut: b.check_out,
             totalPrice: b.total_price,
             status: b.status,
-            hotel: { name: b.hotel_name, image: b.hotel_image, city: b.hotel_city },
+            hotel: { 
+                id: b.hotel_id,  // <--- ADD THIS LINE (This fixes the error)
+                name: b.hotel_name, 
+                image: b.hotel_image, 
+                city: b.hotel_city 
+            },
             room: { title: b.room_title, type: b.room_type }
         }));
 
@@ -117,7 +125,6 @@ exports.getMyBookings = async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 };
-
 // 3. MANAGER DASHBOARD: Get Reservations
 exports.getManagerBookings = async (req, res) => {
     try {
