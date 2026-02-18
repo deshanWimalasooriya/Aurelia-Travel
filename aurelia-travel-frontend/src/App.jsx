@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { NotificationProvider } from './context/NotificationContext';
 import { UserProvider, useUser } from './context/userContext'
+import { WishlistProvider } from './context/WishlistContext'; // <--- Import
 import Layout from './components/layout/Layout'
 import ProtectedRoute from './components/ProtectedRoute'; // Your auth guard
 
@@ -19,6 +21,8 @@ import HotelPage from './pages/HotelPage'
 import AdminDashboard from './pages/AdminDashboard' 
 import HotelSearch from './pages/HotelSearch'
 import HotelShowcase from './pages/HotelShowcase'
+import NotificationsPage from './pages/NotificationsPage'
+import WishlistPage from './pages/WishlistPage'; // <--- Import Page (we will create below)
 
 // --- Import Admin/Manager Components ---
 import DashboardLayout from './pages/admin/DashboardLayout'
@@ -29,6 +33,17 @@ import DashboardBookings from './pages/admin/DashboardBookings'
 import DashboardAnalytics from './pages/admin/DashboardAnalytics'
 import DashboardCustomers from './pages/admin/DashboardCustomers'
 import ManagerFinance from './pages/admin/ManagerFinance'
+import ManagerReviews from './pages/admin/ManagerReviews'
+
+import SuperAdminLayout from './pages/aurelia_admin/SuperAdminLayout'; // Super Admin
+// Super Admin Pages
+import SuperOverview from './pages/aurelia_admin/SuperOverview';
+import SuperHotels from './pages/aurelia_admin/SuperHotels';
+import SuperUsers from './pages/aurelia_admin/SuperUsers';
+import SuperFinance from './pages/aurelia_admin/SuperFinance';
+import SuperReviews from './pages/aurelia_admin/SuperReviews';
+import SuperSettings from './pages/aurelia_admin/SuperSettings';
+import SuperLogs from './pages/aurelia_admin/SuperLogs'; // <--- IMPORT NEW PAGE
 
 import SuperAdminLayout from './pages/aurelia_admin/SuperAdminLayout'; // Super Admin
 // Super Admin Pages
@@ -58,6 +73,7 @@ const AppRoutes = () => {
           <Route path="finance" element={<SuperFinance />} />
           <Route path="reviews" element={<SuperReviews />} />   {/* NEW */}
           <Route path="settings" element={<SuperSettings />} /> {/* NEW */}
+          <Route path="logs" element={<SuperLogs />} /> {/* <--- ADD ROUTE HERE */}
       </Route>
 
 
@@ -70,6 +86,7 @@ const AppRoutes = () => {
           <Route path="bookings" element={<DashboardBookings />} />
           <Route path="analytics" element={<DashboardAnalytics />} />
           <Route path="customers" element={<DashboardCustomers />} />
+          <Route path="reviews" element={<ManagerReviews />} />
           <Route path="finance" element={<ManagerFinance />} />
       </Route>
 
@@ -85,7 +102,8 @@ const AppRoutes = () => {
             <Route path="/hotels" element={<HotelPage />} />
             <Route path="/hotel-search" element={<HotelSearch />} />
             <Route path="/hotel-showcase" element={<HotelShowcase />} />
-
+            <Route path="/notifications" element={user ? <NotificationsPage /> : <Navigate to="/auth" />} />
+            <Route path="/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} /> {/* <--- ADD ROUTE */}
             {/* Auth Routes */}
             <Route path="/auth" element={!user ? <LoginRegister /> : <Navigate to="/profile" />} />
             
@@ -109,7 +127,11 @@ function App() {
   return (
     <UserProvider>
       <AuthProvider>
-         <AppRoutes />
+        <NotificationProvider>
+          <WishlistProvider>
+            <AppRoutes />
+          </WishlistProvider>
+        </NotificationProvider>
       </AuthProvider>
     </UserProvider>
   )

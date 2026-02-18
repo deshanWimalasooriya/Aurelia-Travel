@@ -123,3 +123,42 @@ exports.updateSettings = async (data) => {
         return knex('platform_settings').insert(data);
     }
 };
+
+// ... existing imports
+
+// 7. Activity Logs
+exports.getActivityLogs = (filters = {}) => {
+    const query = knex('activity_logs')
+        .join('users', 'activity_logs.admin_id', 'users.id')
+        .select(
+            'activity_logs.*',
+            'users.username as admin_name',
+            'users.email as admin_email'
+        )
+        .orderBy('activity_logs.created_at', 'desc');
+
+    // Apply Filters
+    if (filters.search) {
+        query.where(builder => {
+            builder.where('users.username', 'like', `%${filters.search}%`)
+                   .orWhere('activity_logs.action_type', 'like', `%${filters.search}%`)
+                   .orWhere('activity_logs.target', 'like', `%${filters.search}%`);
+        });
+    }
+
+    if (filters.action && filters.action !== 'all') {
+        // Matches "DELETE" with "DELETE_USER", "DELETE_HOTEL", etc.
+        query.where('activity_logs.action_type', 'like', `${filters.action}%`);
+    }
+
+    if (filters.date) {
+        query.whereRaw('DATE(activity_logs.created_at) = ?', [filters.date]);
+    }
+
+    return query;
+};
+
+// Helper to Create Log (Use this in other controllers)
+exports.createLog = (data) => {
+    return knex('activity_logs').insert(data);
+};

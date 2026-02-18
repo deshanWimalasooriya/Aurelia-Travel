@@ -2,6 +2,9 @@ const bookingModel = require('../models/bookingModel');
 const roomModel = require('../models/roomModel');
 const hotelModel = require('../models/hotelModel');
 
+// Import the helper
+const { sendNotification } = require('./notificationController');
+
 // 1. CREATE BOOKING (Consumer)
 exports.createBooking = async (req, res) => {
     try {
@@ -65,11 +68,35 @@ exports.createBooking = async (req, res) => {
             reference: result.reference
         });
 
+        // 1. Notify User
+        await sendNotification(
+            req.user.userId,
+            "Booking Confirmed",
+            `Your stay at ${room.hotel_name || 'the hotel'} is confirmed!`,
+            "success",
+            `/profile`
+        );
+
+        // 2. Notify Hotel Manager (if exists)
+        const hotel = await hotelModel.getById(room.hotel_id);
+        if (hotel && hotel.manager_id) {
+            await sendNotification(
+                hotel.manager_id,
+                "New Reservation",
+                `You have a new booking for ${room.title}.`,
+                "info",
+                "/admin/bookings"
+            );
+        }
+
     } catch (err) {
         console.error("Booking Error:", err);
         res.status(500).json({ success: false, error: err.message }); // Handles "Room not available"
     }
 };
+
+// 2. GET MY BOOKINGS (Consumer)
+// API/controllers/bookingController.js
 
 // 2. GET MY BOOKINGS (Consumer)
 exports.getMyBookings = async (req, res) => {
@@ -84,7 +111,12 @@ exports.getMyBookings = async (req, res) => {
             checkOut: b.check_out,
             totalPrice: b.total_price,
             status: b.status,
-            hotel: { name: b.hotel_name, image: b.hotel_image, city: b.hotel_city },
+            hotel: { 
+                id: b.hotel_id,  // <--- ADD THIS LINE (This fixes the error)
+                name: b.hotel_name, 
+                image: b.hotel_image, 
+                city: b.hotel_city 
+            },
             room: { title: b.room_title, type: b.room_type }
         }));
 
@@ -93,7 +125,6 @@ exports.getMyBookings = async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 };
-
 // 3. MANAGER DASHBOARD: Get Reservations
 exports.getManagerBookings = async (req, res) => {
     try {

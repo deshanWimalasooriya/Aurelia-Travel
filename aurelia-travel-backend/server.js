@@ -3,11 +3,17 @@ const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const connection = require('./config/db'); // This is now your Knex instance
+const http = require('http'); // 1. Import HTTP
+const { init } = require('./API/socket'); // 2. Import Socket Init
 
 // Load Env Variables
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app); // 3. Create Server
+
+// Initialize Socket.io
+init(server); // 4. Initialize
 
 // --- 1. MIDDLEWARE ---
 // CORS: Allow requests from your Frontend
@@ -37,8 +43,12 @@ const walletRoutes = require('./API/routes/walletRoutes');
 const crmRoutes = require('./API/routes/crmRoutes');
 const amenityRoutes = require('./API/routes/amenityRoutes');
 const financeRoutes = require('./API/routes/financeRoutes');
-const adminRoutes = require('./API/routes/adminRoutes'); // Existing Admin/Manager routes
-const platformRoutes = require('./API/routes/platformRoutes'); // ✅ SUPER ADMIN ROUTES
+const notificationRoutes = require('./API/routes/notificationRoutes');
+const wishlistRoutes = require('./API/routes/wishlistRoutes'); // <--- ADD THIS
+
+// --- MISSING IMPORTS ADDED HERE ---
+const adminRoutes = require('./API/routes/adminRoutes'); 
+const platformRoutes = require('./API/routes/platformRoutes');
 
 // --- 3. REGISTER ROUTES ---
 
@@ -47,6 +57,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/hotels', hotelRoutes); // Hotels (Public view)
 app.use('/api/rooms', roomRoutes);
 app.use('/api/amenities', amenityRoutes);
+app.use('/api/finance', financeRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/wishlist', wishlistRoutes); // <--- ADD THIS
 app.use('/api/reviews', reviewRoutes);
 
 // Protected User Routes (Applied verifyToken here globally for safety)
@@ -75,7 +88,7 @@ connection.raw('SELECT 1')
 
 // --- 5. START SERVER ---
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`🚀 Server is running on port ${PORT}`);
     console.log(`🔗 Platform Routes available at: http://localhost:${PORT}/api/platform`);
 });

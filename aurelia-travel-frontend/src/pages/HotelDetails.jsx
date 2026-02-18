@@ -5,10 +5,12 @@ import {
   MapPin, Star, Check, Wifi, Car, Coffee, Info, ArrowRight, 
   ShieldCheck, Utensils, Calendar, Users, TrendingUp, 
   Maximize, Mountain, User, Clock, AlertCircle, Ban, Dog, 
-  Bed, Eye, X, Image as ImageIcon 
+  Bed, Eye, X, Image as ImageIcon, Heart 
 } from 'lucide-react';
 import { useUser } from '../context/userContext';
+import { useWishlist } from '../context/WishlistContext'; // Ensure this context exists or remove if not
 import ImageGallery from '../components/ui/ImageGallery'; 
+import HotelDetailsSkeleton from '../components/ui/HotelDetailsSkeleton'; // Your skeleton loader
 import './styles/hotelDetails.css';
 
 const HotelDetails = () => {
@@ -17,10 +19,15 @@ const HotelDetails = () => {
   const { user } = useUser();
   const roomsRef = useRef(null);
   
+  // Data States
   const [hotel, setHotel] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Wishlist Logic
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const isSaved = hotel ? isInWishlist(hotel.id) : false;
   
   // Gallery State
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -53,14 +60,13 @@ const HotelDetails = () => {
         
         // Handle raw room data
         const rawRooms = Array.isArray(roomRes.data) ? roomRes.data : (roomRes.data.data || []);
-        
-        // ✅ MODIFIED: Filter to only show active rooms
         const activeRooms = rawRooms.filter(room => room.is_active);
 
+        // Handle Reviews
         const reviewsData = Array.isArray(reviewRes.data.data) ? reviewRes.data.data : [];
         
         setHotel(hotelData);
-        setRooms(activeRooms); // Set filtered list
+        setRooms(activeRooms); 
         setReviews(reviewsData);
       } catch (err) {
         console.error("Fetch details error:", err);
@@ -179,7 +185,23 @@ const HotelDetails = () => {
     }
   };
 
-  if (loading) return <div className="loading-screen"><div className="spinner"></div><h3>Loading Hotel...</h3></div>;
+  // Helper: Render Stars
+  const renderStars = (rating) => {
+    return (
+        <div style={{display:'flex', gap:'2px'}}>
+            {[...Array(5)].map((_, i) => (
+                <Star 
+                    key={i} 
+                    size={14} 
+                    fill={i < rating ? "#fbbf24" : "none"} 
+                    color={i < rating ? "#fbbf24" : "#cbd5e1"} 
+                />
+            ))}
+        </div>
+    );
+  };
+
+  if (loading) return <HotelDetailsSkeleton />;
   if (!hotel) return <div className="loading-screen">Hotel not found</div>;
 
   // --- IMAGES & LOCATION LOGIC ---
@@ -215,6 +237,23 @@ const HotelDetails = () => {
             <div className="hotel-headline">
                 <div>
                     <h1 className="hotel-title">{hotel.name}</h1>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px'}}>
+                        {/* --- WISHLIST BUTTON --- */}
+                        <button 
+                            onClick={() => toggleWishlist(hotel)}
+                            style={{
+                                background: isSaved ? '#fee2e2' : 'transparent',
+                                border: `1px solid ${isSaved ? '#ef4444' : '#cbd5e1'}`,
+                                borderRadius: '50px', padding: '6px 12px',
+                                display: 'flex', alignItems: 'center', gap: '6px',
+                                cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
+                                color: isSaved ? '#b91c1c' : '#64748b', transition: 'all 0.2s'
+                            }}
+                        >
+                            <Heart size={16} fill={isSaved ? "currentColor" : "none"} />
+                            {isSaved ? 'Saved' : 'Save'}
+                        </button>
+                    </div>
                     <div className="hotel-meta">
                         <span className="meta-item"><MapPin size={16} className="icon-blue"/> {hotel.address_line_1}, {hotel.city}, {hotel.country}</span>
                         <div className="rating-pill">
@@ -386,7 +425,7 @@ const HotelDetails = () => {
                     </div>
                 </div>
 
-                {/* REVIEWS */}
+                {/* REVIEWS SECTION */}
                 <div className="section-card reviews-section">
                     <div className="reviews-header-bar">
                         <h2 className="section-title">Guest Reviews</h2>
@@ -403,19 +442,32 @@ const HotelDetails = () => {
                             {reviews.map((rev) => (
                                 <div key={rev.id} className="review-card">
                                     <div className="review-user-row">
-                                        <div className="user-avatar">{rev.user_name ? rev.user_name.charAt(0) : "G"}</div>
+                                        <div className="avatar-circle">
+                                            {rev.profile_image ? (
+                                                <img src={rev.profile_image} alt="" style={{width:'100%', height:'100%', borderRadius:'50%', objectFit:'cover'}} />
+                                            ) : (
+                                                (rev.user_name || "G").charAt(0).toUpperCase()
+                                            )}
+                                        </div>
                                         <div className="user-meta">
                                             <span className="user-name">{rev.user_name || "Verified Guest"}</span>
-                                            <span className="user-country">Sri Lanka</span>
+                                            <span className="user-country">{new Date(rev.created_at).toLocaleDateString()}</span>
                                         </div>
                                     </div>
                                     <div className="review-content-block">
-                                        <div className="review-date-row">
-                                            <span className="review-date">Reviewed on {new Date(rev.created_at).toLocaleDateString()}</span>
-                                            <span className="review-score-small">{rev.rating}</span>
+                                        <div className="review-date-row" style={{marginBottom:'8px'}}>
+                                            {renderStars(rev.rating)}
                                         </div>
                                         <h4 className="review-subject">{rev.title}</h4>
                                         <p className="review-body">{rev.comment}</p>
+
+                                        {/* Display Manager Response */}
+                                        {rev.hotel_response && (
+                                            <div className="hotel-response-public" style={{marginTop:'15px', background:'#f8fafc', padding:'12px', borderRadius:'8px', borderLeft:'3px solid #3b82f6'}}>
+                                                <span style={{fontSize:'0.75rem', fontWeight:'700', color:'#3b82f6', textTransform:'uppercase', display:'block', marginBottom:'4px'}}>Response from Property</span>
+                                                <p style={{fontSize:'0.9rem', color:'#334155', margin:0}}>{rev.hotel_response}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}

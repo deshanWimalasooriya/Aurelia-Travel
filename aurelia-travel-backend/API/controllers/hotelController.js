@@ -1,4 +1,5 @@
 const hotelModel = require("../models/hotelModel");
+const { notifyAdmins } = require('./notificationController'); // Import
 
 const parseHotelData = (hotel) => {
     if (!hotel) return null;
@@ -115,6 +116,14 @@ exports.create = async (req, res) => {
             manager_id: req.user.userId,
             is_featured: 0
         };
+
+        // NEW: Notify Admins
+        await notifyAdmins(
+            "New Property Added",
+            `A new hotel "${hotelData.name}" has been listed and requires review.`,
+            "warning", // 'warning' uses yellow color (good for pending reviews)
+            `/superAdmin/hotels` // Link to Admin Hotels Page
+        );
 
         const newHotelId = await hotelModel.create(hotelData, images, amenities);
         res.status(201).json({ success: true, message: "Hotel created", hotelId: newHotelId });

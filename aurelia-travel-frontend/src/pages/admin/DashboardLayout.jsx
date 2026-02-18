@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { 
   LayoutDashboard, BedDouble, CalendarDays, BarChart3, 
   Users, LogOut, Menu, X, Building, ChevronRight, 
-  DollarSign
+  DollarSign, MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext'; 
 import './styles/dashboard-layout.css';
@@ -27,6 +27,7 @@ const DashboardLayout = () => {
     { path: '/admin/rooms', label: 'Room Manager', icon: BedDouble },
     { path: '/admin/bookings', label: 'Reservations', icon: CalendarDays },
     { path: '/admin/customers', label: 'Guest List', icon: Users },
+    { path: '/admin/reviews', label: 'Reviews', icon: MessageSquare },
     { path: '/admin/analytics', label: 'Financials', icon: BarChart3 },
     { path: '/admin/finance', label: 'Payments', icon: DollarSign},
   ];

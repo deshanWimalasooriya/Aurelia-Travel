@@ -66,6 +66,16 @@ const platformService = {
     updateSettings: async (settings) => {
         const res = await axios.put(`${API_URL}/settings`, settings, getAuthHeader());
         return res.data;
+    },
+
+    // ✅ NEW: Activity Logs
+    getLogs: async (params) => {
+        // params: { search, date, action }
+        const res = await axios.get(`${API_URL}/logs`, { 
+            ...getAuthHeader(),
+            params 
+        });
+        return res.data;
     }
 };
 

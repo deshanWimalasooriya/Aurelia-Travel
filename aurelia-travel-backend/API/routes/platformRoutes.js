@@ -31,4 +31,7 @@ router.delete('/reviews/:id', platformController.deleteReview);
 router.get('/settings', platformController.getSettings);
 router.put('/settings', platformController.updateSettings);
 
+// ✅ NEW: Logs
+router.get('/logs', platformController.getSystemLogs);
+
 module.exports = router;
