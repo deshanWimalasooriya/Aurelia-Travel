@@ -9,7 +9,6 @@ module.exports = {
       host: process.env.DB_HOST || '127.0.0.1',
       
       // IMPORTANT: TiDB uses port 4000, XAMPP uses 3306. 
-      // We now read this from the .env file instead of hardcoding it.
       port: Number(process.env.DB_PORT) || 3306,
       
       user: process.env.DB_USER || 'root',
@@ -25,6 +24,19 @@ module.exports = {
         minVersion: 'TLSv1.2'
       }
     },
+    
+    // ✅ RESOLVED: CONNECTION POOLING (Fixes Multi-User Crashes)
+    pool: {
+      min: 2, 
+      max: 40, // Increased from default 10 to 40 for higher traffic
+      
+      // If a connection is idle for 30s, close it to free up RAM
+      idleTimeoutMillis: 30000, 
+      
+      // If the database is busy, wait 5s for a slot, then fail (don't hang forever)
+      acquireTimeoutMillis: 5000 
+    },
+
     migrations: {
       directory: './db/migrations'
     },
