@@ -45,15 +45,6 @@ import SuperReviews from './pages/aurelia_admin/SuperReviews';
 import SuperSettings from './pages/aurelia_admin/SuperSettings';
 import SuperLogs from './pages/aurelia_admin/SuperLogs'; // <--- IMPORT NEW PAGE
 
-import SuperAdminLayout from './pages/aurelia_admin/SuperAdminLayout'; // Super Admin
-// Super Admin Pages
-import SuperOverview from './pages/aurelia_admin/SuperOverview';
-import SuperHotels from './pages/aurelia_admin/SuperHotels';
-import SuperUsers from './pages/aurelia_admin/SuperUsers';
-import SuperFinance from './pages/aurelia_admin/SuperFinance';
-import SuperReviews from './pages/aurelia_admin/SuperReviews';
-import SuperSettings from './pages/aurelia_admin/SuperSettings';
-
 import './index.css'
 
 // Helper component to access Context safely inside the Provider
