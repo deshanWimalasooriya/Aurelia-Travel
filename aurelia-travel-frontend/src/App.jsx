@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { NotificationProvider } from './context/NotificationContext';
 import { UserProvider, useUser } from './context/userContext'
+import { WishlistProvider } from './context/WishlistContext'; // <--- Import
 import Layout from './components/layout/Layout'
 import ProtectedRoute from './components/ProtectedRoute'; // Your auth guard
 
@@ -21,6 +22,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import HotelSearch from './pages/HotelSearch'
 import HotelShowcase from './pages/HotelShowcase'
 import NotificationsPage from './pages/NotificationsPage'
+import WishlistPage from './pages/WishlistPage'; // <--- Import Page (we will create below)
 
 // --- Import Admin/Manager Components ---
 import DashboardLayout from './pages/admin/DashboardLayout'
@@ -90,7 +92,7 @@ const AppRoutes = () => {
             <Route path="/hotel-search" element={<HotelSearch />} />
             <Route path="/hotel-showcase" element={<HotelShowcase />} />
             <Route path="/notifications" element={user ? <NotificationsPage /> : <Navigate to="/auth" />} />
-
+            <Route path="/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} /> {/* <--- ADD ROUTE */}
             {/* Auth Routes */}
             <Route path="/auth" element={!user ? <LoginRegister /> : <Navigate to="/profile" />} />
             
@@ -115,7 +117,9 @@ function App() {
     <UserProvider>
       <AuthProvider>
         <NotificationProvider>
-          <AppRoutes />
+          <WishlistProvider>
+            <AppRoutes />
+          </WishlistProvider>
         </NotificationProvider>
       </AuthProvider>
     </UserProvider>

@@ -1,5 +1,6 @@
-import { Star, MapPin } from 'lucide-react'
+import { Star, MapPin, Heart } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useWishlist } from '../../context/WishlistContext'; // Import Hook
 import './styles/HotelCard.css'
 
 const HotelCard = ({ hotel }) => {
@@ -11,6 +12,9 @@ const HotelCard = ({ hotel }) => {
   
   // Handle price display
   const startPrice = parseFloat(hotel.price || 0);
+
+  const { isInWishlist, toggleWishlist } = useWishlist(); // Use Context
+  const isSaved = isInWishlist(hotel.id);
 
   return (
     <div className="hotel-card">
@@ -26,6 +30,24 @@ const HotelCard = ({ hotel }) => {
             </div>
         )}
       </div>
+
+      {/* --- NEW WISHLIST BUTTON --- */}
+        <button 
+            className="wishlist-btn" 
+            onClick={(e) => {
+                e.preventDefault(); // Prevent navigating to details
+                toggleWishlist(hotel);
+            }}
+            style={{
+                position: 'absolute', top: 12, right: 12,
+                background: 'white', border: 'none', borderRadius: '50%',
+                width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+            }}
+        >
+            <Heart size={18} fill={isSaved ? "#ef4444" : "none"} color={isSaved ? "#ef4444" : "#64748b"} />
+        </button>
+        {/* --------------------------- */}
       
       <div className="hotel-info">
         <h3 className="hotel-name">{hotel.name}</h3>

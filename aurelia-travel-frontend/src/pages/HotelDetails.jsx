@@ -9,7 +9,11 @@ import {
 } from 'lucide-react';
 import { useUser } from '../context/userContext';
 import ImageGallery from '../components/ui/ImageGallery'; 
+import HotelDetailsSkeleton from '../components/ui/HotelDetailsSkeleton'; // ✅ IMPORTED SKELETON
 import './styles/hotelDetails.css';
+
+import { useWishlist } from '../context/WishlistContext';
+import { Heart } from 'lucide-react';
 
 const HotelDetails = () => {
   const { id } = useParams();
@@ -21,6 +25,9 @@ const HotelDetails = () => {
   const [rooms, setRooms] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const isSaved = hotel ? isInWishlist(hotel.id) : false;
   
   // Gallery State
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -54,13 +61,13 @@ const HotelDetails = () => {
         // Handle raw room data
         const rawRooms = Array.isArray(roomRes.data) ? roomRes.data : (roomRes.data.data || []);
         
-        // ✅ MODIFIED: Filter to only show active rooms
+        // Filter to only show active rooms
         const activeRooms = rawRooms.filter(room => room.is_active);
 
         const reviewsData = Array.isArray(reviewRes.data.data) ? reviewRes.data.data : [];
         
         setHotel(hotelData);
-        setRooms(activeRooms); // Set filtered list
+        setRooms(activeRooms); 
         setReviews(reviewsData);
       } catch (err) {
         console.error("Fetch details error:", err);
@@ -179,7 +186,9 @@ const HotelDetails = () => {
     }
   };
 
-  if (loading) return <div className="loading-screen"><div className="spinner"></div><h3>Loading Hotel...</h3></div>;
+  // ✅ UPDATED LOADING CHECK
+  if (loading) return <HotelDetailsSkeleton />;
+  
   if (!hotel) return <div className="loading-screen">Hotel not found</div>;
 
   // --- IMAGES & LOCATION LOGIC ---
@@ -215,6 +224,22 @@ const HotelDetails = () => {
             <div className="hotel-headline">
                 <div>
                     <h1 className="hotel-title">{hotel.name}</h1>
+                    {/* --- WISHLIST BUTTON --- */}
+                    <button 
+                        onClick={() => toggleWishlist(hotel)}
+                        style={{
+                            background: isSaved ? '#fee2e2' : 'transparent',
+                            border: `1px solid ${isSaved ? '#ef4444' : '#cbd5e1'}`,
+                            borderRadius: '50px', padding: '8px 16px',
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600,
+                            color: isSaved ? '#b91c1c' : '#64748b', transition: 'all 0.2s'
+                        }}
+                    >
+                        <Heart size={18} fill={isSaved ? "currentColor" : "none"} />
+                        {isSaved ? 'Saved' : 'Save'}
+                    </button>
+                    {/* ----------------------- */}
                     <div className="hotel-meta">
                         <span className="meta-item"><MapPin size={16} className="icon-blue"/> {hotel.address_line_1}, {hotel.city}, {hotel.country}</span>
                         <div className="rating-pill">

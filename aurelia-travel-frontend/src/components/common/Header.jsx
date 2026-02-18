@@ -6,6 +6,7 @@ import { useNotifications } from '../../context/NotificationContext'
 import NotificationBell from '../ui/NotificationBell'
 import axios from 'axios'
 import './styles/header.css'
+import { useWishlist } from '../../context/WishlistContext';
 
 const Header = () => {
   const location = useLocation()
@@ -13,7 +14,7 @@ const Header = () => {
   
   // ✅ Extract isManager and isAdmin
   const { user, clearUser, isAdmin, isManager } = useUser()
-  
+  const { wishlist } = useWishlist();
   // State for Dropdown
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
@@ -77,9 +78,22 @@ const Header = () => {
           <Link to="/contact" className="header-nav-link">Contact</Link>
         </nav>
         <div className="header-actions">
-          <button className="header-action">
-            <Heart className="header-icon" />
-          </button>
+          {/* --- UPDATED WISHLIST BUTTON --- */}
+          <Link to="/wishlist" className="header-action" style={{position: 'relative'}}>
+              <Heart className="header-icon" />
+              {wishlist.length > 0 && (
+                  <span style={{
+                      position: 'absolute', top: 0, right: 0,
+                      background: '#ef4444', color: 'white',
+                      fontSize: '10px', fontWeight: 'bold',
+                      height: '16px', width: '16px',
+                      borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                      {wishlist.length}
+                  </span>
+              )}
+          </Link>
+        {/* ------------------------------- */}
           <div style={{ marginRight: '15px' }}>
             <NotificationBell />
           </div>
