@@ -8,6 +8,7 @@ import { Filter, SlidersHorizontal, X } from 'lucide-react'
 import './styles/hotelPage.css'
 
 const HotelPage = () => {
+  // ... (Keep existing states) ...
   const [searchParams] = useSearchParams();
   const [allHotels, setAllHotels] = useState([])
   const [topHotels, setTopHotels] = useState([]) 

@@ -7,6 +7,7 @@ import { SlidersHorizontal, X, MapPin } from 'lucide-react'
 import './styles/hotelPage.css' // ✅ Use the modern premium stylesheet
 
 const SearchResults = () => {
+  // ... (Keep existing state and filter logic) ...
   const location = useLocation()
   const [hotels, setHotels] = useState([]) 
   const [loading, setLoading] = useState(true)

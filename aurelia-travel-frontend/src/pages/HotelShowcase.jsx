@@ -24,6 +24,7 @@ const HotelShowcase = () => {
     const fetchData = async () => {
       try {
         setLoading(true)
+        // ... (API calls remain the same) ...
         const [allRes, topRes, newRes] = await Promise.all([
           api.get('/hotels'),
           api.get('/hotels/top-rated'),

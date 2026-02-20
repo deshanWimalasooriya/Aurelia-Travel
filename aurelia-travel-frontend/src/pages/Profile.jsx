@@ -94,6 +94,7 @@ export default function Profile() {
     } catch (err) { alert(err.response?.data?.message || "Failed to submit review."); }
   };
 
+  // --- PROFILE HANDLERS ---
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setProfileData(prev => ({ ...prev, [name]: value }));
@@ -132,6 +133,7 @@ export default function Profile() {
     finally { setLoadingProfile(false); }
   };
 
+  // --- PAYMENT HANDLERS ---
   const handlePaymentInput = (e) => {
     const { name, value } = e.target;
     if (name === 'card_number') {
