@@ -2,13 +2,12 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import HotelCard from '../components/ui/HotelCard'
-import SkeletonCard from '../components/ui/SkeletonCard' // ✅ Import Skeleton
+import SkeletonCard from '../components/ui/SkeletonCard'
 import SearchForm from '../components/ui/SearchForm'
 import { Filter, SlidersHorizontal, X } from 'lucide-react'
-import './styles/HotelPage.css'
+import './styles/hotelPage.css'
 
 const HotelPage = () => {
-  // ... (Keep existing states) ...
   const [searchParams] = useSearchParams();
   const [allHotels, setAllHotels] = useState([])
   const [topHotels, setTopHotels] = useState([]) 
@@ -24,7 +23,6 @@ const HotelPage = () => {
   const [minRating, setMinRating] = useState(0)
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
 
-  // ... (Keep fetch logic) ...
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -79,7 +77,6 @@ const HotelPage = () => {
     )
   }
 
-  // ... (Keep filtering logic) ...
   const filteredHotels = useMemo(() => {
     if (!allHotels) return [];
     const locationQuery = (searchParams.get('location') || '').toLowerCase().trim();
@@ -106,18 +103,16 @@ const HotelPage = () => {
     });
   }, [allHotels, searchParams, priceRange, minRating, selectedFilters]);
 
-  // ✅ NEW: Replace full-page loading with skeleton layout
-  // (We remove the "if (loading) return ..." block from here)
 
   return (
     <div className="page-wrapper">
       
-      {/* HEADER (Always visible) */}
+      {/* HEADER */}
       <div className="modern-header">
         <div className="header-bg-overlay"></div>
         <div className="header-content-centered">
           <h1>Find your sanctuary</h1>
-          <p>Discover luxury, comfort, and adventure.</p>
+          <p>Discover luxury, comfort, and unparalleled experiences.</p>
           <div className="floating-search-bar">
             <SearchForm /> 
           </div>
@@ -128,35 +123,33 @@ const HotelPage = () => {
         
         {/* MOBILE FILTER TOGGLE */}
         <button className="mobile-filter-btn" onClick={() => setIsMobileFilterOpen(true)}>
-            <SlidersHorizontal size={18} /> Filters
+            <SlidersHorizontal size={20} /> Filter Results
         </button>
 
-        {/* LEFT SIDEBAR (Hide if loading to keep layout clean, or show skeletons inside sidebar too?) 
-            For now, we'll keep the sidebar visible but static/empty if loading. 
-        */}
+        {/* LEFT SIDEBAR */}
         <aside className={`filter-sidebar ${isMobileFilterOpen ? 'mobile-open' : ''}`}>
           <div className="sidebar-header-mobile">
-            <h3>Filters</h3>
-            <button onClick={() => setIsMobileFilterOpen(false)}><X size={20}/></button>
+            <h3>Refine Search</h3>
+            <button onClick={() => setIsMobileFilterOpen(false)}><X size={24}/></button>
           </div>
 
-          {/* Only show filters when data is ready, otherwise show a simplified loading state for sidebar */}
           {!loading ? (
             <div className="sidebar-sticky-content">
                 <div className="filter-card">
                    <div className="card-header">
-                       <h4>Max Price</h4>
-                       <span className="price-tag">LKR {priceRange[1].toLocaleString()}</span>
+                       <h4>Maximum Price</h4>
                    </div>
                    <div className="histogram-wrapper">
+                       <div className="range-value-display">Up to ${priceRange[1].toLocaleString()}</div>
                        <input type="range" min="0" max={maxPriceLimit} value={priceRange[1]} onChange={(e) => setPriceRange([0, Number(e.target.value)])} className="modern-range" />
                    </div>
                 </div>
+
                 <div className="filter-card">
                   <div className="card-header">
-                      <h4>Amenities</h4>
+                      <h4>Popular Amenities</h4>
                       {(selectedFilters.length > 0 || priceRange[1] < maxPriceLimit) && (
-                        <button onClick={() => { setSelectedFilters([]); setPriceRange([0, maxPriceLimit]); }} className="reset-link">Reset</button>
+                        <button onClick={() => { setSelectedFilters([]); setPriceRange([0, maxPriceLimit]); }} className="reset-link">Clear All</button>
                       )}
                   </div>
                   <div className="amenities-scroll-area">
@@ -173,8 +166,8 @@ const HotelPage = () => {
             </div>
           ) : (
             <div className="sidebar-sticky-content">
-                <div className="filter-card"><div className="skeleton-text title skeleton-pulse"></div></div>
-                <div className="filter-card"><div className="skeleton-text title skeleton-pulse"></div></div>
+                <div className="filter-card"><div className="skeleton-pulse" style={{height:'100px', borderRadius:'12px'}}></div></div>
+                <div className="filter-card"><div className="skeleton-pulse" style={{height:'300px', borderRadius:'12px'}}></div></div>
             </div>
           )}
         </aside>
@@ -183,21 +176,19 @@ const HotelPage = () => {
         <main className="results-feed">
           <div className="results-toolbar">
             <div className="result-count">
-                <strong>{loading ? '...' : filteredHotels.length}</strong> 
-                <span> properties match your search</span>
+                <strong>{loading ? '...' : filteredHotels.length}</strong> properties found
             </div>
           </div>
 
-          {/* ✅ UPDATED: Skeleton Logic */}
           {loading ? (
             <div className="hotel-grid-modern">
                 {Array(6).fill(0).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : filteredHotels.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon"><Filter size={40} /></div>
-              <h3>No matches found</h3>
-              <p>We couldn't find any properties matching your specific filters.</p>
+              <div className="empty-icon-circle"><Filter size={36} /></div>
+              <h3>No Matches Found</h3>
+              <p>We couldn't find any properties matching your specific filters. Try broadening your search.</p>
               <button onClick={() => { setSelectedFilters([]); setPriceRange([0, maxPriceLimit]); }} className="btn-primary-outline">Clear Filters</button>
             </div>
           ) : (

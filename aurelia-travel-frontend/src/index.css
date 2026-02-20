@@ -1,3 +1,35 @@
+/* --- AURELIA PREMIUM DESIGN SYSTEM --- */
+:root {
+  /* Colors */
+  --color-primary: #2563eb;       /* Royal Blue */
+  --color-primary-hover: #1d4ed8; 
+  --color-dark: #0f172a;          /* Deep Slate/Navy */
+  --color-dark-hover: #1e293b;
+  --color-accent: #d97706;        /* Aurelia Gold */
+  --color-background: #f8fafc;    /* Clean Light Gray */
+  --color-surface: #ffffff;       /* Pure White */
+  
+  /* Text */
+  --text-main: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  
+  /* UI Elements */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 50px;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+  --shadow-float: 0 20px 40px -10px rgba(0, 0, 0, 0.12);
+  --glass-border: 1px solid rgba(226, 232, 240, 0.8);
+  
+  --font-main: 'Inter', system-ui, -apple-system, sans-serif;
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -5,77 +37,61 @@
 }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
-  background-color: #f8f9fa;
-  color: #333;
+  font-family: var(--font-main);
+  background-color: var(--color-background);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+
+  /* --- NEW: Scales entire website to 80% --- */
+  zoom: 0.8; 
+  -moz-transform: scale(0.8);
+  -moz-transform-origin: top center;
+
+  overflow-x: hidden;
 }
 
-/* --- FIX: Force Inputs to be Visible --- */
+/* Force Inputs to be Visible (Kept your fix) */
 input, select, textarea {
-  color: #000000 !important;       /* Forces text to be black */
-  background-color: #ffffff !important; /* Forces background to be white */
-  color-scheme: light;             /* Tells browser to use light-mode defaults for this element */
+  color: var(--text-main) !important;
+  background-color: var(--color-surface) !important;
+  color-scheme: light;
+  font-family: var(--font-main);
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px;
 }
 
-.btn-primary {
-  background-color: #3b82f6;
-  color: white;
-  font-weight: 500;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary:hover {
-  background-color: #2563eb;
-}
-
-.card {
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  transition: all 0.3s;
-}
-
-.card:hover {
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-
-.section {
-  padding: 80px 0;
-  background-color: #f8f9fa;
-}
-
+/* Base Form Inputs */
 .form-input {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: all 0.2s;
-  
-  /* FIX: Ensure visibility here as well */
-  background-color: #ffffff;
-  color: #1f2937;
-}
-
-/* --- FIX: Add this class to your inputs in React to stop overlap --- */
-.input-with-icon {
-  padding-left: 45px !important; /* Makes space for the icon */
+  padding: 12px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  transition: var(--transition-smooth);
 }
 
 .form-input:focus {
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.input-with-icon {
+  padding-left: 45px !important;
+}
+
+/* --- 80% SCALING & FULL-SCREEN FIX --- */
+#root {
+    width: 125vw !important;
+    height: 125vh !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
 }

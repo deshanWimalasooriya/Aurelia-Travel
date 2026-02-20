@@ -34,11 +34,10 @@ const SuperSettings = () => {
 
     return (
         <div className="sa-settings-container">
-            <h1 className="sa-page-title" style={{marginBottom: '10px'}}>Platform Configuration</h1>
-            <p style={{ color: '#64748b', marginBottom: '30px' }}>Manage global system parameters.</p>
+            <h1 className="sa-page-title" style={{marginBottom: '5px'}}>Platform Configuration</h1>
+            <p className="sa-page-subtitle" style={{marginBottom: '30px'}}>Manage global system parameters.</p>
 
             <form onSubmit={handleSave} className="sa-settings-form">
-                {/* (Form content remains the same, just ensured handleSave uses service) */}
                 
                 {/* Commission */}
                 <div className="sa-setting-section">
@@ -54,7 +53,7 @@ const SuperSettings = () => {
                             value={config.commission_rate}
                             onChange={e => setConfig({...config, commission_rate: e.target.value})}
                         />
-                        <p className="sa-helper-text">This percentage is deducted from all hotel bookings.</p>
+                        <p className="sa-helper-text">This percentage is deducted automatically from all hotel bookings.</p>
                     </div>
                 </div>
 
@@ -90,22 +89,23 @@ const SuperSettings = () => {
                             <input 
                                 type="checkbox" 
                                 className="sa-checkbox"
-                                checked={!!config.maintenance_mode} // Ensure boolean
+                                checked={!!config.maintenance_mode} 
                                 onChange={e => setConfig({...config, maintenance_mode: e.target.checked})}
                             />
-                            <span style={{ fontWeight: 600, color: '#0f172a' }}>Enable Maintenance Mode</span>
+                            <span style={{ fontWeight: 700, color: 'var(--color-dark)' }}>Enable Maintenance Mode</span>
                         </label>
                         <p className="sa-helper-text">
-                            If enabled, users will see a "Under Maintenance" screen. Admins can still log in.
+                            If enabled, standard users will see a "Under Maintenance" screen. Super Admins can still log in.
                         </p>
                     </div>
                 </div>
 
-                <button type="submit" disabled={loading} className="sa-btn-save">
-                    <Save size={18}/> {loading ? 'Saving...' : 'Save Configuration'}
-                </button>
-
-                {msg && <p className={msg.includes('Error') ? 'sa-msg-error' : 'sa-msg-success'}>{msg}</p>}
+                <div className="sa-form-footer">
+                    <button type="submit" disabled={loading} className="sa-btn-save">
+                        <Save size={18}/> {loading ? 'Saving...' : 'Save Configuration'}
+                    </button>
+                    {msg && <p className={msg.includes('Error') ? 'sa-msg-error' : 'sa-msg-success'}>{msg}</p>}
+                </div>
             </form>
         </div>
     );

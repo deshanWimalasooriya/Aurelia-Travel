@@ -1,25 +1,18 @@
 /* src/pages/admin/styles/dashboard-customers.css */
 :root {
-  --primary-dark: #0f172a;
-  --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.05);
-  --shadow-float: 0 10px 15px -3px rgba(0,0,0,0.08);
-  --transition: all 0.25s ease;
+  --dh-bg: #f8fafc;
+  --dh-surface: #ffffff;
+  --dh-text-main: #0f172a;
+  --dh-text-muted: #64748b;
+  --dh-border: #e2e8f0;
+  --dh-radius: 8px;
+  --dh-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 }
 
-.customers-page { animation: fadeIn 0.4s ease-out; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-.table-header-action {
-  background: white; padding: 24px; border-radius: 16px;
-  box-shadow: var(--shadow-card); border: 1px solid #f1f5f9;
-  display: flex; justify-content: space-between; align-items: center;
+.customers-dashboard-wrapper {
+  color: var(--dh-text-main);
+  animation: fadeIn 0.3s ease-out;
 }
-
-.form-input {
-  width: 100%; padding: 10px 16px; border: 1px solid #cbd5e1;
-  background: #fff; outline: none; transition: var(--transition);
-}
-.form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 
 /* GRID */
 .customer-grid {
@@ -28,39 +21,33 @@
 }
 
 .customer-card {
-  background: white; padding: 30px 20px; border-radius: 16px;
-  text-align: center; border: 1px solid #f1f5f9; box-shadow: var(--shadow-card);
-  transition: var(--transition); cursor: pointer; position: relative;
-}
-
-.customer-card:hover {
-  border-color: #f59e0b; box-shadow: var(--shadow-float); transform: translateY(-4px);
+  background: var(--dh-surface); padding: 30px 20px; border-radius: 16px;
+  text-align: center; border: 1px solid var(--dh-border); box-shadow: var(--dh-shadow);
+  transition: all 0.2s; cursor: pointer; position: relative;
 }
 
 .card-header-badge {
   position: absolute; top: 16px; right: 16px; padding: 4px 10px;
-  border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
+  border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  display: flex; align-items: center; gap: 4px;
 }
 
 .customer-avatar-large {
   width: 80px; height: 80px; margin: 0 auto 16px; border-radius: 50%;
   background: #f1f5f9; display: flex; align-items: center; justify-content: center;
-  border: 4px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  font-size: 2rem; overflow: hidden;
+  font-size: 2rem; overflow: hidden; font-weight: 700; color: var(--dh-text-muted);
 }
 .customer-avatar-large img { width: 100%; height: 100%; object-fit: cover; }
 
-/* MODAL */
-.modal-overlay {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
-  z-index: 100; display: flex; align-items: center; justify-content: center;
+.customer-name { margin: 0 0 4px; font-size: 1.1rem; color: var(--dh-text-main); font-weight: 700; }
+.customer-email { margin: 0 0 24px; color: var(--dh-text-muted); font-size: 0.9rem; }
+
+.customer-stats-bar {
+    display: flex; justify-content: space-between; background: #f8fafc;
+    padding: 12px; border-radius: 12px; border: 1px solid var(--dh-border);
 }
-.form-container {
-  background: white; padding: 30px; border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-}
-.btn-primary {
-  background: #0f172a; color: white; border: none; padding: 12px;
-  border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
-}
+.stat-block { flex: 1; text-align: center; }
+.stat-label { font-size: 0.75rem; color: var(--dh-text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
+.stat-num { font-size: 1.1rem; font-weight: 800; color: var(--dh-text-main); }
+.text-success { color: #16a34a; }
+.stat-divider { width: 1px; background: var(--dh-border); }

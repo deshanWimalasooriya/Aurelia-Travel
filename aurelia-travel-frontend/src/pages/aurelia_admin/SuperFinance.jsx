@@ -16,7 +16,6 @@ const SuperFinance = () => {
     const fetchFinanceData = async () => {
         setLoading(true);
         try {
-            // 1. Fetch Transaction History (Uses the FIXED Platform Route)
             const transRes = await api.get('/platform/finance');
             if (transRes.data && Array.isArray(transRes.data)) {
                  setTransactions(transRes.data);
@@ -24,7 +23,6 @@ const SuperFinance = () => {
                  setTransactions(transRes.data.data);
             }
 
-            // 2. Fetch Summary Stats (Uses the WORKING Admin Analytics endpoint)
             const analyticsRes = await api.get('/admin/analytics');
             if (analyticsRes.data && analyticsRes.data.summary) {
                 setSummary(analyticsRes.data.summary);
@@ -62,7 +60,6 @@ const SuperFinance = () => {
         document.body.removeChild(link);
     };
 
-    // Filter Logic
     const filtered = transactions.filter(t => 
         (t.hotel_name && t.hotel_name.toLowerCase().includes(search.toLowerCase())) ||
         (t.transaction_id && t.transaction_id.toLowerCase().includes(search.toLowerCase())) ||
@@ -81,14 +78,13 @@ const SuperFinance = () => {
         <div className="super-finance-container">
             <div className="sa-header-row">
                 <div>
-                    <h1 className="sa-page-title" style={{marginBottom:'5px'}}>Financial Overview</h1>
-                    <p style={{margin:0, color:'#64748b', fontSize:'0.9rem'}}>Track platform revenue and commission payments.</p>
+                    <h1 className="sa-page-title">Financial Overview</h1>
+                    <p className="sa-page-subtitle">Track platform revenue and commission payments.</p>
                 </div>
                 <button 
                     className="sa-btn-export" 
                     onClick={exportCSV} 
                     disabled={transactions.length === 0 || loading}
-                    style={{ opacity: transactions.length === 0 ? 0.6 : 1 }}
                 >
                     <Download size={18}/> Export CSV
                 </button>
@@ -148,10 +144,8 @@ const SuperFinance = () => {
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan="5" style={{textAlign:'center', padding:'40px'}}>
-                                        <div style={{display:'flex', justifyContent:'center', alignItems:'center', gap:'10px'}}>
-                                            <Loader2 className="animate-spin"/> Loading Financial Data...
-                                        </div>
+                                    <td colSpan="5" className="empty-state-cell">
+                                        <div className="flex-center"><Loader2 className="animate-spin"/> Loading Financial Data...</div>
                                     </td>
                                 </tr>
                             ) : filtered.length > 0 ? (
@@ -165,24 +159,18 @@ const SuperFinance = () => {
                                         </td>
                                         <td>
                                             <div className="txn-hotel">{txn.hotel_name || 'Unknown Hotel'}</div>
-                                            <div className="txn-manager" style={{fontSize:'0.8rem', color:'#64748b'}}>
-                                                {txn.manager_email || 'No Email'}
-                                            </div>
+                                            <div className="txn-manager">{txn.manager_email || 'No Email'}</div>
                                         </td>
                                         <td>
                                             <div className="txn-date">
-                                                <Calendar size={12} style={{marginRight:'4px', display:'inline'}}/> 
+                                                <Calendar size={12} className="inline-icon"/> 
                                                 {txn.payment_date ? new Date(txn.payment_date).toLocaleDateString() : 'N/A'}
                                             </div>
-                                            <div className="txn-time" style={{fontSize:'0.75rem', color:'#94a3b8', marginLeft:'18px'}}>
+                                            <div className="txn-time">
                                                 {txn.payment_date ? new Date(txn.payment_date).toLocaleTimeString() : ''}
                                             </div>
                                         </td>
-                                        <td>
-                                            <span className="amount-positive">
-                                                + {formatCurrency(txn.amount_paid)}
-                                            </span>
-                                        </td>
+                                        <td><span className="amount-positive">+ {formatCurrency(txn.amount_paid)}</span></td>
                                         <td>
                                             <span className={`status-badge ${
                                                 (txn.status === 'succeeded' || txn.status === 'paid') ? 'success' : 'warning'
@@ -193,11 +181,7 @@ const SuperFinance = () => {
                                     </tr>
                                 ))
                             ) : (
-                                <tr>
-                                    <td colSpan="5" style={{textAlign:'center', padding:'30px', color: '#64748b'}}>
-                                        No transactions found.
-                                    </td>
-                                </tr>
+                                <tr><td colSpan="5" className="empty-state-cell">No transactions found.</td></tr>
                             )}
                         </tbody>
                     </table>

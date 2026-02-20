@@ -3,19 +3,17 @@ import {
   LayoutDashboard, Building2, Users, DollarSign, 
   MessageSquare, Settings, LogOut, ShieldCheck, Search, ClipboardList
 } from 'lucide-react';
-import NotificationBell from '../../components/ui/NotificationBell'; // ✅ Import Bell
-import { useUser } from '../../context/userContext'; // ✅ Import User Context
+import NotificationBell from '../../components/ui/NotificationBell'; 
+import { useAuth } from '../../context/AuthContext'; 
 import './styles/super-admin.css';
 
 const SuperAdminLayout = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user } = useUser(); // Get current admin info
+    const { user, logout } = useAuth(); 
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/auth');
+    const handleLogout = async () => {
+        navigate('/profile');
     };
 
     const isActive = (path) => {
@@ -23,13 +21,12 @@ const SuperAdminLayout = () => {
         return location.pathname.includes(path);
     };
 
-    // Helper to get page title based on route
     const getPageTitle = () => {
         if(location.pathname.includes('hotels')) return 'Hotel Management';
         if(location.pathname.includes('users')) return 'User Base';
         if(location.pathname.includes('finance')) return 'Financial Overview';
         if(location.pathname.includes('reviews')) return 'Moderation';
-        if(location.pathname.includes('logs')) return 'System Logs'; // <--- NEW TITLE
+        if(location.pathname.includes('logs')) return 'System Logs'; 
         if(location.pathname.includes('settings')) return 'Platform Settings';
         return 'Dashboard Overview';
     };
@@ -39,7 +36,7 @@ const SuperAdminLayout = () => {
             {/* SIDEBAR */}
             <aside className="sa-sidebar">
                 <div className="sa-brand">
-                    <ShieldCheck size={28} style={{ color: '#f43f5e' }} />
+                    <ShieldCheck size={28} className="brand-icon" />
                     Aurelia <span>Admin</span>
                 </div>
                 
@@ -62,8 +59,6 @@ const SuperAdminLayout = () => {
                     <Link to="/superAdmin/reviews" className={`sa-nav-item ${isActive('reviews') ? 'active' : ''}`}>
                         <MessageSquare size={20}/> Moderation
                     </Link>
-
-                    {/* --- NEW LOGS LINK --- */}
                     <Link to="/superAdmin/logs" className={`sa-nav-item ${isActive('logs') ? 'active' : ''}`}>
                         <ClipboardList size={20}/> Activity Logs
                     </Link>
@@ -81,26 +76,22 @@ const SuperAdminLayout = () => {
 
             {/* MAIN CONTENT AREA */}
             <main className="sa-main">
-                {/* ✅ NEW: ADMIN TOP HEADER */}
                 <header className="sa-topbar">
                     <h2 className="sa-topbar-title">{getPageTitle()}</h2>
                     
                     <div className="sa-topbar-actions">
-                        {/* 1. Global Search (Optional visual placeholder) */}
                         <div className="sa-global-search">
                             <Search size={16} />
                             <input type="text" placeholder="Quick search..." />
                         </div>
 
-                        {/* 2. NOTIFICATION BELL */}
                         <div className="sa-action-item">
                             <NotificationBell /> 
                         </div>
 
-                        {/* 3. Admin Profile */}
                         <div className="sa-admin-profile">
                             <div className="sa-avatar">
-                                {user?.username?.charAt(0) || 'A'}
+                                {user?.username?.charAt(0).toUpperCase() || 'A'}
                             </div>
                             <span className="sa-admin-name">{user?.username || 'Super Admin'}</span>
                         </div>

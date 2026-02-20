@@ -1,48 +1,30 @@
-/* Core Variables */
-:root {
-  --primary-color: #1e1b4b; /* Deep Indigo/Navy */
-  --accent-color: #4f46e5;  /* Bright Indigo */
-  --text-dark: #000000;     /* UPDATED: Pure Black for text */
-  --text-muted: #64748b;    /* Slate 500 */
-  --bg-color: #f8fafc;
-  --input-bg: #ffffff;      /* UPDATED: Pure White for input background */
-  --white: #ffffff;
-  --error: #ef4444;
-  --radius: 12px;
-}
+/* =========================================
+   AUTHENTICATION PAGE STYLES
+   ========================================= */
 
-body {
-    margin: 0;
-    font-family: 'Inter', sans-serif;
-    background-color: var(--bg-color);
-}
-
-/* Page Wrapper */
 .auth-page-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  padding: 20px;
-  background: linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%);
+  min-height: calc(100vh - 76px); /* Account for header height */
+  padding: 40px 20px;
+  background-color: var(--color-background);
 }
 
-/* Card Container */
 .auth-card-container {
   display: flex;
   width: 100%;
   max-width: 1000px;
-  background: var(--white);
-  border-radius: 24px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-float);
   overflow: hidden;
   min-height: 650px;
   position: relative;
+  border: 1px solid var(--border-subtle);
 }
 
-/* ============================
-   LEFT SIDE: VISUALS
-   ============================ */
+/* --- LEFT SIDE: VISUALS --- */
 .auth-visual-side {
   width: 50%;
   background-image: url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop');
@@ -54,8 +36,8 @@ body {
 
 .visual-overlay {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(to bottom, rgba(30, 27, 75, 0.4), rgba(30, 27, 75, 0.85));
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(15, 23, 42, 0.4), var(--color-dark));
   padding: 40px;
   display: flex;
   flex-direction: column;
@@ -67,13 +49,15 @@ body {
     letter-spacing: 2px;
     font-weight: 700;
     opacity: 0.8;
+    color: var(--color-accent);
 }
 
 .visual-heading {
     font-size: 2.5rem;
     line-height: 1.1;
-    font-weight: 700;
+    font-weight: 800;
     margin-bottom: 15px;
+    color: var(--color-surface);
 }
 
 .visual-subtext {
@@ -84,18 +68,18 @@ body {
 }
 
 .glass-testimonial {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 20px;
-    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 24px;
+    border-radius: var(--radius-md);
     margin-top: auto;
 }
 
 .quote-text {
     font-style: italic;
     font-size: 0.95rem;
-    line-height: 1.5;
+    line-height: 1.6;
     margin-bottom: 15px;
     opacity: 0.95;
 }
@@ -103,25 +87,25 @@ body {
 .quote-author {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 .author-avatar {
-    width: 32px;
-    height: 32px;
-    background: var(--accent-color);
+    width: 36px;
+    height: 36px;
+    background: var(--color-primary);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: bold;
 }
 
 .author-name {
     display: block;
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
 }
 
 .author-role {
@@ -130,9 +114,7 @@ body {
     opacity: 0.8;
 }
 
-/* ============================
-   RIGHT SIDE: FORM
-   ============================ */
+/* --- RIGHT SIDE: FORM --- */
 .auth-form-side {
   width: 50%;
   padding: 50px;
@@ -140,17 +122,20 @@ body {
   flex-direction: column;
   justify-content: center;
   overflow-y: auto;
+  background-color: var(--color-surface);
 }
 
 .form-header h2 {
     font-size: 1.8rem;
-    color: #0f172a;
+    color: var(--color-dark);
     margin-bottom: 8px;
+    font-weight: 800;
 }
 
 .sub-header {
     color: var(--text-muted);
     margin-bottom: 30px;
+    font-size: 0.95rem;
 }
 
 /* Social Buttons */
@@ -166,20 +151,20 @@ body {
     align-items: center;
     justify-content: center;
     gap: 10px;
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 10px;
+    background: var(--color-surface);
+    border: 1px solid #cbd5e1;
+    border-radius: var(--radius-sm);
+    padding: 12px;
     font-size: 0.9rem;
     font-weight: 600;
-    color: #334155;
+    color: var(--text-main);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: var(--transition-smooth);
 }
 
 .social-btn:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
+    background: var(--color-background);
+    border-color: var(--text-muted);
 }
 
 /* Divider */
@@ -202,75 +187,44 @@ body {
     padding: 0 10px;
 }
 
-/* ============================
-   FIXED INPUT STYLES
-   ============================ */
+/* --- FORM INPUTS --- */
 .modern-form {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 20px;
 }
 
 .input-group label {
     display: block;
     font-size: 0.85rem;
     font-weight: 600;
-    color: #475569; /* Slate 600 */
+    color: var(--text-secondary);
     margin-bottom: 8px;
-    letter-spacing: 0.5px;
 }
 
-/* Wrapper ensures relative positioning for the icon */
 .input-wrapper {
     position: relative;
     width: 100%;
 }
 
-/* Icon Positioning */
 .input-icon {
     position: absolute;
     left: 14px;
     top: 50%;
-    transform: translateY(-50%); /* Perfectly center vertical */
-    color: #94a3b8; /* Slate 400 */
+    transform: translateY(-50%);
+    color: var(--text-muted);
     pointer-events: none;
     z-index: 10;
 }
 
-/* FIX: Input Text Visibility & Padding */
-.modern-input {
-    width: 100%;
-    height: 48px; /* Fixed height for consistency */
-    
-    /* Padding: Top Right Bottom Left (Left allows space for icon) */
-    padding: 0 15px 0 45px; 
-    
-    border: 1px solid #cbd5e1; /* Slightly darker border for white bg */
-    border-radius: 8px;
-    
-    /* UPDATED: White Background & Black Text */
-    background: #ffffff; 
-    color: #000000;      
-    
-    font-size: 0.95rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    box-sizing: border-box;
+.modern-input.with-icon {
+    padding-left: 45px;
 }
 
-/* Input Focus State */
-.modern-input:focus {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+.modern-input:focus + .input-icon {
+    color: var(--color-primary);
 }
 
-/* Placeholder Text Color */
-.modern-input::placeholder {
-    color: #9ca3af; /* Grey placeholder */
-}
-
-/* Toggle Password Eye */
 .password-toggle {
     position: absolute;
     right: 14px;
@@ -279,13 +233,13 @@ body {
     background: none;
     border: none;
     cursor: pointer;
-    color: #94a3b8;
+    color: var(--text-muted);
     padding: 0;
     display: flex;
     align-items: center;
 }
 
-.password-toggle:hover { color: #475569; }
+.password-toggle:hover { color: var(--text-main); }
 
 /* Checkbox & Options */
 .form-options {
@@ -293,7 +247,6 @@ body {
     justify-content: space-between;
     align-items: center;
     font-size: 0.85rem;
-    margin-top: 5px;
 }
 
 .checkbox-label {
@@ -301,7 +254,8 @@ body {
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    color: #475569;
+    color: var(--text-secondary);
+    font-weight: 500;
 }
 
 .checkbox-label input { display: none; }
@@ -309,18 +263,18 @@ body {
 .checkbox-custom {
     width: 18px;
     height: 18px;
-    border: 2px solid #cbd5e1;
+    border: 1px solid #cbd5e1;
     border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: var(--transition-smooth);
     background: white;
 }
 
 .checkbox-label input:checked + .checkbox-custom {
-    background: var(--accent-color);
-    border-color: var(--accent-color);
+    background: var(--color-primary);
+    border-color: var(--color-primary);
 }
 
 .checkbox-label input:checked + .checkbox-custom::after {
@@ -333,38 +287,40 @@ body {
 .link-btn-small {
     background: none;
     border: none;
-    color: var(--accent-color);
+    color: var(--color-primary);
     font-weight: 600;
     cursor: pointer;
 }
+.link-btn-small:hover { text-decoration: underline; }
 
 /* Submit Button */
 .submit-btn-animated {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    background: var(--primary-color);
+    gap: 10px;
+    background: var(--color-dark);
     color: white;
     border: none;
     padding: 14px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
-    margin-top: 15px;
+    transition: var(--transition-smooth);
+    margin-top: 10px;
 }
 
 .submit-btn-animated:hover {
-    background: #312e81;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(49, 46, 129, 0.2);
+    background: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
 .submit-btn-animated:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+    transform: none;
 }
 
 /* Bottom Text */
@@ -372,13 +328,13 @@ body {
     text-align: center;
     font-size: 0.9rem;
     color: var(--text-muted);
-    margin-top: 20px;
+    margin-top: 10px;
 }
 
 .link-btn-text {
     background: none;
     border: none;
-    color: var(--accent-color);
+    color: var(--color-primary);
     font-weight: 700;
     cursor: pointer;
     padding: 0;
@@ -390,20 +346,20 @@ body {
 /* Error Banner */
 .error-banner {
     background: #fef2f2;
-    color: var(--error);
-    padding: 12px;
-    border-radius: 8px;
+    color: #ef4444;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
     font-size: 0.9rem;
     display: flex;
     align-items: center;
     gap: 10px;
     border: 1px solid #fecaca;
-    margin-top: 5px;
+    font-weight: 500;
 }
 
-/* Animation for switching fields */
+/* Animation */
 @keyframes slideIn {
-    from { opacity: 0; transform: translateY(-5px); }
+    from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
@@ -420,13 +376,13 @@ body {
     }
     .auth-visual-side {
         width: 100%;
-        height: 200px;
+        height: 250px;
     }
     .visual-subtext, .glass-testimonial {
         display: none;
     }
     .auth-form-side {
         width: 100%;
-        padding: 30px 20px;
+        padding: 40px 24px;
     }
 }

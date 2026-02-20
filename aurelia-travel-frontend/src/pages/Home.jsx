@@ -29,7 +29,7 @@ const Home = () => {
           }
         })
       },
-      { threshold: 0.1 } // Trigger when 10% of element is visible
+      { threshold: 0.1 } 
     )
 
     revealRefs.current.forEach((el) => observer.observe(el))
@@ -42,7 +42,7 @@ const Home = () => {
 
   return (
     <>
-      {/* --- CINEMATIC PRELOADER (UNCHANGED) --- */}
+      {/* --- CINEMATIC PRELOADER --- */}
       <div className={`preloader-overlay ${!showIntro ? 'fade-out' : ''}`}>
           <div className="brand-container">
               <h1 className="brand-text">Aurelia Travel</h1>
@@ -61,15 +61,15 @@ const Home = () => {
              <div className="hero-content">
                <div className="animate-hero-text">
                  <h1 className="hero-title">
-                   Stop Planning<br />
-                   <span className="gradient-text">Start Traveling</span>
+                   Stop Planning.<br />
+                   <span className="gradient-text">Start Traveling.</span>
                  </h1>
                  <p className="hero-subtitle">
                    The world's first AI-powered travel concierge designed for the busy professional. 
                    Recover your time. We handle the details.
                  </p>
                  <div className="hero-cta-group">
-                    <Link to="/plan-trip" className="btn-primary-glow">Generate My Trip</Link>
+                    <Link to="/travel-plan" className="btn-primary-glow">Generate My Trip</Link>
                     <a href="#how-it-works" className="btn-secondary-outline">How it Works</a>
                  </div>
                </div>
@@ -82,7 +82,7 @@ const Home = () => {
              </div>
         </header>
 
-        {/* SECTION 2: THE "WHY" - Psychological Trigger (Time vs Stress) */}
+        {/* SECTION 2: THE "WHY" */}
         <section className="features-section">
             <div className="container">
                 <div className="section-header" ref={addToRefs}>
@@ -91,21 +91,18 @@ const Home = () => {
                 </div>
 
                 <div className="feature-grid">
-                    {/* Card 1 */}
                     <div className="feature-card" ref={addToRefs}>
                         <div className="icon-box">🧠</div>
                         <h3>AI-Driven Personalization</h3>
                         <p>Our algorithms learn your preferences to curate hotels and activities that match your specific taste, not generic lists.</p>
                     </div>
                     
-                    {/* Card 2 */}
                     <div className="feature-card" ref={addToRefs}>
                         <div className="icon-box">⚡</div>
                         <h3>Instant Itineraries</h3>
                         <p>Forget spreadsheets. Get a day-by-day plan optimized for logistics, opening times, and your energy levels.</p>
                     </div>
 
-                    {/* Card 3 */}
                     <div className="feature-card" ref={addToRefs}>
                         <div className="icon-box">💎</div>
                         <h3>Exclusive Access</h3>
@@ -117,16 +114,17 @@ const Home = () => {
 
         {/* SECTION 3: IMMERSIVE PARALLAX BANNER */}
         <section className="parallax-banner" ref={addToRefs}>
+            <div className="parallax-overlay"></div>
             <div className="parallax-content">
                 <h2>"Time is the only luxury you can't buy back."</h2>
                 <p>Don't waste it scrolling through reviews.</p>
             </div>
         </section>
 
-        {/* SECTION 4: HOW IT WORKS (The Process) */}
+        {/* SECTION 4: HOW IT WORKS */}
         <section id="how-it-works" className="steps-section">
             <div className="container">
-                <div className="section-header center" ref={addToRefs}>
+                <div className="section-header" ref={addToRefs}>
                     <span className="badge">THE PROCESS</span>
                     <h2>Your Journey in 3 Steps</h2>
                 </div>
@@ -153,12 +151,12 @@ const Home = () => {
             </div>
         </section>
 
-        {/* SECTION 5: FINAL CTA - The Closer */}
+        {/* SECTION 5: FINAL CTA */}
         <section className="final-cta-section">
             <div className="cta-content" ref={addToRefs}>
                 <h2>Ready to upgrade your travel experience?</h2>
                 <p>Join thousands of smart travelers using Aurelia.</p>
-                <Link to="/plan-trip" className="btn-white-shine">Start Free Trial</Link>
+                <Link to="/travel-plan" className="btn-white-shine">Start Free Trial</Link>
             </div>
         </section>
 
