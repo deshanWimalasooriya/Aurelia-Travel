@@ -11,8 +11,6 @@ const HotelCard = ({ hotel }) => {
   const { isInWishlist, toggleWishlist } = useWishlist(); 
   const isSaved = isInWishlist(hotel.id);
 
-  const { isInWishlist, toggleWishlist } = useWishlist(); // Use Context
-  const isSaved = isInWishlist(hotel.id);
 
   return (
     <div className="hotel-card">
