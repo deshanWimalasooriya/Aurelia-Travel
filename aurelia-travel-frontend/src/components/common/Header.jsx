@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Search, Heart, User, LogOut, Settings, LayoutDashboard, Building2 } from 'lucide-react' 
+import { Search, Heart, User, LogOut, Settings, LayoutDashboard, Building2, Menu, X } from 'lucide-react' 
 import { useUser } from '../../context/userContext'
 import { useNotifications } from '../../context/NotificationContext'
 import NotificationBell from '../ui/NotificationBell'
@@ -16,8 +16,10 @@ const Header = () => {
   const { wishlist } = useWishlist();
   
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false) // ✅ Mobile Menu State
   const dropdownRef = useRef(null)
 
+  // Close profile dropdown if clicked outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -27,6 +29,11 @@ const Header = () => {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // ✅ Auto-close mobile menu when changing pages
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [location.pathname])
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -43,6 +50,7 @@ const Header = () => {
 
   const handleLogout = async () => {
     setDropdownOpen(false);
+    setMobileMenuOpen(false);
     try {
       await axios.post('http://localhost:5000/api/auth/logout', {}, {
         withCredentials: true
@@ -66,14 +74,13 @@ const Header = () => {
           Aurelia<span>Travel</span>
         </Link>
 
-        {/* Center Navigation */}
+        {/* Center Navigation (Hidden on Mobile) */}
         <nav className="header-nav">
           <Link to="/" className={`header-nav-link ${location.pathname === '/' ? 'active' : ''}`}>Home</Link>
           <Link to="/travel-plan" className={`header-nav-link ${location.pathname === '/travel-plan' ? 'active' : ''}`}>Smart Plan</Link>
           <Link to="/hotel-showcase" className={`header-nav-link ${location.pathname.includes('/hotel') ? 'active' : ''}`}>Hotels</Link>
           <Link to="/about" className={`header-nav-link ${location.pathname === '/about' ? 'active' : ''}`}>About</Link>
           <Link to="/contact" className={`header-nav-link ${location.pathname === '/contact' ? 'active' : ''}`}>Contact</Link>
-
         </nav>
 
         {/* Right Actions */}
@@ -111,7 +118,7 @@ const Header = () => {
                   )}
                 </button>
 
-                {/* Dropdown */}
+                {/* Desktop Profile Dropdown */}
                 <div className={`header-dropdown ${dropdownOpen ? 'open' : ''}`}>
                   <div className="dropdown-user-details">
                     <span className="dropdown-username">{user.name || user.username || 'User'}</span>
@@ -148,11 +155,37 @@ const Header = () => {
               </div>
             </div>
           ) : (
-            <Link to="/auth" className="btn-auth-login">Sign In</Link>
+            <Link to="/auth" className="btn-auth-login desktop-auth-btn">Sign In</Link>
           )}
           
+          {/* ✅ Mobile Menu Toggle Button */}
+          <button 
+             className="mobile-menu-btn" 
+             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+             aria-label="Toggle Menu"
+          >
+             {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
+          </button>
+
         </div>
       </div>
+
+      {/* ✅ Mobile Navigation Overlay */}
+      <div className={`mobile-nav-overlay ${mobileMenuOpen ? 'open' : ''}`}>
+        <nav className="mobile-nav-links">
+          <Link to="/" className={`mobile-nav-link ${location.pathname === '/' ? 'active' : ''}`}>Home</Link>
+          <Link to="/travel-plan" className={`mobile-nav-link ${location.pathname === '/travel-plan' ? 'active' : ''}`}>Smart Plan</Link>
+          <Link to="/hotel-showcase" className={`mobile-nav-link ${location.pathname.includes('/hotel') ? 'active' : ''}`}>Hotels</Link>
+          <Link to="/about" className={`mobile-nav-link ${location.pathname === '/about' ? 'active' : ''}`}>About</Link>
+          <Link to="/contact" className={`mobile-nav-link ${location.pathname === '/contact' ? 'active' : ''}`}>Contact</Link>
+          
+          {/* If logged out, show Sign In button in the mobile menu */}
+          {!user && (
+            <Link to="/auth" className="btn-auth-login mobile-auth-btn">Sign In</Link>
+          )}
+        </nav>
+      </div>
+
     </header>
   )
 }

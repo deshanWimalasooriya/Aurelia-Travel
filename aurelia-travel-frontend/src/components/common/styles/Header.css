@@ -347,3 +347,96 @@
   .header-nav { display: none; } /* Mobile menu logic can be added later */
   .header-greeting-wrapper { display: none; }
 }
+
+/* ... [Keep all your existing Header.css code above this] ... */
+
+/* =========================================
+   MOBILE NAVIGATION STYLES
+   ========================================= */
+
+/* Hamburger Button */
+.mobile-menu-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--color-dark);
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 8px;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.mobile-menu-btn:hover {
+  color: var(--color-primary);
+}
+
+/* Mobile Slide-Down Menu */
+.mobile-nav-overlay {
+  position: absolute;
+  top: 76px; /* Exactly below the header */
+  left: 0;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  box-shadow: var(--shadow-md);
+  border-top: 1px solid var(--border-subtle, #e2e8f0);
+  
+  /* Smooth drawer animation */
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.4s ease;
+  z-index: 900;
+}
+
+.mobile-nav-overlay.open {
+  max-height: 400px; /* Expands to fit content */
+  padding: 24px;
+}
+
+.mobile-nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mobile-nav-link {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle, #e2e8f0);
+  transition: var(--transition-smooth);
+}
+
+.mobile-nav-link:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.mobile-nav-link:hover, 
+.mobile-nav-link.active {
+  color: var(--color-primary);
+  padding-left: 8px; /* Slight indent effect on tap */
+}
+
+.mobile-auth-btn {
+  display: none; /* Only show on mobile */
+  text-align: center;
+  margin-top: 10px;
+}
+
+/* --- RESPONSIVE OVERRIDES --- */
+@media (max-width: 900px) {
+  /* Hide Desktop Elements */
+  .header-nav { display: none; } 
+  .header-greeting-wrapper { display: none; }
+  .desktop-auth-btn { display: none; } /* Hide the top-right button to save space */
+  
+  /* Show Mobile Elements */
+  .mobile-menu-btn { display: flex; }
+  .mobile-auth-btn { display: block; }
+}

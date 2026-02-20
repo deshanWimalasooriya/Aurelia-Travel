@@ -21,7 +21,7 @@ exports.payCommission = async (req, res) => {
     }
 };
 
-// --- NEW ANALYTICS ENDPOINT ---
+// --- FIX: ANALYTICS ENDPOINT ---
 exports.getAnalytics = async (req, res) => {
     try {
         const managerId = req.user.userId;
@@ -34,7 +34,7 @@ exports.getAnalytics = async (req, res) => {
             financeModel.getManagerFinancialTable(managerId)
         ]);
 
-        // Calculate Summary
+        // Calculate Summary Safely
         let totalRevenue = 0;
         let totalCommission = 0;
         let totalBookings = 0;
@@ -44,39 +44,45 @@ exports.getAnalytics = async (req, res) => {
             const rate = parseFloat(h.commission_rate || 5.00);
             const comm = rev * (rate / 100);
             
+            // Fix: Parse to integer to prevent "1" + "2" = "12" string concatenation bug
+            const bookingsCount = parseInt(h.bookings || 0, 10);
+            
             totalRevenue += rev;
             totalCommission += comm;
-            totalBookings += h.bookings;
+            totalBookings += bookingsCount;
 
             return {
                 id: h.id,
                 name: h.name,
-                bookings: h.bookings,
+                bookings: bookingsCount,
                 revenue: rev,
                 commission: comm
             };
         });
 
         res.json({
-            revenue: revenueTrends,
-            byHotel: byHotel,
-            byStatus: byStatus,
-            summary: {
-                totalBookings,
-                totalRevenue,
-                totalCommission,
-                netIncome: totalRevenue - totalCommission
-            },
-            hotelFinancials
+            success: true,
+            data: {
+                // Fix: Force Recharts values to be numbers, otherwise the graph breaks
+                revenue: revenueTrends.map(r => ({ name: r.name, value: parseFloat(r.value || 0) })),
+                byHotel: byHotel.map(h => ({ name: h.name, value: parseInt(h.value || 0, 10) })),
+                byStatus: byStatus.map(s => ({ name: s.name, value: parseInt(s.value || 0, 10) })),
+                summary: {
+                    totalBookings,
+                    totalRevenue,
+                    totalCommission,
+                    netIncome: totalRevenue - totalCommission
+                },
+                hotelFinancials
+            }
         });
 
     } catch (err) {
         console.error("Manager Analytics Error:", err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ success: false, error: err.message });
     }
 };
 
-// NEW ENDPOINT: /api/finance/overview
 exports.getOverview = async (req, res) => {
     try {
         const managerId = req.user.userId;
