@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api'; 
+import { motion, AnimatePresence } from 'framer-motion';
 import { Search, MapPin, Power, Mail, Loader2, Eye, X, Bed, DollarSign, Users, Building, Trash2, ExternalLink, Smartphone, CheckCircle } from 'lucide-react';
 import './styles/super-hotels.css';
 
@@ -19,7 +20,7 @@ const SuperHotels = () => {
     // --- OTP Delete State ---
     const [showOtpModal, setShowOtpModal] = useState(false);
     const [hotelToDelete, setHotelToDelete] = useState(null);
-    const [otpStep, setOtpStep] = useState('request'); // 'request' | 'verify'
+    const [otpStep, setOtpStep] = useState('request'); 
     const [otpInput, setOtpInput] = useState('');
     const [isOtpLoading, setIsOtpLoading] = useState(false);
 
@@ -42,7 +43,7 @@ const SuperHotels = () => {
     };
 
     const toggleStatus = async (hotel) => {
-        const action = hotel.is_active ? 'BAN' : 'ACTIVATE';
+        const action = hotel.is_active ? 'HIDE' : 'PUBLISH';
         if(!window.confirm(`Are you sure you want to ${action} this hotel?`)) return;
         
         try {
@@ -75,7 +76,6 @@ const SuperHotels = () => {
 
     // --- LIVE PREVIEW ---
     const handlePreview = (id) => {
-        // Opens the public hotel details page in a new tab
         window.open(`/hotel/${id}`, '_blank');
     };
 
@@ -89,24 +89,22 @@ const SuperHotels = () => {
 
     const requestOtp = () => {
         setIsOtpLoading(true);
-        // SIMULATION: In a real app, call api.post('/auth/send-otp')
         setTimeout(() => {
             setIsOtpLoading(false);
             setOtpStep('verify');
-            alert("DEV MODE: Your OTP is 123456"); // Mock OTP for testing
+            alert("SECURITY: Your OTP is 123456"); 
         }, 1500);
     };
 
     const verifyAndDelete = async (e) => {
         e.preventDefault();
-        if (otpInput !== '123456') { // Mock check
+        if (otpInput !== '123456') { 
             alert("Invalid OTP. Please try again.");
             return;
         }
 
         setIsOtpLoading(true);
         try {
-            // Call API Delete
             await api.delete(`/hotels/${hotelToDelete.id}`);
             setShowOtpModal(false);
             await loadHotels();
@@ -128,7 +126,10 @@ const SuperHotels = () => {
         <div style={{position: 'relative'}}>
             {/* Header */}
             <div className="sa-header-row">
-                <h1 className="sa-page-title" style={{marginBottom:0}}>Manage Hotels</h1>
+                <div>
+                    <h1 className="sa-page-title">Manage Hotels</h1>
+                    <p style={{margin:0, color:'var(--text-muted)', fontSize:'0.9rem'}}>Overview of all registered properties</p>
+                </div>
                 <div className="sa-search-wrapper">
                     <Search size={18} className="sa-search-icon"/>
                     <input 
@@ -153,10 +154,10 @@ const SuperHotels = () => {
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr><td colSpan="4" style={{textAlign: 'center', padding: '40px', color: '#64748b'}}>Loading Hotels...</td></tr>
+                            <tr><td colSpan="4" style={{textAlign: 'center', padding: '40px'}}><Loader2 className="animate-spin mx-auto" color="var(--text-muted)"/></td></tr>
                         ) : filtered.length > 0 ? (
                             filtered.map(hotel => (
-                                <tr key={hotel.id}>
+                                <tr key={hotel.id} style={{ opacity: hotel.is_active ? 1 : 0.6 }}>
                                     <td>
                                         <div className="sa-hotel-name">{hotel.name}</div>
                                         <div className="sa-hotel-sub">{hotel.email || 'No Contact Info'}</div>
@@ -165,22 +166,22 @@ const SuperHotels = () => {
                                         <div className="sa-hotel-sub"><MapPin size={14}/> {hotel.city}, {hotel.country}</div>
                                     </td>
                                     <td>
-                                        <span className={hotel.is_active ? 'sa-badge-active' : 'sa-badge-banned'}>
+                                        <span className={`sa-status-badge ${hotel.is_active ? 'active' : 'inactive'}`}>
                                             {hotel.is_active ? 'Active' : 'Hidden'}
                                         </span>
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
-                                        <div style={{display:'flex', gap:'8px', justifyContent:'flex-end'}}>
+                                        <div className="sa-action-group">
                                             <button className="sa-action-btn" title="Live Preview" onClick={() => handlePreview(hotel.id)}>
-                                                <ExternalLink size={18} color="#2563eb"/>
+                                                <ExternalLink size={18} color="var(--color-primary)"/>
                                             </button>
                                             <button className="sa-action-btn" title="View Details" onClick={() => handleViewHotel(hotel)}>
-                                                <Eye size={18} color="#64748b"/>
+                                                <Eye size={18} color="var(--text-secondary)"/>
                                             </button>
                                             <button className="sa-action-btn" title={hotel.is_active ? "Unpublish" : "Publish"} onClick={() => toggleStatus(hotel)}>
-                                                <Power size={18} color={hotel.is_active ? "#f59e0b" : "#10b981"}/>
+                                                <Power size={18} color={hotel.is_active ? "#10b981" : "#f59e0b"}/>
                                             </button>
-                                            <button className="sa-action-btn" title="Delete Hotel" onClick={() => initiateDelete(hotel)}>
+                                            <button className="sa-action-btn delete" title="Delete Hotel" onClick={() => initiateDelete(hotel)}>
                                                 <Trash2 size={18} color="#ef4444"/>
                                             </button>
                                         </div>
@@ -188,23 +189,24 @@ const SuperHotels = () => {
                                 </tr>
                             ))
                         ) : (
-                            <tr><td colSpan="4" style={{textAlign: 'center', padding: '30px', color: '#64748b'}}>No hotels found.</td></tr>
+                            <tr><td colSpan="4" style={{textAlign: 'center', padding: '30px', color: 'var(--text-muted)'}}>No hotels found.</td></tr>
                         )}
                     </tbody>
                 </table>
             </div>
 
             {/* --- VIEW HOTEL DETAILS MODAL --- */}
+            <AnimatePresence>
             {showModal && selectedHotel && (
-                <div className="sa-modal-overlay">
-                    <div className="sa-modal-content wide-modal">
+                <motion.div className="sa-modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowModal(false)}>
+                    <motion.div className="sa-modal-content wide-modal" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()}>
                         <div className="sa-modal-header">
                             <h3>Property Details</h3>
                             <button onClick={() => setShowModal(false)} className="sa-btn-close"><X size={20}/></button>
                         </div>
                         
                         <div className="sa-modal-body">
-                            <div className="hotel-view-header">
+                            <div className="hotel-view-hero">
                                 <div className="hotel-view-img">
                                     {selectedHotel.main_image 
                                         ? <img src={selectedHotel.main_image} alt={selectedHotel.name} /> 
@@ -212,7 +214,7 @@ const SuperHotels = () => {
                                     }
                                 </div>
                                 <div className="hotel-view-info">
-                                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
+                                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', width: '100%'}}>
                                         <h2>{selectedHotel.name}</h2>
                                         <button className="btn-preview-link" onClick={() => handlePreview(selectedHotel.id)}>
                                             <ExternalLink size={14}/> Live Page
@@ -220,7 +222,7 @@ const SuperHotels = () => {
                                     </div>
                                     <p className="location"><MapPin size={14}/> {selectedHotel.address_line_1}, {selectedHotel.city}</p>
                                     <div className="badges">
-                                        <span className={selectedHotel.is_active ? 'sa-badge-active' : 'sa-badge-banned'}>
+                                        <span className={`sa-status-badge ${selectedHotel.is_active ? 'active' : 'inactive'}`}>
                                             {selectedHotel.is_active ? 'Published' : 'Hidden'}
                                         </span>
                                         <span className="sa-badge-neutral">ID: {selectedHotel.id}</span>
@@ -232,7 +234,7 @@ const SuperHotels = () => {
                                 </div>
                             </div>
 
-                            <hr className="sa-divider"/>
+                            <div className="sa-divider"></div>
 
                             <h4 className="section-title">Room Inventory</h4>
                             {loadingRooms ? (
@@ -253,7 +255,7 @@ const SuperHotels = () => {
                                                 <div className="room-stats">
                                                     <span><DollarSign size={12}/> ${room.base_price_per_night}</span>
                                                     <span><Users size={12}/> {room.capacity}</span>
-                                                    <span>🛏️ {room.total_quantity}</span>
+                                                    <span>🛏️ {room.total_quantity} units</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -263,64 +265,50 @@ const SuperHotels = () => {
                                 <p className="empty-state">No rooms found for this hotel.</p>
                             )}
                         </div>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
             )}
+            </AnimatePresence>
 
             {/* --- OTP DELETE MODAL --- */}
+            <AnimatePresence>
             {showOtpModal && (
-                <div className="sa-modal-overlay">
-                    <div className="sa-modal-content narrow-modal">
-                        <div className="sa-modal-header">
-                            <h3>Security Verification</h3>
-                            <button onClick={() => setShowOtpModal(false)} className="sa-btn-close"><X size={20}/></button>
+                <motion.div className="sa-modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowOtpModal(false)}>
+                    <motion.div className="sa-modal-content narrow-modal text-center" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()}>
+                        <div className="sa-modal-header" style={{border: 'none', paddingBottom: 0}}>
+                            <button onClick={() => setShowOtpModal(false)} className="sa-btn-close ml-auto"><X size={20}/></button>
                         </div>
-                        <div className="sa-modal-body text-center">
+                        <div className="sa-modal-body" style={{paddingTop: 0}}>
                             <div className="otp-icon-wrapper">
-                                <Smartphone size={32} color="#4f46e5"/>
+                                <Smartphone size={32} color="var(--color-primary)"/>
                             </div>
                             
                             {otpStep === 'request' ? (
                                 <>
-                                    <h4>Delete {hotelToDelete?.name}?</h4>
+                                    <h3 style={{margin: '0 0 10px', color: 'var(--color-dark)'}}>Delete {hotelToDelete?.name}?</h3>
                                     <p className="modal-text">
                                         This action is irreversible. To confirm deletion, 
-                                        we need to verify your identity via OTP sent to your registered mobile.
+                                        we need to verify your identity via OTP.
                                     </p>
-                                    <button 
-                                        className="btn-primary-large" 
-                                        onClick={requestOtp} 
-                                        disabled={isOtpLoading}
-                                    >
+                                    <button className="btn-primary-large" onClick={requestOtp} disabled={isOtpLoading}>
                                         {isOtpLoading ? <Loader2 className="animate-spin" /> : "Send OTP"}
                                     </button>
                                 </>
                             ) : (
                                 <form onSubmit={verifyAndDelete} className="otp-form">
-                                    <h4>Enter OTP</h4>
+                                    <h3 style={{margin: '0 0 10px', color: 'var(--color-dark)'}}>Enter OTP</h3>
                                     <p className="modal-text">Code sent to admin mobile (Dev: 123456)</p>
-                                    <input 
-                                        type="text" 
-                                        className="otp-input" 
-                                        placeholder="• • • • • •" 
-                                        maxLength={6}
-                                        value={otpInput}
-                                        onChange={e => setOtpInput(e.target.value)}
-                                        autoFocus
-                                    />
-                                    <button 
-                                        type="submit" 
-                                        className="btn-danger-large" 
-                                        disabled={isOtpLoading || otpInput.length < 6}
-                                    >
+                                    <input type="text" className="otp-input" placeholder="• • • • • •" maxLength={6} value={otpInput} onChange={e => setOtpInput(e.target.value)} autoFocus/>
+                                    <button type="submit" className="btn-danger-large" disabled={isOtpLoading || otpInput.length < 6}>
                                         {isOtpLoading ? <Loader2 className="animate-spin" /> : "Confirm Delete"}
                                     </button>
                                 </form>
                             )}
                         </div>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
             )}
+            </AnimatePresence>
         </div>
     );
 };

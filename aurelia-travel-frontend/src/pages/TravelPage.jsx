@@ -1,17 +1,19 @@
 import React from 'react';
-import PlannerContainer from '../components/common/PlannerContainer'; // Adjust path if needed
+import PlannerContainer from '../components/common/PlannerContainer';
 import './styles/travelPage.css';
 
 const TravelPage = () => {
   return (
     <div className="travel-page">
-      <section className="travel-hero">
-        <h1>Create Your <span>Aurelia Roadmap</span></h1>
-        <p>Short break? We'll handle the logistics. You handle the memories.</p>
-      </section>
+      <div className="container">
+        <section className="travel-hero">
+          <h1>Design Your <span>Perfect Escape</span></h1>
+          <p>Provide your preferences. Our AI will curate a flawless itinerary in seconds.</p>
+        </section>
 
-      {/* Calling the separated component */}
-      <PlannerContainer />
+        {/* Calling the separated component */}
+        <PlannerContainer />
+      </div>
     </div>
   );
 };

@@ -20,15 +20,18 @@ exports.getAnalyticsData = async (req, res) => {
             const rate = parseFloat(h.commission_rate || 5.00); // Default 5%
             const comm = rev * (rate / 100);
             
-            // Add to totals
+            // Fix: Parse string counts into actual integers
+            const bookingsCount = parseInt(h.bookings || 0, 10);
+            
+            // Add to totals safely
             totalRevenue += rev;
             totalCommission += comm;
-            totalBookings += h.bookings;
+            totalBookings += bookingsCount;
 
             return {
                 id: h.id,
                 name: h.name,
-                bookings: h.bookings,
+                bookings: bookingsCount,
                 revenue: rev,
                 commission: comm
             };
@@ -36,9 +39,10 @@ exports.getAnalyticsData = async (req, res) => {
 
         // Construct the Final Response Object
         const responseData = {
-            revenue: revenueTrends, // [{name: 'Jan', value: 5000}, ...]
-            byHotel: byHotel,       // [{name: 'Hotel A', value: 50}, ...]
-            byStatus: byStatus,     // [{name: 'confirmed', value: 20}, ...]
+            // Fix: Force values to be numbers so Recharts library accepts them
+            revenue: revenueTrends.map(r => ({ name: r.name, value: parseFloat(r.value || 0) })),
+            byHotel: byHotel.map(h => ({ name: h.name, value: parseInt(h.value || 0, 10) })),      
+            byStatus: byStatus.map(s => ({ name: s.name, value: parseInt(s.value || 0, 10) })),    
             
             summary: {
                 totalBookings: totalBookings,
@@ -58,7 +62,6 @@ exports.getAnalyticsData = async (req, res) => {
     }
 };
 
-// Existing Endpoints (Preserved)
 exports.getDashboardStats = async (req, res) => {
     try {
         const stats = await adminModel.getGlobalStats();
@@ -86,7 +89,6 @@ exports.getRecentBookings = async (req, res) => {
     }
 };
 
-// ✅ NEW: Finance Endpoint
 exports.getFinanceRecords = async (req, res) => {
     try {
         const transactions = await adminModel.getAllTransactions();

@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   LayoutDashboard, BedDouble, CalendarDays, BarChart3, 
-  Users, LogOut, Menu, X, Building, ChevronRight, 
+  Users, LogOut, Menu, Building, ChevronRight, 
   DollarSign, MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext'; 
@@ -13,11 +13,9 @@ const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
-  const { checkAuth } = useAuth(); 
-  const user = checkAuth();
+  const { user, logout } = useAuth(); 
 
-  const logout = () => {
-    // Perform logout logic (clear tokens) here
+  const handleLogout = async () => {;
     navigate('/profile');
   }
 
@@ -39,7 +37,6 @@ const DashboardLayout = () => {
         className={`dashboard-sidebar ${!sidebarOpen ? 'closed' : ''}`}
         animate={{ width: sidebarOpen ? 280 : 0, opacity: sidebarOpen ? 1 : 0 }}
         transition={{ duration: 0.3 }}
-        style={{ overflow: 'hidden' }}
       >
         <div className="sidebar-header">
           <div className="brand-logo">Aurelia<span>Manager</span></div>
@@ -55,7 +52,7 @@ const DashboardLayout = () => {
                 to={item.path} 
                 className={`nav-item ${isActive ? 'active' : ''}`}
               >
-                <Icon size={20} strokeWidth={isActive ? 2 : 1.5} />
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} />
                 <span>{item.label}</span>
                 {isActive && <ChevronRight size={16} style={{marginLeft: 'auto', opacity: 0.8}} />}
               </Link>
@@ -64,7 +61,7 @@ const DashboardLayout = () => {
         </nav>
 
         <div className="sidebar-footer">
-          <button onClick={logout} className="logout-btn">
+          <button onClick={handleLogout} className="logout-btn">
             <LogOut size={18} />
             <span>Sign Out</span>
           </button>
@@ -90,7 +87,7 @@ const DashboardLayout = () => {
             <div className="admin-avatar">
                {user?.username ? user.username.charAt(0).toUpperCase() : 'A'}
             </div>
-            <span style={{fontWeight: 600, fontSize: '0.9rem', color: '#0f172a'}}>
+            <span style={{fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-dark)'}}>
                 {user?.username || 'Admin'}
             </span>
           </div>

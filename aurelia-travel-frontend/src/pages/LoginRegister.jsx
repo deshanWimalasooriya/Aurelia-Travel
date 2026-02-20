@@ -5,15 +5,18 @@ import { Mail, Lock, User, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle } f
 import './styles/LoginRegister.css'
 import axios from 'axios'
 
-// Simple SVG components for Google/Facebook
+// Standard minimal SVGs for Brands (Lucide doesn't include brand logos)
 const GoogleIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
-    <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)"><path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z"/><path fill="#34A853" d="M -14.754 63.239 C -11.514 63.239 -8.804 62.159 -6.824 60.329 L -10.684 57.329 C -11.764 58.049 -13.134 58.489 -14.754 58.489 C -17.884 58.489 -20.534 56.379 -21.484 53.529 L -25.464 53.529 L -25.464 56.619 C -23.494 60.539 -19.444 63.239 -14.754 63.239 Z"/><path fill="#FBBC05" d="M -21.484 53.529 C -21.734 52.809 -21.864 52.039 -21.864 51.239 C -21.864 50.439 -21.734 49.669 -21.484 48.949 L -21.484 45.859 L -25.464 45.859 C -26.284 47.479 -26.754 49.299 -26.754 51.239 C -26.754 53.179 -26.284 54.999 -25.464 56.619 L -21.484 53.529 Z"/><path fill="#EA4335" d="M -14.754 43.989 C -12.984 43.989 -11.404 44.599 -10.154 45.799 L -6.734 42.379 C -8.804 40.439 -11.514 39.239 -14.754 39.239 C -19.444 39.239 -23.494 41.939 -25.464 45.859 L -21.484 48.949 C -20.534 46.099 -17.884 43.989 -14.754 43.989 Z"/></g>
+  <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+    <path fill="#4285F4" d="M23.745 12.27c0-.827-.074-1.623-.214-2.393H12v4.524h6.586a5.61 5.61 0 0 1-2.434 3.684v3.06h3.945c2.308-2.124 3.648-5.253 3.648-8.875Z"/>
+    <path fill="#34A853" d="M12 24c3.303 0 6.073-1.096 8.096-2.964l-3.945-3.06c-1.094.733-2.493 1.168-4.151 1.168-3.195 0-5.901-2.158-6.864-5.062H1.05v3.165A11.996 11.996 0 0 0 12 24Z"/>
+    <path fill="#FBBC05" d="M5.136 14.082a7.195 7.195 0 0 1-.382-2.082c0-.72.13-1.423.382-2.082V6.753H1.05A11.99 11.99 0 0 0 0 12c0 1.936.463 3.766 1.282 5.418l3.854-3.336Z"/>
+    <path fill="#EA4335" d="M12 4.835c1.796 0 3.403.618 4.67 1.826l3.504-3.504C18.068 1.196 15.298 0 12 0 7.37 0 3.196 2.68 1.05 6.753l3.854 3.336c.963-2.904 3.669-5.254 6.864-5.254Z"/>
   </svg>
 )
 
 const FacebookIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg" fill="#1877F2">
+  <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg" fill="#1877F2">
     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
   </svg>
 )
@@ -35,7 +38,6 @@ export default function Auth(){
     confirmPassword: '' 
   })
 
-  // Load saved email on mount
   useEffect(() => {
     const savedEmail = localStorage.getItem('aurelia_saved_email')
     if (savedEmail) {
@@ -45,7 +47,6 @@ export default function Auth(){
   }, [])
 
   const handleSocialLogin = (provider) => {
-    // Placeholder for social login logic
     console.log(`Initiating ${provider} login...`)
     alert(`${provider} login integration pending backend setup.`)
   }
@@ -55,7 +56,6 @@ export default function Auth(){
     setLoading(true)
     setError(null)
 
-    // 1. Client-side Validation
     if (mode === 'register') {
         if (form.password !== form.confirmPassword) {
             setError("Passwords do not match")
@@ -71,7 +71,6 @@ export default function Auth(){
 
     try {
       if (mode === 'login') {
-        // Handle "Remember Me" logic
         if (rememberMe) {
             localStorage.setItem('aurelia_saved_email', form.email)
         } else {
@@ -85,7 +84,6 @@ export default function Auth(){
           withCredentials: true
         })
 
-        console.log('Login successful:', response.data)
         await refreshUser()
         navigate('/profile')
       } else {
@@ -97,12 +95,10 @@ export default function Auth(){
           withCredentials: true
         })
 
-        console.log('Registration successful:', response.data)
         alert('Registration successful! Please login.')
         toggleMode() 
       }
     } catch (err) {
-      console.error(err)
       setError(err.response?.data?.message || 'An error occurred. Please try again.')
     } finally {
       setLoading(false)
@@ -163,7 +159,7 @@ export default function Auth(){
                 <div className="form-header">
                     <h2>{mode === 'login' ? 'Welcome back' : 'Create account'}</h2>
                     <p className="sub-header">
-                        {mode === 'login' ? "Please enter your details." : "Start your journey today."}
+                        {mode === 'login' ? "Please enter your details to sign in." : "Start your journey with us today."}
                     </p>
                 </div>
 
@@ -190,14 +186,14 @@ export default function Auth(){
                         <div className="input-group slide-in-element">
                             <label htmlFor="username">Full Name</label>
                             <div className="input-wrapper">
-                                {/*<User size={18} className="input-icon"/>*/}
+                                <User size={18} className="input-icon"/>
                                 <input 
                                     id="username"
                                     name="username"
                                     autoComplete="name"
                                     value={form.username} 
                                     onChange={e=>setForm(f=>({...f, username:e.target.value}))} 
-                                    className="modern-input"
+                                    className="modern-input with-icon"
                                     placeholder="e.g. John Doe"
                                     required
                                 />
@@ -209,7 +205,7 @@ export default function Auth(){
                     <div className="input-group">
                         <label htmlFor="email">Email Address</label>
                         <div className="input-wrapper">
-                            {/*<Mail size={18} className="input-icon"/>*/}
+                            <Mail size={18} className="input-icon"/>
                             <input 
                                 id="email"
                                 name="email"
@@ -217,7 +213,7 @@ export default function Auth(){
                                 value={form.email} 
                                 onChange={e=>setForm(f=>({...f, email:e.target.value}))} 
                                 type="email" 
-                                className="modern-input"
+                                className="modern-input with-icon"
                                 placeholder="you@example.com"
                                 required
                             />
@@ -228,7 +224,7 @@ export default function Auth(){
                     <div className="input-group">
                         <label htmlFor="password">Password</label>
                         <div className="input-wrapper">
-                            {/*<Lock size={18} className="input-icon"/>*/}
+                            <Lock size={18} className="input-icon"/>
                             <input 
                                 id="password"
                                 name="password"
@@ -236,7 +232,7 @@ export default function Auth(){
                                 value={form.password} 
                                 onChange={e=>setForm(f=>({...f, password:e.target.value}))} 
                                 type={showPassword ? "text" : "password"} 
-                                className="modern-input"
+                                className="modern-input with-icon"
                                 placeholder="••••••••"
                                 required
                             />
@@ -255,7 +251,7 @@ export default function Auth(){
                         <div className="input-group slide-in-element">
                             <label htmlFor="confirmPassword">Confirm Password</label>
                             <div className="input-wrapper">
-                                {/*<CheckCircle size={18} className="input-icon"/>*/}
+                                <CheckCircle size={18} className="input-icon"/>
                                 <input 
                                     id="confirmPassword"
                                     name="confirmPassword"
@@ -263,7 +259,7 @@ export default function Auth(){
                                     value={form.confirmPassword} 
                                     onChange={e=>setForm(f=>({...f, confirmPassword:e.target.value}))} 
                                     type={showPassword ? "text" : "password"} 
-                                    className="modern-input"
+                                    className="modern-input with-icon"
                                     placeholder="••••••••"
                                     required
                                 />

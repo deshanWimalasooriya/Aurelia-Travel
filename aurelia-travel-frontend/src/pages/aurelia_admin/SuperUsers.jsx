@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api'; 
-import { Search, User, Trash2, ShieldBan, CheckCircle, Plus, X, Edit2, Save, Eye, Loader2, Filter, Smartphone, Building, Bed, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, User, Trash2, ShieldBan, CheckCircle, Plus, X, Edit2, Save, Eye, Loader2, Smartphone, Building, Bed, ChevronDown, ChevronUp } from 'lucide-react';
 import './styles/super-users.css';
 
 const SuperUsers = () => {
@@ -54,11 +55,9 @@ const SuperUsers = () => {
         }
     };
 
-    // --- MANAGER DATA FETCHING ---
     const fetchManagerHotels = async (managerId) => {
         setLoadingHotels(true);
         try {
-            // ✅ FIX: Use the new standard endpoint we created in hotelRoutes
             const res = await api.get(`/hotels/manager/${managerId}`);
             if (res.data.success) {
                 setManagerHotels(res.data.data);
@@ -84,7 +83,6 @@ const SuperUsers = () => {
         if (!hotelRooms[hotelId]) {
             setLoadingRooms(prev => ({ ...prev, [hotelId]: true }));
             try {
-                // Fetch rooms using standard room route
                 const res = await api.get(`/rooms/hotel/${hotelId}`);
                 if (res.data.success) {
                     setHotelRooms(prev => ({ ...prev, [hotelId]: res.data.data }));
@@ -97,10 +95,6 @@ const SuperUsers = () => {
         }
     };
 
-    // ... (Keep existing OTP handlers: handleSaveUser, handleDelete, handleToggleBan, requestOtp, verifyAndExecute) ...
-    // ... (Keep existing Helper functions: openCreateModal, openEditModal) ...
-
-    // --- ACTIONS ---
     const handleSaveUser = async (e) => {
         e.preventDefault();
         const payload = { ...formData };
@@ -201,7 +195,10 @@ const SuperUsers = () => {
         <div style={{position: 'relative'}}>
             {/* Header */}
             <div className="sa-header-row">
-                <div><h1 className="sa-page-title" style={{marginBottom:'5px'}}>User Management</h1><p style={{margin:0, color:'#64748b', fontSize:'0.9rem'}}>Manage travelers, managers, and admins.</p></div>
+                <div>
+                    <h1 className="sa-page-title">User Base</h1>
+                    <p style={{margin:0, color:'var(--text-muted)', fontSize:'0.9rem'}}>Manage travelers, partners, and admins</p>
+                </div>
                 <button className="sa-btn-create" onClick={openCreateModal}><Plus size={18} /> Add User</button>
             </div>
 
@@ -217,7 +214,8 @@ const SuperUsers = () => {
             {/* Search */}
             <div className="sa-table-controls" style={{marginBottom:'15px'}}>
                 <div className="sa-search-wrapper" style={{width: '100%'}}>
-                    <Search size={18} className="sa-search-icon"/><input className="sa-search-input" placeholder="Search by name or email..." value={search} onChange={e => setSearch(e.target.value)}/>
+                    <Search size={18} className="sa-search-icon"/>
+                    <input className="sa-search-input" placeholder="Search by name or email..." value={search} onChange={e => setSearch(e.target.value)}/>
                 </div>
             </div>
 
@@ -226,64 +224,66 @@ const SuperUsers = () => {
                 <table className="sa-table">
                     <thead><tr><th>User Profile</th><th>Role</th><th>Status</th><th style={{textAlign: 'right'}}>Actions</th></tr></thead>
                     <tbody>
-                        {loading ? <tr><td colSpan="4" style={{textAlign:'center', padding:'40px'}}><Loader2 className="animate-spin"/> Loading...</td></tr> : filtered.length > 0 ? (
+                        {loading ? <tr><td colSpan="4" style={{textAlign:'center', padding:'40px'}}><Loader2 className="animate-spin mx-auto" color="var(--text-muted)"/></td></tr> : filtered.length > 0 ? (
                             filtered.map(user => (
-                                <tr key={user.id}>
+                                <tr key={user.id} style={{ opacity: user.is_active ? 1 : 0.6 }}>
                                     <td>
                                         <div className="sa-user-cell">
-                                            <div className="sa-user-avatar">{user.profile_image ? <img src={user.profile_image} alt="" style={{width:'100%', height:'100%', borderRadius:'50%', objectFit:'cover'}} /> : <User size={20}/>}</div>
+                                            <div className="sa-user-avatar">{user.profile_image ? <img src={user.profile_image} alt=""/> : <User size={20}/>}</div>
                                             <div><div className="sa-user-name">{user.username}</div><div className="sa-user-email">{user.email}</div></div>
                                         </div>
                                     </td>
                                     <td><span className={`sa-role-badge sa-role-${user.role}`}>{user.role.replace('_', ' ')}</span></td>
                                     <td>{user.is_active ? <span className="sa-status-text sa-text-active"><CheckCircle size={14}/> Active</span> : <span className="sa-status-text sa-text-banned"><ShieldBan size={14}/> Banned</span>}</td>
                                     <td style={{ textAlign: 'right' }}>
-                                        <button className="sa-action-btn" onClick={() => openViewModal(user)}><Eye size={18} color="#64748b"/></button>
-                                        <button className="sa-action-btn" onClick={() => openEditModal(user)}><Edit2 size={18} color="#3b82f6"/></button>
-                                        <button className="sa-action-btn" onClick={() => handleToggleBan(user)}><ShieldBan size={18} color={user.is_active ? "#f59e0b" : "#10b981"}/></button>
-                                        <button className="sa-action-btn" onClick={() => handleDelete(user.id)}><Trash2 size={18} color="#ef4444"/></button>
+                                        <div className="sa-action-group">
+                                            <button className="sa-action-btn" title="View Profile" onClick={() => openViewModal(user)}><Eye size={18} color="var(--text-secondary)"/></button>
+                                            <button className="sa-action-btn" title="Edit User" onClick={() => openEditModal(user)}><Edit2 size={18} color="var(--color-primary)"/></button>
+                                            <button className="sa-action-btn" title={user.is_active ? "Ban User" : "Activate User"} onClick={() => handleToggleBan(user)}><ShieldBan size={18} color={user.is_active ? "#f59e0b" : "#10b981"}/></button>
+                                            <button className="sa-action-btn delete" title="Delete User" onClick={() => handleDelete(user.id)}><Trash2 size={18} color="#ef4444"/></button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))
-                        ) : <tr><td colSpan="4" style={{textAlign:'center', padding:'40px', color: '#64748b'}}>No users found.</td></tr>}
+                        ) : <tr><td colSpan="4" style={{textAlign:'center', padding:'40px', color: 'var(--text-muted)'}}>No users found.</td></tr>}
                     </tbody>
                 </table>
             </div>
 
             {/* VIEW DETAILS MODAL */}
+            <AnimatePresence>
             {showViewModal && selectedUser && (
-                <div className="sa-modal-overlay">
-                    <div className={`sa-modal-content ${selectedUser.role === 'hotel_manager' ? 'wide-modal' : ''}`}>
+                <motion.div className="sa-modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowViewModal(false)}>
+                    <motion.div className={`sa-modal-content ${selectedUser.role === 'hotel_manager' ? 'wide-modal' : ''}`} initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()}>
                         <div className="sa-modal-header"><h3>User Details</h3><button onClick={() => setShowViewModal(false)} className="sa-btn-close"><X size={20}/></button></div>
                         <div className="sa-modal-body">
-                            {/* Basic Info */}
                             <div className="user-profile-header">
                                 <div className="large-avatar">{selectedUser.profile_image ? <img src={selectedUser.profile_image} alt=""/> : <User size={40}/>}</div>
-                                <div><h2>{selectedUser.username}</h2><span className={`sa-role-badge sa-role-${selectedUser.role}`}>{selectedUser.role.replace('_', ' ')}</span></div>
+                                <div><h2 style={{margin:'0 0 5px', color:'var(--color-dark)', fontSize:'1.4rem'}}>{selectedUser.username}</h2><span className={`sa-role-badge sa-role-${selectedUser.role}`}>{selectedUser.role.replace('_', ' ')}</span></div>
                             </div>
                             <div className="detail-grid">
                                 <div className="d-item"><label>Full Name</label><p>{selectedUser.first_name} {selectedUser.last_name || '-'}</p></div>
                                 <div className="d-item"><label>Email</label><p>{selectedUser.email}</p></div>
                                 <div className="d-item"><label>Phone</label><p>{selectedUser.phone || 'N/A'}</p></div>
                                 <div className="d-item"><label>Location</label><p>{selectedUser.city || 'N/A'}, {selectedUser.country || ''}</p></div>
-                                <div className="d-item full"><label>Bio</label><p>{selectedUser.bio || 'No bio provided.'}</p></div>
+                                <div className="d-item full"><label>Bio</label><p style={{fontStyle: 'italic', color: 'var(--text-secondary)'}}>{selectedUser.bio || 'No bio provided.'}</p></div>
                             </div>
 
-                            {/* --- MANAGER SPECIFIC: HOTELS LIST --- */}
+                            {/* MANAGER SPECIFIC: HOTELS LIST */}
                             {selectedUser.role === 'hotel_manager' && (
                                 <div className="manager-portfolio-section">
-                                    <hr className="sa-divider"/>
+                                    <div className="sa-divider"></div>
                                     <h4 className="section-title"><Building size={16}/> Managed Properties</h4>
                                     
                                     {loadingHotels ? (
-                                        <div className="loading-state"><Loader2 className="animate-spin"/> Loading Properties...</div>
+                                        <div className="loading-state"><Loader2 className="animate-spin" size={20}/> Fetching Properties...</div>
                                     ) : managerHotels.length > 0 ? (
                                         <div className="manager-hotels-list">
                                             {managerHotels.map(hotel => (
                                                 <div key={hotel.id} className="manager-hotel-card">
                                                     <div className="mh-header" onClick={() => toggleHotelRooms(hotel.id)}>
-                                                        <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                                                            <div className="mh-icon"><Building size={18}/></div>
+                                                        <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+                                                            <div className="mh-icon"><Building size={16}/></div>
                                                             <div>
                                                                 <span className="mh-name">{hotel.name}</span>
                                                                 <span className={`mh-status ${hotel.is_active ? 'active' : 'inactive'}`}>
@@ -291,22 +291,23 @@ const SuperUsers = () => {
                                                                 </span>
                                                             </div>
                                                         </div>
-                                                        {expandedHotelId === hotel.id ? <ChevronUp size={18}/> : <ChevronDown size={18}/>}
+                                                        {expandedHotelId === hotel.id ? <ChevronUp size={18} color="var(--text-muted)"/> : <ChevronDown size={18} color="var(--text-muted)"/>}
                                                     </div>
 
-                                                    {/* --- NESTED: ROOMS LIST --- */}
+                                                    {/* NESTED: ROOMS LIST */}
+                                                    <AnimatePresence>
                                                     {expandedHotelId === hotel.id && (
-                                                        <div className="mh-rooms-container">
+                                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="mh-rooms-container">
                                                             {loadingRooms[hotel.id] ? (
-                                                                <div className="loading-sub"><Loader2 size={16} className="animate-spin"/> Fetching Rooms...</div>
+                                                                <div className="loading-sub"><Loader2 size={16} className="animate-spin"/></div>
                                                             ) : (hotelRooms[hotel.id] && hotelRooms[hotel.id].length > 0) ? (
                                                                 <table className="mini-rooms-table">
                                                                     <thead><tr><th>Room Type</th><th>Price</th><th>Qty</th></tr></thead>
                                                                     <tbody>
                                                                         {hotelRooms[hotel.id].map(room => (
                                                                             <tr key={room.id}>
-                                                                                <td><Bed size={14} style={{marginRight:'5px'}}/> {room.title}</td>
-                                                                                <td>${room.base_price_per_night}</td>
+                                                                                <td><Bed size={14} style={{marginRight:'6px', color:'var(--text-muted)'}}/> {room.title}</td>
+                                                                                <td style={{fontWeight:600}}>${room.base_price_per_night}</td>
                                                                                 <td>{room.total_quantity}</td>
                                                                             </tr>
                                                                         ))}
@@ -315,8 +316,9 @@ const SuperUsers = () => {
                                                             ) : (
                                                                 <div className="empty-sub">No rooms found.</div>
                                                             )}
-                                                        </div>
+                                                        </motion.div>
                                                     )}
+                                                    </AnimatePresence>
                                                 </div>
                                             ))}
                                         </div>
@@ -326,43 +328,51 @@ const SuperUsers = () => {
                                 </div>
                             )}
                         </div>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
             )}
+            </AnimatePresence>
 
-            {/* OTP & EDIT MODALS (Same as before) */}
+            {/* EDIT/CREATE MODAL */}
+            <AnimatePresence>
             {showEditModal && (
-                <div className="sa-modal-overlay">
-                    <div className="sa-modal-content">
+                <motion.div className="sa-modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <motion.div className="sa-modal-content" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}>
                         <div className="sa-modal-header"><h3>{isEditing ? 'Edit User' : 'Create New User'}</h3><button onClick={() => setShowEditModal(false)} className="sa-btn-close"><X size={20}/></button></div>
-                        <form onSubmit={handleSaveUser} className="sa-modal-form">
-                            <div className="form-row"><div className="form-group"><label>First Name</label><input value={formData.first_name} onChange={e => setFormData({...formData, first_name: e.target.value})} /></div><div className="form-group"><label>Last Name</label><input value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})} /></div></div>
-                            <div className="form-group"><label>Username *</label><input required value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} /></div>
-                            <div className="form-group"><label>Email *</label><input type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
-                            <div className="form-group"><label>Role</label><select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}><option value="user">User</option><option value="hotel_manager">Hotel Manager</option><option value="admin">Admin</option></select></div>
-                            <div className="form-group"><label>{isEditing ? 'Password (Optional)' : 'Password *'}</label><input type="password" required={!isEditing} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} /></div>
-                            <div className="form-group"><label>Phone</label><input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} /></div>
-                            <div className="sa-modal-footer"><button type="button" className="btn-cancel" onClick={() => setShowEditModal(false)}>Cancel</button><button type="submit" className="btn-save"><Save size={16}/> {isEditing ? 'Update' : 'Create'}</button></div>
-                        </form>
-                    </div>
-                </div>
+                        <div className="sa-modal-body">
+                            <form onSubmit={handleSaveUser} className="sa-modal-form">
+                                <div className="form-row"><div className="form-group"><label>First Name</label><input className="sa-input" value={formData.first_name} onChange={e => setFormData({...formData, first_name: e.target.value})} /></div><div className="form-group"><label>Last Name</label><input className="sa-input" value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})} /></div></div>
+                                <div className="form-group"><label>Username <span className="req">*</span></label><input className="sa-input" required value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} /></div>
+                                <div className="form-group"><label>Email <span className="req">*</span></label><input className="sa-input" type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
+                                <div className="form-group"><label>Role</label><select className="sa-input" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}><option value="user">Traveler</option><option value="hotel_manager">Hotel Partner</option><option value="admin">System Admin</option></select></div>
+                                <div className="form-group"><label>{isEditing ? 'Password (Optional)' : 'Password *'}</label><input className="sa-input" type="password" required={!isEditing} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} /></div>
+                                <div className="form-group"><label>Phone</label><input className="sa-input" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} /></div>
+                                <div className="sa-modal-footer"><button type="button" className="btn-ghost" onClick={() => setShowEditModal(false)}>Cancel</button><button type="submit" className="btn-primary-compact"><Save size={16}/> {isEditing ? 'Update Profile' : 'Create Profile'}</button></div>
+                            </form>
+                        </div>
+                    </motion.div>
+                </motion.div>
             )}
+            </AnimatePresence>
 
+            {/* OTP MODAL */}
+            <AnimatePresence>
             {showOtpModal && (
-                <div className="sa-modal-overlay" style={{zIndex: 1100}}>
-                    <div className="sa-modal-content narrow-modal">
-                        <div className="sa-modal-header"><h3>Security Verification</h3><button onClick={() => setShowOtpModal(false)} className="sa-btn-close"><X size={20}/></button></div>
-                        <div className="sa-modal-body text-center">
-                            <div className="otp-icon-wrapper"><Smartphone size={32} color="#4f46e5"/></div>
+                <motion.div className="sa-modal-overlay" style={{zIndex: 1100}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <motion.div className="sa-modal-content narrow-modal text-center" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}>
+                        <div className="sa-modal-header" style={{border: 'none', paddingBottom: 0}}><button onClick={() => setShowOtpModal(false)} className="sa-btn-close ml-auto"><X size={20}/></button></div>
+                        <div className="sa-modal-body" style={{paddingTop: 0}}>
+                            <div className="otp-icon-wrapper"><Smartphone size={32} color="var(--color-primary)"/></div>
                             {otpStep === 'request' ? (
-                                <><p className="modal-text">Confirm sensitive action via OTP.</p><button className="btn-primary-large" onClick={requestOtp} disabled={isOtpLoading}>{isOtpLoading ? <Loader2 className="animate-spin" /> : "Send OTP"}</button></>
+                                <><h3 style={{margin:'0 0 10px', color:'var(--color-dark)'}}>Security Verification</h3><p className="modal-text">Confirm sensitive action via OTP.</p><button className="btn-primary-large" onClick={requestOtp} disabled={isOtpLoading}>{isOtpLoading ? <Loader2 className="animate-spin mx-auto" /> : "Send OTP"}</button></>
                             ) : (
-                                <form onSubmit={verifyAndExecute} className="otp-form"><h4>Enter Code</h4><p className="modal-text">Dev Code: 123456</p><input className="otp-input" maxLength={6} value={otpInput} onChange={e => setOtpInput(e.target.value)} autoFocus/><button type="submit" className="btn-danger-large" disabled={isOtpLoading || otpInput.length < 6}>{isOtpLoading ? <Loader2 className="animate-spin" /> : "Verify"}</button></form>
+                                <form onSubmit={verifyAndExecute} className="otp-form"><h3 style={{margin:'0 0 10px', color:'var(--color-dark)'}}>Enter Code</h3><p className="modal-text">Dev Code: 123456</p><input className="otp-input" maxLength={6} value={otpInput} onChange={e => setOtpInput(e.target.value)} autoFocus/><button type="submit" className="btn-danger-large" disabled={isOtpLoading || otpInput.length < 6}>{isOtpLoading ? <Loader2 className="animate-spin mx-auto" /> : "Verify & Execute"}</button></form>
                             )}
                         </div>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
             )}
+            </AnimatePresence>
         </div>
     );
 };

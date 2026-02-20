@@ -7,7 +7,7 @@ import {
   MapPin, Clock, Phone, Search, X,
   Building, Star, CheckCircle2,
   Bold, Italic, List,
-  Power 
+  Power, Mail
 } from 'lucide-react';
 import './styles/dashboard-hotels.css';
 
@@ -16,7 +16,6 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 
-// Fix for default Leaflet marker icons not showing in React
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -24,7 +23,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// --- Simple Editor (No Changes) ---
+// --- Simple Editor ---
 const SimpleEditor = ({ value, onChange }) => {
     const editorRef = useRef(null);
     const isLocked = useRef(false);
@@ -51,30 +50,35 @@ const SimpleEditor = ({ value, onChange }) => {
 };
 
 // --- MAP COMPONENTS ---
-
-// 1. Component to handle clicks on the map
 const LocationMarker = ({ setPosition }) => {
-    useMapEvents({
-        click(e) {
-            setPosition(e.latlng.lat, e.latlng.lng);
-        },
-    });
+    useMapEvents({ click(e) { setPosition(e.latlng.lat, e.latlng.lng); } });
     return null;
 };
 
-// 2. Component to update map view when inputs change manually
 const MapUpdater = ({ center }) => {
     const map = useMap();
-    useEffect(() => {
-        if (center) {
-            map.flyTo(center, map.getZoom());
+    useEffect(() => { 
+        if (center && !isNaN(center[0]) && !isNaN(center[1])) {
+            map.flyTo(center, map.getZoom()); 
         }
     }, [center, map]);
     return null;
 };
 
+// --- SAFE COORDINATE PARSERS ---
+const getSafeCoords = (lat, lng) => {
+    const parsedLat = parseFloat(lat);
+    const parsedLng = parseFloat(lng);
+    if (!isNaN(parsedLat) && !isNaN(parsedLng)) return [parsedLat, parsedLng];
+    return [51.505, -0.09]; // Default map fallback
+};
+
+const hasValidCoords = (lat, lng) => {
+    return !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng));
+};
+
+
 const DashboardHotels = () => {
-  // --- State Management ---
   const [view, setView] = useState('list');
   const [hotels, setHotels] = useState([]);
   const [filteredHotels, setFilteredHotels] = useState([]);
@@ -83,7 +87,6 @@ const DashboardHotels = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   
-  // Amenities State
   const [dbAmenities, setDbAmenities] = useState([]); 
   const [newAmenityText, setNewAmenityText] = useState('');
 
@@ -96,67 +99,47 @@ const DashboardHotels = () => {
     amenities: [] 
   });
 
-  // --- 1. Fetch Global Amenities ---
   useEffect(() => {
       api.get('/amenities') 
         .then(res => {
             const rawAm = Array.isArray(res.data) ? res.data : (res.data.data || []);
-            const normalized = rawAm.map(a => ({
-                ...a,
-                id: a.id || a._id, 
-                name: a.name 
-            }));
+            const normalized = rawAm.map(a => ({ ...a, id: a.id || a._id, name: a.name }));
             setDbAmenities(normalized);
-        })
-        .catch(err => console.warn("Global amenities fetch failed:", err));
+        }).catch(err => console.warn("Global amenities fetch failed:", err));
   }, []);
 
-  // --- 2. Fetch Hotels List ---
   const fetchHotels = useCallback(async () => {
     try {
       const res = await api.get('/hotels/mine');
       const data = Array.isArray(res.data) ? res.data : (res.data.data || []);
-      setHotels(data);
-      setFilteredHotels(data);
-    } catch (err) { 
-      console.error("Failed to load hotels:", err); 
-    }
+      setHotels(data); setFilteredHotels(data);
+    } catch (err) { console.error("Failed to load hotels:", err); }
   }, []);
 
-  useEffect(() => {
-      fetchHotels();
-  }, [fetchHotels]);
+  useEffect(() => { fetchHotels(); }, [fetchHotels]);
 
-  // Search Logic
   useEffect(() => {
     const lowerTerm = searchTerm.toLowerCase();
     const filtered = hotels.filter(h => h.name.toLowerCase().includes(lowerTerm));
     setFilteredHotels(filtered);
   }, [searchTerm, hotels]);
 
-  // --- 3. Sync Hotel Amenities on Edit ---
   useEffect(() => {
     if (editingHotel && view === 'form') {
         api.get(`/hotels/${editingHotel.id}/amenities`)
             .then(res => {
                 const fetchedAmenities = Array.isArray(res.data) ? res.data : (res.data.data || []);
                 const amenityIds = fetchedAmenities.map(item => {
-                    if (typeof item === 'object' && item !== null) {
-                        return item.amenity_id || item.id || item._id; 
-                    }
+                    if (typeof item === 'object' && item !== null) return item.amenity_id || item.id || item._id; 
                     return item; 
                 });
                 setFormData(prev => ({ ...prev, amenities: amenityIds }));
-            })
-            .catch(err => console.error("Failed to fetch hotel amenities:", err));
+            }).catch(err => console.error("Failed to fetch hotel amenities:", err));
     }
   }, [editingHotel, view]);
 
-
-  // --- FORM HANDLERS ---
   const handleSwitchToForm = (hotel = null) => {
     setEditingHotel(hotel);
-    
     if (hotel) {
         const processedImages = (hotel.images_meta && hotel.images_meta.length > 0) 
             ? hotel.images_meta.map(img => ({ url: img.url, isPrimary: img.isPrimary }))
@@ -169,12 +152,13 @@ const DashboardHotels = () => {
         setFormData({
             name: hotel.name || '', description: hotel.description || '', address: hotel.address_line_1 || '',
             city: hotel.city || '', province: hotel.state || '', postalCode: hotel.postal_code || '',
-            country: hotel.country || '', latitude: hotel.latitude || '', longitude: hotel.longitude || '',
+            country: hotel.country || '', 
+            latitude: hotel.latitude ? String(hotel.latitude) : '', 
+            longitude: hotel.longitude ? String(hotel.longitude) : '',
             email: hotel.email || '', phone: hotel.phone || '', website: hotel.website || '',
             checkIn: hotel.check_in_time || '14:00', checkOut: hotel.check_out_time || '11:00',
             cancellationPolicy: hotel.cancellation_policy_hours || '24',
-            images: processedImages,
-            amenities: [] 
+            images: processedImages, amenities: [] 
         });
     } else {
         setFormData({ 
@@ -187,13 +171,8 @@ const DashboardHotels = () => {
     setView('form');
   };
 
-  // Helper to set location from Map
   const handleMapClick = (lat, lng) => {
-      setFormData(prev => ({
-          ...prev,
-          latitude: lat.toFixed(6), // Standard precision for maps
-          longitude: lng.toFixed(6)
-      }));
+      setFormData(prev => ({ ...prev, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }));
   };
 
   const handleImageChange = (index, value) => {
@@ -212,7 +191,6 @@ const DashboardHotels = () => {
       setFormData({ ...formData, images: newImages });
   };
 
-  // --- AMENITY TRANSFER LIST LOGIC ---
   const moveToSelected = (id) => {
       if (!formData.amenities.some(a => String(a) === String(id))) {
           setFormData(prev => ({ ...prev, amenities: [...prev.amenities, id] }));
@@ -227,9 +205,8 @@ const DashboardHotels = () => {
       if (!newAmenityText.trim()) return;
       const name = newAmenityText.trim();
       const existing = dbAmenities.find(a => a.name.toLowerCase() === name.toLowerCase());
-      if (existing) {
-          moveToSelected(existing.id); 
-      } else {
+      if (existing) moveToSelected(existing.id); 
+      else {
           const tempId = name; 
           setDbAmenities(prev => [...prev, { id: tempId, name: name }]); 
           setFormData(prev => ({ ...prev, amenities: [...prev.amenities, tempId] }));
@@ -240,23 +217,22 @@ const DashboardHotels = () => {
   const selectedList = dbAmenities.filter(am => formData.amenities.some(id => String(id) === String(am.id)));
   const availableList = dbAmenities.filter(am => !formData.amenities.some(id => String(id) === String(am.id)));
 
-
-  // --- API ACTIONS ---
-
-  // 1. Submit Form
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     const validImages = formData.images.filter(img => img.url.trim() !== '');
     
+    // Safely parse numbers to avoid sending NaNs to backend
     const payload = {
       name: formData.name, description: formData.description, address_line_1: formData.address,
       city: formData.city, state: formData.province, postal_code: formData.postalCode || '00000',
-      country: formData.country, latitude: parseFloat(formData.latitude), longitude: parseFloat(formData.longitude),
+      country: formData.country, 
+      latitude: formData.latitude ? parseFloat(formData.latitude) : null, 
+      longitude: formData.longitude ? parseFloat(formData.longitude) : null,
       email: formData.email, phone: formData.phone, website: formData.website,
       check_in_time: formData.checkIn, check_out_time: formData.checkOut,
       cancellation_policy_hours: parseInt(formData.cancellationPolicy) || 24,
-      images: validImages, 
+      images: validImages.map(img => img.url),
       amenities: formData.amenities 
     };
 
@@ -268,35 +244,23 @@ const DashboardHotels = () => {
     finally { setLoading(false); }
   };
 
-  // 2. Delete Hotel
   const handleDelete = async (id) => {
     if(!window.confirm("Delete property?")) return;
     try { await api.delete(`/hotels/${id}`); setHotels(prev => prev.filter(h => h.id !== id)); } 
     catch(err) { alert("Failed to delete."); }
   };
 
-  // 3. Toggle Active Status Logic
   const handleToggleStatus = async (hotel) => {
-      const newStatus = !hotel.is_active; // Calculate new status
-      
-      const confirmMsg = newStatus 
-        ? "Publish this property?" 
-        : "Unpublish this property? It will be hidden from search results.";
-        
+      const newStatus = !hotel.is_active; 
+      const confirmMsg = newStatus ? "Publish this property?" : "Unpublish this property? It will be hidden from search results.";
       if (!window.confirm(confirmMsg)) return;
 
       try {
-          // A. Optimistic Update
           setHotels(prev => prev.map(h => h.id === hotel.id ? { ...h, is_active: newStatus } : h));
           setFilteredHotels(prev => prev.map(h => h.id === hotel.id ? { ...h, is_active: newStatus } : h));
-
-          // B. Send Update to Backend
           await api.put(`/hotels/${hotel.id}`, { is_active: newStatus });
-          
       } catch (err) {
-          console.error("Status toggle failed", err);
           alert("Failed to update status. Please try again.");
-          // C. Revert UI on failure
           await fetchHotels(); 
       }
   };
@@ -306,45 +270,44 @@ const DashboardHotels = () => {
       <AnimatePresence mode="wait">
         
         {/* --- LIST VIEW --- */}
-        {view === 'list' && (
-          <motion.div key="list" className="dashboard-content" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        {view === 'list' ? (
+          <motion.div key="list" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{duration: 0.2}}>
             <div className="dashboard-header">
-                <div><h1>Property Portfolio</h1><p>Manage your hotels</p></div>
+                <div><h1 className="page-title">Property Portfolio</h1><p className="page-subtitle">Manage your hotels</p></div>
                 <div className="header-actions">
-                    <div className="search-bar"><Search size={16}/><input placeholder="Search..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}/></div>
-                    <button className="btn-primary-compact" onClick={() => handleSwitchToForm()}><Plus size={16}/> Add Hotel</button>
+                    <div className="search-bar">
+                        <Search size={16} className="search-icon"/>
+                        <input placeholder="Search properties..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}/>
+                    </div>
+                    <button className="btn-primary-compact" onClick={() => handleSwitchToForm()}>
+                        <Plus size={16}/> Add Hotel
+                    </button>
                 </div>
             </div>
+
             <div className="table-container">
                 <table className="modern-table">
                     <thead><tr><th>Property</th><th>Location</th><th>Status</th><th className="text-right">Actions</th></tr></thead>
                     <tbody>
                     {filteredHotels.length === 0 ? (
-                        <tr><td colSpan="4" style={{textAlign:'center', padding:'20px'}}>No hotels found.</td></tr>
+                        <tr><td colSpan="4" className="empty-state-cell">No hotels found.</td></tr>
                     ) : (
                         filteredHotels.map(hotel => (
                             <tr key={hotel.id} style={{ opacity: hotel.is_active ? 1 : 0.6 }}>
                                 <td>
                                     <div className="hotel-cell-main">
-                                        <div className="hotel-thumbnail">{hotel.main_image ? <img src={hotel.main_image} alt=""/> : <Building size={20}/>}</div>
+                                        <div className="hotel-thumbnail">{hotel.main_image ? <img src={hotel.main_image} alt=""/> : <Building size={20} className="placeholder-icon"/>}</div>
                                         <div className="hotel-meta">
-                                            <span className="hotel-name clickable-name" onClick={() => navigate(`/hotel/${hotel.id}`)}>{hotel.name}</span>
+                                            <span className="clickable-name" onClick={() => navigate(`/hotel/${hotel.id}`)}>{hotel.name}</span>
                                             <span className="hotel-id">#{hotel.id}</span>
                                         </div>
                                     </div>
                                 </td>
-                                <td><MapPin size={14}/> {hotel.city}, {hotel.country}</td>
                                 <td>
-                                    <span className={`status-badge ${hotel.is_active ? 'active' : 'inactive'}`} 
-                                          style={{
-                                              padding: '4px 8px', 
-                                              borderRadius: '12px', 
-                                              fontSize: '0.75rem', 
-                                              fontWeight: 600,
-                                              backgroundColor: hotel.is_active ? '#dcfce7' : '#f1f5f9',
-                                              color: hotel.is_active ? '#166534' : '#64748b',
-                                              border: `1px solid ${hotel.is_active ? '#bbf7d0' : '#e2e8f0'}`
-                                          }}>
+                                    <div className="info-badge"><MapPin size={14}/> {hotel.city}, {hotel.country}</div>
+                                </td>
+                                <td>
+                                    <span className={`status-badge ${hotel.is_active ? 'active' : 'inactive'}`}>
                                         {hotel.is_active ? 'Active' : 'Hidden'}
                                     </span>
                                 </td>
@@ -353,18 +316,11 @@ const DashboardHotels = () => {
                                         <button 
                                             className="icon-btn" 
                                             onClick={() => handleToggleStatus(hotel)}
-                                            title={hotel.is_active ? "Click to Unpublish" : "Click to Publish"}
-                                            style={{ 
-                                                color: hotel.is_active ? '#22c55e' : '#cbd5e1', 
-                                                borderColor: hotel.is_active ? '#22c55e' : '#e2e8f0',
-                                                backgroundColor: hotel.is_active ? '#f0fdf4' : 'white'
-                                            }}
-                                        >
-                                            <Power size={16}/>
-                                        </button>
-                                        <button className="icon-btn" onClick={() => navigate(`/hotel/${hotel.id}`)}><Eye size={16}/></button>
-                                        <button className="icon-btn" onClick={() => handleSwitchToForm(hotel)}><Edit2 size={16}/></button>
-                                        <button className="icon-btn delete" onClick={() => handleDelete(hotel.id)}><Trash2 size={16}/></button>
+                                            title={hotel.is_active ? "Unpublish" : "Publish"}
+                                            style={{ color: hotel.is_active ? '#22c55e' : '#cbd5e1', borderColor: hotel.is_active ? '#22c55e' : '#e2e8f0' }}
+                                        ><Power size={16}/></button>
+                                        <button className="icon-btn" title="Edit Hotel" onClick={() => handleSwitchToForm(hotel)}><Edit2 size={16}/></button>
+                                        <button className="icon-btn delete" title="Delete Hotel" onClick={() => handleDelete(hotel.id)}><Trash2 size={16}/></button>
                                     </div>
                                 </td>
                             </tr>
@@ -374,113 +330,106 @@ const DashboardHotels = () => {
                 </table>
             </div>
           </motion.div>
-        )}
-        
-        {/* --- FORM VIEW --- */}
-        {view === 'form' && (
-          <motion.div key="form" className="form-wrapper" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        ) : (
+        /* --- FORM VIEW --- */
+          <motion.div key="form" className="form-wrapper" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{duration: 0.2}}>
             <div className="form-card">
-                <div className="form-header"><h2>{editingHotel ? 'Edit Property' : 'New Property'}</h2><button onClick={() => setView('list')}><X/></button></div>
+                <div className="form-header">
+                    <div>
+                        <h2>{editingHotel ? 'Edit Property' : 'New Property'}</h2>
+                        <p>Fill in the details for your hotel listing.</p>
+                    </div>
+                    <button className="btn-close" onClick={() => setView('list')}><X size={24}/></button>
+                </div>
+
                 <form onSubmit={handleSubmit} className="professional-form">
-                    
                     {/* CORE INFO */}
                     <div className="form-section">
                         <h4 className="section-heading"><Building size={18}/> Core Info</h4>
                         <div className="core-info-grid">
                             <div className="core-inputs">
-                                <input className="form-input mb-3" placeholder="Property Name" value={formData.name} onChange={e=>setFormData({...formData, name:e.target.value})} required/>
-                                <SimpleEditor value={formData.description} onChange={val => setFormData({...formData, description:val})}/>
+                                <div className="form-group"><label>Property Name <span className="req">*</span></label><input className="form-input" value={formData.name} onChange={e=>setFormData({...formData, name:e.target.value})} required/></div>
+                                <div className="form-group"><label>Description</label><SimpleEditor value={formData.description} onChange={val => setFormData({...formData, description:val})}/></div>
                             </div>
                             <div className="image-preview-wrapper">
                                 <label>Images (Star = Primary)</label>
                                 <div className="image-inputs-col">
                                     {formData.images.map((img, i) => (
-                                        <div key={i} className="image-input-row" style={{display:'flex', gap:'8px', alignItems:'center', marginBottom:'8px'}}>
-                                            <button type="button" onClick={() => setPrimaryImage(i)} className={`icon-btn small ${img.isPrimary ? 'active-star' : ''}`} style={{color: img.isPrimary ? '#f59e0b' : '#cbd5e1', border: img.isPrimary ? '1px solid #f59e0b' : '1px solid #e2e8f0'}}>
+                                        <div key={i} style={{display:'flex', gap:'8px', alignItems:'center', marginBottom:'8px'}}>
+                                            <button type="button" onClick={() => setPrimaryImage(i)} className="icon-btn" style={{color: img.isPrimary ? '#f59e0b' : '#cbd5e1', borderColor: img.isPrimary ? '#f59e0b' : '#e2e8f0', width: '36px', flexShrink: 0}}>
                                                 <Star size={16} fill={img.isPrimary ? '#f59e0b' : 'none'}/>
                                             </button>
                                             <input className="form-input" placeholder="Image URL" value={img.url} onChange={e => handleImageChange(i, e.target.value)}/>
-                                            {formData.images.length > 1 && <button type="button" className="icon-btn delete" onClick={() => removeImageField(i)}><MinusCircle size={16}/></button>}
+                                            {formData.images.length > 1 && <button type="button" className="icon-btn delete" style={{flexShrink: 0}} onClick={() => removeImageField(i)}><MinusCircle size={16}/></button>}
                                         </div>
                                     ))}
-                                    <button type="button" className="btn-ghost small" onClick={addImageField}>+ Add Image URL</button>
+                                    <button type="button" className="btn-ghost" style={{width: '100%', justifyContent: 'center'}} onClick={addImageField}>+ Add Image URL</button>
                                 </div>
                                 <div className="image-preview-box mt-2">
-                                    {formData.images.find(i=>i.isPrimary && i.url) ? <img src={formData.images.find(i=>i.isPrimary).url} alt="Primary" onError={(e) => e.target.style.display='none'}/> : <ImageIcon size={32}/>}
+                                    {formData.images.find(i=>i.isPrimary && i.url) ? <img src={formData.images.find(i=>i.isPrimary).url} alt="Primary" onError={(e) => e.target.style.display='none'}/> : <div className="preview-placeholder"><ImageIcon size={32}/><span>Primary Image</span></div>}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* LOCATION (UPDATED WITH MAP) */}
+                    {/* LOCATION MAP */}
                     <div className="form-section">
                         <h4 className="section-heading"><MapPin size={18}/> Location Details</h4>
                         <div className="form-grid-2">
-                            <input className="form-input" placeholder="Address" value={formData.address} onChange={e=>setFormData({...formData, address:e.target.value})} required/>
-                            <input className="form-input" placeholder="City" value={formData.city} onChange={e=>setFormData({...formData, city:e.target.value})} required/>
-                            <input className="form-input" placeholder="Province/State" value={formData.province} onChange={e=>setFormData({...formData, province:e.target.value})}/>
-                            <input className="form-input" placeholder="Country" value={formData.country} onChange={e=>setFormData({...formData, country:e.target.value})} required/>
-                            
-                            <input className="form-input" placeholder="Latitude" type="number" step="any" value={formData.latitude} onChange={e=>setFormData({...formData, latitude:e.target.value})}/>
-                            <input className="form-input" placeholder="Longitude" type="number" step="any" value={formData.longitude} onChange={e=>setFormData({...formData, longitude:e.target.value})}/>
+                            <div className="form-group"><label>Address <span className="req">*</span></label><input className="form-input" value={formData.address} onChange={e=>setFormData({...formData, address:e.target.value})} required/></div>
+                            <div className="form-group"><label>City <span className="req">*</span></label><input className="form-input" value={formData.city} onChange={e=>setFormData({...formData, city:e.target.value})} required/></div>
+                            <div className="form-group"><label>Province/State</label><input className="form-input" value={formData.province} onChange={e=>setFormData({...formData, province:e.target.value})}/></div>
+                            <div className="form-group"><label>Country <span className="req">*</span></label><input className="form-input" value={formData.country} onChange={e=>setFormData({...formData, country:e.target.value})} required/></div>
+                            <div className="form-group"><label>Latitude</label><input className="form-input" type="number" step="any" value={formData.latitude} onChange={e=>setFormData({...formData, latitude:e.target.value})}/></div>
+                            <div className="form-group"><label>Longitude</label><input className="form-input" type="number" step="any" value={formData.longitude} onChange={e=>setFormData({...formData, longitude:e.target.value})}/></div>
                         </div>
 
-                        {/* MAP CONTAINER */}
-                        <div className="map-picker-container" style={{ marginTop: '20px', height: '300px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                        {/* SAFE MAP CONTAINER */}
+                        <div style={{ marginTop: '20px', height: '300px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-subtle)', position: 'relative', zIndex: 1 }}>
                             <MapContainer 
-                                center={[formData.latitude || 51.505, formData.longitude || -0.09]} 
-                                zoom={formData.latitude ? 15 : 4} 
+                                center={getSafeCoords(formData.latitude, formData.longitude)} 
+                                zoom={hasValidCoords(formData.latitude, formData.longitude) ? 15 : 4} 
                                 style={{ height: '100%', width: '100%' }}
                             >
-                                <TileLayer
-                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                />
-                                
-                                {/* Updates lat/lng when clicked */}
+                                <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                                 <LocationMarker setPosition={handleMapClick} />
-                                
-                                {/* Updates Map View when user types manually */}
-                                {(formData.latitude && formData.longitude) && (
+                                {hasValidCoords(formData.latitude, formData.longitude) && (
                                     <>
-                                        <Marker position={[formData.latitude, formData.longitude]} />
-                                        <MapUpdater center={[formData.latitude, formData.longitude]} />
+                                        <Marker position={getSafeCoords(formData.latitude, formData.longitude)} />
+                                        <MapUpdater center={getSafeCoords(formData.latitude, formData.longitude)} />
                                     </>
                                 )}
                             </MapContainer>
-                            <p style={{fontSize: '0.8rem', color: '#64748b', marginTop: '5px'}}>
-                                * Click on the map to set the exact property location.
-                            </p>
                         </div>
+                        <p style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px'}}>* Click on the map to set exact property coordinates.</p>
                     </div>
 
                     {/* CONTACT */}
                     <div className="form-section">
                         <h4 className="section-heading"><Clock size={18}/> Operations & Contact</h4>
                         <div className="form-grid-3">
-                            <input className="form-input" placeholder="Email" type="email" value={formData.email} onChange={e=>setFormData({...formData, email:e.target.value})}/>
-                            <input className="form-input" placeholder="Phone" value={formData.phone} onChange={e=>setFormData({...formData, phone:e.target.value})}/>
-                            <input className="form-input" placeholder="Website" value={formData.website} onChange={e=>setFormData({...formData, website:e.target.value})}/>
+                            <div className="form-group"><label>Email</label><div className="input-with-icon"><Mail size={16}/><input className="form-input" type="email" value={formData.email} onChange={e=>setFormData({...formData, email:e.target.value})}/></div></div>
+                            <div className="form-group"><label>Phone</label><div className="input-with-icon"><Phone size={16}/><input className="form-input" value={formData.phone} onChange={e=>setFormData({...formData, phone:e.target.value})}/></div></div>
+                            <div className="form-group"><label>Website</label><input className="form-input" value={formData.website} onChange={e=>setFormData({...formData, website:e.target.value})}/></div>
                             <div className="form-group"><label>Check-in</label><input type="time" className="form-input" value={formData.checkIn} onChange={e=>setFormData({...formData, checkIn:e.target.value})}/></div>
                             <div className="form-group"><label>Check-out</label><input type="time" className="form-input" value={formData.checkOut} onChange={e=>setFormData({...formData, checkOut:e.target.value})}/></div>
-                            <div className="form-group"><label>Cancel (Hrs)</label><input type="number" className="form-input" value={formData.cancellationPolicy} onChange={e=>setFormData({...formData, cancellationPolicy:e.target.value})}/></div>
+                            <div className="form-group"><label>Cancel Window (Hrs)</label><input type="number" className="form-input" value={formData.cancellationPolicy} onChange={e=>setFormData({...formData, cancellationPolicy:e.target.value})}/></div>
                         </div>
                     </div>
 
-                    {/* AMENITIES - TRANSFER LIST */}
+                    {/* AMENITIES */}
                     <div className="form-section no-border">
-                        <h4 className="section-heading"><CheckCircle2 size={18}/> Amenities Management</h4>
-                        <div style={{display:'flex', gap:'10px', marginBottom:'15px', alignItems: 'center'}}>
+                        <h4 className="section-heading"><CheckCircle2 size={18}/> Amenities</h4>
+                        <div style={{display:'flex', gap:'10px', marginBottom:'20px', alignItems: 'center'}}>
                             <input className="form-input" placeholder="Create new amenity..." value={newAmenityText} onChange={e => setNewAmenityText(e.target.value)} style={{maxWidth: '300px'}}/>
-                            <button type="button" className="btn-secondary" onClick={addNewAmenity}>Add</button>
-                            <span style={{fontSize:'0.8rem', color:'#64748b'}}>Adds to Selected list.</span>
+                            <button type="button" className="btn-ghost" onClick={addNewAmenity}>Add Custom</button>
                         </div>
                         <div className="transfer-container">
                             <div className="transfer-column">
                                 <div className="transfer-header"><span>Selected ({selectedList.length})</span><CheckCircle2 size={16} /></div>
                                 <div className="transfer-list">
                                     {selectedList.map(am => (
-                                        <div key={am.id} className="transfer-item selected-item" onClick={() => moveToAvailable(am.id)} title="Click to remove">
+                                        <div key={am.id} className="transfer-item selected-item" onClick={() => moveToAvailable(am.id)}>
                                             <span>{am.name}</span><MinusCircle size={14} />
                                         </div>
                                     ))}
@@ -491,7 +440,7 @@ const DashboardHotels = () => {
                                 <div className="transfer-header"><span>Available ({availableList.length})</span><List size={16} /></div>
                                 <div className="transfer-list">
                                     {availableList.map(am => (
-                                        <div key={am.id} className="transfer-item available-item" onClick={() => moveToSelected(am.id)} title="Click to add">
+                                        <div key={am.id} className="transfer-item available-item" onClick={() => moveToSelected(am.id)}>
                                             <span>{am.name}</span><Plus size={14} />
                                         </div>
                                     ))}
@@ -502,7 +451,7 @@ const DashboardHotels = () => {
 
                     <div className="form-actions">
                         <button type="button" className="btn-ghost" onClick={() => setView('list')}>Cancel</button>
-                        <button type="submit" className="btn-primary-compact submit" disabled={loading}>{loading ? <Loader2 className="animate-spin"/> : 'Save Hotel'}</button>
+                        <button type="submit" className="btn-primary-compact" disabled={loading}>{loading ? <Loader2 className="animate-spin"/> : 'Save Property'}</button>
                     </div>
                 </form>
             </div>

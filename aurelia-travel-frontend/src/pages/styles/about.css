@@ -1,112 +1,157 @@
+/* =========================================
+   ABOUT PAGE STYLES
+   ========================================= */
+
 .about-page {
-  padding-bottom: 80px;
-  background-color: #f8f9fa;
+  padding-bottom: 100px;
+  background-color: var(--color-background);
 }
 
-/* Hero */
+/* Hero Section */
 .about-hero {
-  height: 60vh;
-  background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?ixlib=rb-4.0.3&auto=format&fit=crop&w=2021&q=80');
-  background-size: cover;
-  background-position: center;
+  position: relative;
+  height: 65vh;
+  min-height: 500px;
+  background: url('https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?ixlib=rb-4.0.3&auto=format&fit=crop&w=2021&q=80') center/cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: white;
-  margin-bottom: 60px;
+  margin-bottom: 80px;
+  margin-top: -76px; /* Pull behind transparent header */
+}
+
+.about-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(15, 23, 42, 0.6), var(--color-dark));
+  z-index: 1;
+}
+
+.about-hero-content {
+  position: relative;
+  z-index: 2;
+  color: var(--color-surface);
+  margin-top: 50px;
 }
 
 .about-hero h1 {
-  font-size: 3.5rem;
+  font-size: 4rem;
   font-weight: 800;
   margin-bottom: 20px;
+  letter-spacing: -1px;
 }
 
 .about-hero h1 span {
-  color: #3b82f6; /* Primary Blue */
+  color: var(--color-primary);
 }
 
 .about-hero p {
   font-size: 1.25rem;
-  max-width: 600px;
+  max-width: 700px;
   margin: 0 auto;
   opacity: 0.9;
+  line-height: 1.6;
 }
 
-/* Mission */
+/* Mission Section */
 .about-mission {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 40px;
-  margin-bottom: 80px;
+  margin-bottom: 100px;
 }
 
 .mission-card {
-  background: white;
-  padding: 40px;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-  border: 1px solid #eee;
+  background: var(--color-surface);
+  padding: 50px 40px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  transition: var(--transition-smooth);
+}
+
+.mission-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-5px);
 }
 
 .mission-card.highlight {
-  border-left: 5px solid #3b82f6;
+  border-top: 6px solid var(--color-primary);
+  box-shadow: var(--shadow-float);
+}
+
+.mission-icon-wrapper {
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+.highlight-icon {
+  color: var(--color-accent);
 }
 
 .mission-card h2 {
-  margin-bottom: 15px;
-  color: #1e293b;
+  margin-bottom: 20px;
+  color: var(--color-dark);
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
 .mission-card p {
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.7;
+  font-size: 1.05rem;
 }
 
-/* Features */
+/* Features Grid */
 .about-features {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 30px;
 }
 
 .feature-item {
   text-align: center;
-  padding: 30px;
-  background: white;
-  border-radius: 16px;
-  transition: transform 0.3s;
+  padding: 40px 30px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  transition: var(--transition-smooth);
 }
 
 .feature-item:hover {
   transform: translateY(-10px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-float);
+  border-color: #cbd5e1;
 }
 
 .icon-box {
   width: 70px;
   height: 70px;
   background: #eff6ff;
-  color: #3b82f6;
+  color: var(--color-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 20px;
+  margin: 0 auto 24px;
 }
 
 .feature-item h3 {
-  margin-bottom: 10px;
-  color: #1e293b;
+  margin-bottom: 12px;
+  color: var(--color-dark);
+  font-size: 1.25rem;
+  font-weight: 700;
 }
 
 .feature-item p {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.95rem;
+  line-height: 1.6;
 }
 
-@media (max-width: 768px) {
-  .about-hero h1 { font-size: 2.5rem; }
+@media (max-width: 900px) {
+  .about-hero h1 { font-size: 3rem; }
   .about-mission { grid-template-columns: 1fr; }
 }

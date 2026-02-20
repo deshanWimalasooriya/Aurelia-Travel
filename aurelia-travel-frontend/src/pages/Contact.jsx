@@ -33,21 +33,21 @@ const Contact = () => {
         <div className="contact-info-card">
           <h3>Contact Information</h3>
           <div className="info-item">
-            <Mail className="info-icon" />
+            <div className="info-icon"><Mail size={24} /></div>
             <div>
               <span className="label">Email</span>
               <p>support@aureliatravel.com</p>
             </div>
           </div>
           <div className="info-item">
-            <Phone className="info-icon" />
+            <div className="info-icon"><Phone size={24} /></div>
             <div>
               <span className="label">Phone</span>
               <p>+94 11 234 5678</p>
             </div>
           </div>
           <div className="info-item">
-            <MapPin className="info-icon" />
+            <div className="info-icon"><MapPin size={24} /></div>
             <div>
               <span className="label">Office</span>
               <p>Colombo, Sri Lanka</p>
