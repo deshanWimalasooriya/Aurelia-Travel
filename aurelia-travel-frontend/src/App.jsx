@@ -45,6 +45,7 @@ import SuperReviews from './pages/aurelia_admin/SuperReviews';
 import SuperSettings from './pages/aurelia_admin/SuperSettings';
 import SuperLogs from './pages/aurelia_admin/SuperLogs'; // <--- IMPORT NEW PAGE
 import SuperMessages from './pages/aurelia_admin/SuperMessages'; // <--- IMPORT NEW PAGE
+import SuperLiveChat from './pages/aurelia_admin/SuperLiveChat';
 
 import './index.css'
 
@@ -67,6 +68,7 @@ const AppRoutes = () => {
           <Route path="settings" element={<SuperSettings />} /> {/* NEW */}
           <Route path="logs" element={<SuperLogs />} /> {/* <--- ADD ROUTE HERE */}
           <Route path="messages" element={<SuperMessages />} />
+          <Route path="live-chat" element={<SuperLiveChat />} /> {/* <--- ADD ROUTE HERE */}
       </Route>
 
 
