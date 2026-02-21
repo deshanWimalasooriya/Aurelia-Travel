@@ -43,6 +43,8 @@ const SuperSettings = () => {
         }
     };
 
+    console.log(config)
+
     return (
         <div className="sa-settings-container">
             <h1 className="sa-page-title" style={{marginBottom: '5px'}}>Platform Configuration</h1>

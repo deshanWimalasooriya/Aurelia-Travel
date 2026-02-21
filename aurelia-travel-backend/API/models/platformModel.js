@@ -110,6 +110,9 @@ exports.getRecentReviews = () => {
         .limit(50);
 };
 
+// ✅ ADD THIS NEW FUNCTION:
+exports.getReviewById = (id) => knex('reviews').where({ id }).first();
+
 exports.deleteReview = (id) => knex('reviews').where({ id }).del();
 
 // 6. Settings

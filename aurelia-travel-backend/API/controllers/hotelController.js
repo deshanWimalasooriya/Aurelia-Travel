@@ -1,5 +1,6 @@
 const hotelModel = require("../models/hotelModel");
-const { notifyAdmins } = require('./notificationController'); // Import
+const { notifyAdmins } = require('./notificationController');
+const logService = require('../services/logService');
 
 const parseHotelData = (hotel) => {
     if (!hotel) return null;
@@ -157,6 +158,24 @@ exports.update = async (req, res) => {
         }
 
         await hotelModel.update(hotelId, updateData, images, amenities);
+
+        // ✅ LOGGING EXACT CHANGES
+        if (req.user.role === 'admin') {
+            let changes = [];
+            for (const key in updateData) {
+                if (key === 'main_image') continue; // Don't log messy image URLs
+                if (oldHotel[key] != updateData[key]) {
+                    changes.push(`${key}: '${oldHotel[key] || ''}' -> '${updateData[key]}'`);
+                }
+            }
+            if (changes.length > 0) {
+                await logService.logAction(
+                    req.user.userId, 'UPDATE_HOTEL', 'Hotels', oldHotel.name, 
+                    changes.join(' | '), updateData.is_active === false ? 'warning' : 'info'
+                );
+            }
+        }
+
         res.status(200).json({ success: true, message: "Hotel updated" });
 
     } catch (err) {
@@ -173,6 +192,12 @@ exports.delete = async (req, res) => {
             return res.status(403).json({ message: "Access denied" });
         }
         await hotelModel.delete(req.params.id);
+
+        // ✅ LOGGING
+        if (req.user.role === 'admin') {
+            await logService.logAction(req.user.userId, 'DELETE_HOTEL', 'Hotels', hotel.name, 'Admin permanently deleted property.', 'error');
+        }
+        
         res.json({ success: true, message: "Deleted" });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 };

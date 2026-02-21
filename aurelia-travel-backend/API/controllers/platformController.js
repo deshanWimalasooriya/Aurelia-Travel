@@ -1,7 +1,8 @@
 const platformModel = require('../models/platformModel');
 const bcrypt = require('bcrypt'); // ✅ Ensure bcrypt is imported
 const { sendNotification, notifyAdmins } = require('./notificationController');
-const logService = require('../services/logService'); // ✅ IMPORT SERVICE
+const logService = require('../services/logService');
+const reviewModel = require('../models/reviewModel');
 
 // ... (Existing Overview and Hotel functions) ...
 
@@ -154,10 +155,35 @@ exports.getAllReviews = async (req, res) => {
 
 exports.deleteReview = async (req, res) => {
     try {
-        await platformModel.deleteReview(req.params.id);
-        res.json({ success: true, message: 'Review removed' });
+        const reviewId = req.params.id;
+
+        // 1. Fetch the review so we know which hotel it belongs to
+        const review = await platformModel.getReviewById(reviewId);
+        
+        if (!review) {
+            return res.status(404).json({ error: 'Review not found' });
+        }
+
+        // 2. Delete the review
+        await platformModel.deleteReview(reviewId);
+        
+        // 3. ✅ RECALCULATE the hotel's overall average rating
+        await reviewModel.updateHotelRating(review.hotel_id);
+        
+        // 4. Log the action
+        await logService.logAction(
+            req.user.userId, 
+            'DELETE_REVIEW', 
+            'Moderation', 
+            `Review ID: ${reviewId}`, 
+            'Admin permanently removed a guest review.', 
+            'error'
+        );
+
+        res.json({ success: true, message: 'Review removed and hotel rating updated' });
     } catch (err) {
-        res.status(500).json({ error: 'Delete failed' });
+        console.error(err);
+        res.status(500).json({ error: 'Delete failed' }); 
     }
 };
 
@@ -191,15 +217,15 @@ exports.updateSettings = async (req, res) => {
             changes.push(`Maintenance: ${req.body.maintenance_mode ? 'ENABLED' : 'DISABLED'}`);
         }
 
-        // Only log if something actually changed
+        for (const key in req.body) {
+            if (oldSettings[key] != req.body[key]) {
+                 changes.push(`${key}: '${oldSettings[key] || ''}' -> '${req.body[key]}'`);
+            }
+        }
+
         if (changes.length > 0) {
             await logService.logAction(
-                req.user.userId,       // Who did it?
-                'UPDATE_CONFIG',       // Action Code
-                'System',              // Module
-                'Platform Settings',   // Target
-                changes.join(', '),    // Details: "Commission: 5% -> 8%"
-                'warning'              // Status (Orange badge)
+                req.user.userId, 'UPDATE_CONFIG', 'System', 'Platform Settings', changes.join(' | '), 'warning'
             );
         }
 
@@ -218,16 +244,30 @@ exports.getSystemLogs = async (req, res) => {
         const logs = await platformModel.getActivityLogs({ search, date, action });
         
         // Format for frontend
-        const formatted = logs.map(log => ({
-            id: log.id,
-            admin: log.admin_name || 'System',
-            action: log.action_type,
-            target: log.target,
-            module: log.module,
-            timestamp: log.created_at,
-            status: log.status,
-            details: log.details
-        }));
+        const formatted = logs.map(log => {
+            let exactTime = log.created_at;
+            
+            // ✅ FIX: Safely force the database time into a strict UTC string.
+            // This prevents the server from applying its own timezone, allowing 
+            // your React app in Sri Lanka to correctly add the +5:30 offset itself.
+            if (exactTime instanceof Date) {
+                exactTime = exactTime.toISOString();
+            } else if (typeof exactTime === 'string' && !exactTime.endsWith('Z')) {
+                // If MySQL returned a raw string without a timezone, append 'Z' (UTC marker)
+                exactTime += 'Z'; 
+            }
+
+            return {
+                id: log.id,
+                admin: log.admin_name || 'System',
+                action: log.action_type,
+                target: log.target,
+                module: log.module,
+                timestamp: exactTime, 
+                status: log.status,
+                details: log.details
+            };
+        });
 
         res.json({ success: true, data: formatted });
     } catch (err) {
@@ -303,6 +343,8 @@ exports.markMessageRead = async (req, res) => {
 exports.deleteMessage = async (req, res) => {
     try {
         await platformModel.deleteMessage(req.params.id);
+        // ✅ LOG MESSAGE DELETION
+        await logService.logAction(req.user.userId, 'DELETE_MESSAGE', 'Support', `Inbox Msg ID: ${req.params.id}`, 'Admin deleted a support message.', 'error');
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: 'Failed to delete' }); }
 };
