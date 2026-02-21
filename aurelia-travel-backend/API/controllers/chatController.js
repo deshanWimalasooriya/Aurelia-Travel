@@ -42,3 +42,12 @@ exports.sendMessage = async (req, res) => {
         res.json({ success: true, data: newMsg });
     } catch(err) { res.status(500).json({ error: err.message }); }
 };
+
+exports.getUnreadCount = async (req, res) => {
+    try {
+        const result = await chatModel.getUnreadCount(req.user.userId, req.user.role);
+        res.json({ success: true, count: result.count || 0 });
+    } catch(err) { 
+        res.status(500).json({ error: err.message }); 
+    }
+};

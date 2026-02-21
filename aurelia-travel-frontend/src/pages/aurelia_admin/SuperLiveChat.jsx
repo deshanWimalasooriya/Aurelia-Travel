@@ -60,7 +60,10 @@ const SuperLiveChat = () => {
         setSelectedUser(user);
         try {
             const res = await api.get(`/chat?userId=${user.user_id}`);
-            if (res.data.success) setMessages(res.data.data);
+            if (res.data.success) {
+                setMessages(res.data.data);
+                fetchActiveChats(); // ✅ Instantly clears the red badge from the sidebar list
+            }
         } catch (err) { console.error(err); }
     };
 
@@ -97,9 +100,19 @@ const SuperLiveChat = () => {
                                 <div className="slc-chat-info">
                                     <div className="slc-chat-header">
                                         <span className="slc-name">{chat.username}</span>
-                                        <span className="slc-time">{new Date(chat.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                                        <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+                                            {/* ✅ UNREAD BADGE */}
+                                            {chat.unread_count > 0 && (
+                                                <span className="slc-unread-badge-small">
+                                                    {chat.unread_count > 99 ? '99+' : chat.unread_count}
+                                                </span>
+                                            )}
+                                            <span className="slc-time">{new Date(chat.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                                        </div>
                                     </div>
-                                    <div className="slc-chat-preview">{chat.message}</div>
+                                    <div className="slc-chat-preview" style={{ fontWeight: chat.unread_count > 0 ? 700 : 400, color: chat.unread_count > 0 ? 'var(--color-dark)' : 'var(--text-secondary)' }}>
+                                        {chat.message}
+                                    </div>
                                 </div>
                             </div>
                         ))}

@@ -15,6 +15,12 @@ const LiveChatWidget = () => {
     const isOpenRef = useRef(isOpen);
 
     useEffect(() => {
+        api.get('/chat/unread-count').then(res => {
+            if (res.data.success) setUnreadCount(res.data.count);
+        }).catch(err => console.error(err));
+    }, []);
+
+    useEffect(() => {
         isOpenRef.current = isOpen;
         
         // Fetch full history EVERY time they open it to ensure it is 100% synced
@@ -73,8 +79,8 @@ const LiveChatWidget = () => {
             {!isOpen && (
                 <button className="lc-floating-btn" onClick={() => setIsOpen(true)}>
                     <MessageCircle size={28} />
-                    {/* ✅ UNREAD NOTIFICATION BADGE */}
-                    {unreadCount > 0 && <span className="lc-unread-badge">{unreadCount}</span>}
+                    {/* ✅ DYNAMIC 99+ UNREAD NOTIFICATION BADGE */}
+                    {unreadCount > 0 && <span className="lc-unread-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
                 </button>
             )}
 

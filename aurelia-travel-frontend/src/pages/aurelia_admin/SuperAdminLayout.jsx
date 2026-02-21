@@ -16,6 +16,7 @@ const SuperAdminLayout = () => {
     
     // ✅ State for Inbox Badge
     const [unreadMessages, setUnreadMessages] = useState(0);
+    const [unreadChats, setUnreadChats] = useState(0);
 
     // ✅ Fetch Unread Messages Count
     useEffect(() => {
@@ -25,6 +26,12 @@ const SuperAdminLayout = () => {
                 if (res.data.success) {
                     const count = res.data.data.filter(m => m.status === 'unread').length;
                     setUnreadMessages(count);
+                }
+
+                // ✅ Fetch Live Chat Messages
+                const resChats = await api.get('/chat/unread-count');
+                if (resChats.data.success) {
+                    setUnreadChats(resChats.data.count);
                 }
             } catch (err) {
                 console.error("Failed to fetch message count", err);
@@ -58,6 +65,7 @@ const SuperAdminLayout = () => {
     };
 
     const displayCount = unreadMessages > 99 ? '99+' : unreadMessages;
+    const displayChatCount = unreadChats > 99 ? '99+' : unreadChats;
 
     return (
         <div className="super-dashboard-wrapper">
@@ -91,7 +99,12 @@ const SuperAdminLayout = () => {
                         <Users size={20}/> User Base
                     </Link>
                     <Link to="/superAdmin/live-chat" className={`sa-nav-item ${isActive('live-chat') ? 'active' : ''}`}>
-                        <MessageCircle size={20}/> Live Support
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <MessageCircle size={20}/> Live Support
+                        </div>
+                        {unreadChats > 0 && (
+                            <span className="sa-nav-badge">{displayChatCount}</span>
+                        )}
                     </Link>
 
                     <div className="sa-nav-label" style={{ marginTop: '20px' }}>Management</div>
