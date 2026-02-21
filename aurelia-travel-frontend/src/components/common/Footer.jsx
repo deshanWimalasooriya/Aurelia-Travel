@@ -1,8 +1,23 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Facebook, Twitter, Instagram, Linkedin, MapPin, Phone, Mail } from 'lucide-react'
+import api from '../../services/api' // Import your API service
 import './styles/Footer.css'
 
 const Footer = () => {
+  const [siteInfo, setSiteInfo] = useState(null);
+
+  useEffect(() => {
+    // Fetch the public settings when the footer loads
+    api.get('/platform/settings')
+      .then(res => {
+        setSiteInfo(res.data);
+      })
+      .catch(err => {
+        console.error("Failed to fetch footer settings:", err);
+      });
+  }, []);
+
   return (
     <footer className="footer">
       <div className="footer-container">
@@ -14,9 +29,9 @@ const Footer = () => {
             The world's first AI-powered travel concierge. We handle the logistics, you handle the memories.
           </p>
           <div className="footer-contact-info">
-            <span><MapPin size={16} /> Colombo, Sri Lanka</span>
-            <span><Phone size={16} /> +94 11 234 5678</span>
-            <span><Mail size={16} /> concierge@aureliatravel.com</span>
+            <span><MapPin size={16} /> {siteInfo?.office_address || 'Colombo, Sri Lanka'}</span>
+            <span><Phone size={16} /> {siteInfo?.contact_phone || '+94 11 234 5678'}</span>
+            <span><Mail size={16} /> {siteInfo?.support_email || 'support@aureliatravel.com'}</span>
           </div>
         </div>
         
@@ -49,9 +64,30 @@ const Footer = () => {
             Follow our journey and discover hidden gems around the world.
           </p>
           <div className="footer-social">
-            <a href="#" className="footer-social-item"><Facebook size={18} /></a>
-            <a href="#" className="footer-social-item"><Twitter size={18} /></a>
-            <a href="#" className="footer-social-item"><Instagram size={18} /></a>
+            <a 
+              href={siteInfo?.facebook_url || '#'} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="footer-social-item"
+            >
+              <Facebook size={18} />
+            </a>
+            <a 
+              href={siteInfo?.twitter_url || '#'} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="footer-social-item"
+            >
+              <Twitter size={18} />
+            </a>
+            <a 
+              href={siteInfo?.instagram_url || '#'} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="footer-social-item"
+            >
+              <Instagram size={18} />
+            </a>
             <a href="#" className="footer-social-item"><Linkedin size={18} /></a>
           </div>
         </div>

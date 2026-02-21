@@ -162,3 +162,9 @@ exports.getActivityLogs = (filters = {}) => {
 exports.createLog = (data) => {
     return knex('activity_logs').insert(data);
 };
+
+// 8. Contact Messages
+exports.createContactMessage = (data) => knex('contact_messages').insert(data);
+exports.getContactMessages = () => knex('contact_messages').orderBy('created_at', 'desc');
+exports.updateMessageStatus = (id, status) => knex('contact_messages').where({ id }).update({ status });
+exports.deleteMessage = (id) => knex('contact_messages').where({ id }).del();

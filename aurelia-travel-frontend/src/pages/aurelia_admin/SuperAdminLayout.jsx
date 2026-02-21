@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Building2, Users, DollarSign, 
-  MessageSquare, Settings, LogOut, ShieldCheck, Search, ClipboardList
+  MessageSquare, Settings, LogOut, ShieldCheck, Search, ClipboardList, Inbox
 } from 'lucide-react';
 import NotificationBell from '../../components/ui/NotificationBell'; 
 import { useAuth } from '../../context/AuthContext'; 
@@ -28,6 +28,7 @@ const SuperAdminLayout = () => {
         if(location.pathname.includes('reviews')) return 'Moderation';
         if(location.pathname.includes('logs')) return 'System Logs'; 
         if(location.pathname.includes('settings')) return 'Platform Settings';
+        if(location.pathname.includes('messages')) return 'Support Inbox';
         return 'Dashboard Overview';
     };
 
@@ -55,6 +56,9 @@ const SuperAdminLayout = () => {
                     <div className="sa-nav-label" style={{ marginTop: '20px' }}>Management</div>
                     <Link to="/superAdmin/finance" className={`sa-nav-item ${isActive('finance') ? 'active' : ''}`}>
                         <DollarSign size={20}/> Financials
+                    </Link>
+                    <Link to="/superAdmin/messages" className={`sa-nav-item ${isActive('messages') ? 'active' : ''}`}>
+                        <Inbox size={20}/> Inbox
                     </Link>
                     <Link to="/superAdmin/reviews" className={`sa-nav-item ${isActive('reviews') ? 'active' : ''}`}>
                         <MessageSquare size={20}/> Moderation

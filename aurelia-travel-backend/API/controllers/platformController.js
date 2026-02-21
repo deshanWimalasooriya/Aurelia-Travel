@@ -1,6 +1,6 @@
 const platformModel = require('../models/platformModel');
 const bcrypt = require('bcrypt'); // ✅ Ensure bcrypt is imported
-const { sendNotification } = require('./notificationController'); // Import helper
+const { sendNotification, notifyAdmins } = require('./notificationController');
 const logService = require('../services/logService'); // ✅ IMPORT SERVICE
 
 // ... (Existing Overview and Hotel functions) ...
@@ -234,4 +234,49 @@ exports.getSystemLogs = async (req, res) => {
         console.error("Logs Error:", err);
         res.status(500).json({ error: 'Failed to fetch logs' });
     }
+};
+
+// ==========================================
+// CONTACT MESSAGES
+// ==========================================
+// 🔓 PUBLIC: Submit Form
+exports.submitContact = async (req, res) => {
+    try {
+        const { name, email, message } = req.body;
+        if (!name || !email || !message) return res.status(400).json({ error: "Missing fields" });
+        
+        await platformModel.createContactMessage({ name, email, message });
+        
+        // Alert Super Admins in real-time
+        await notifyAdmins("New Inquiry", `Message received from ${name} (${email}).`, "info", "/superAdmin/messages");
+
+        res.json({ success: true, message: "Message sent successfully" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to send message' });
+    }
+};
+
+// 🔒 ADMIN: Get all messages
+exports.getMessages = async (req, res) => {
+    try {
+        const messages = await platformModel.getContactMessages();
+        res.json({ success: true, data: messages });
+    } catch (err) { res.status(500).json({ error: 'Failed to fetch messages' }); }
+};
+
+// 🔒 ADMIN: Mark as read
+exports.markMessageRead = async (req, res) => {
+    try {
+        await platformModel.updateMessageStatus(req.params.id, 'read');
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Failed to update' }); }
+};
+
+// 🔒 ADMIN: Delete message
+exports.deleteMessage = async (req, res) => {
+    try {
+        await platformModel.deleteMessage(req.params.id);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Failed to delete' }); }
 };

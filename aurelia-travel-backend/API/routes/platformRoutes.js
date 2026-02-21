@@ -34,4 +34,10 @@ router.put('/settings', platformController.updateSettings);
 // ✅ NEW: Logs
 router.get('/logs', platformController.getSystemLogs);
 
+router.post('/contact', platformController.submitContact);
+// ✅ NEW PROTECTED ROUTES FOR MESSAGES
+router.get('/messages', platformController.getMessages);
+router.put('/messages/:id/read', platformController.markMessageRead);
+router.delete('/messages/:id', platformController.deleteMessage);
+
 module.exports = router;
