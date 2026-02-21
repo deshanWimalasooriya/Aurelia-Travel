@@ -72,3 +72,15 @@ exports.notifyUser = (userId, notification) => {
     });
   }
 };
+
+exports.emitToUser = (userId, event, payload) => {
+  if (!io) return;
+  const targetId = parseInt(userId);
+  const socketIds = userSockets.get(targetId);
+  
+  if (socketIds && socketIds.length > 0) {
+    socketIds.forEach(socketId => {
+      io.to(socketId).emit(event, payload);
+    });
+  }
+};

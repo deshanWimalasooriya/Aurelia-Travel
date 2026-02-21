@@ -45,6 +45,7 @@ const amenityRoutes = require('./API/routes/amenityRoutes');
 const financeRoutes = require('./API/routes/financeRoutes');
 const notificationRoutes = require('./API/routes/notificationRoutes');
 const wishlistRoutes = require('./API/routes/wishlistRoutes'); // <--- ADD THIS
+// const chatRoutes = require('./API/routes/chatRoutes');
 
 // --- MISSING IMPORTS ADDED HERE ---
 const adminRoutes = require('./API/routes/adminRoutes'); 
@@ -61,6 +62,7 @@ app.use('/api/finance', financeRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/wishlist', wishlistRoutes); // <--- ADD THIS
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/chat', require('./API/routes/chatRoutes'));
 
 // Protected User Routes (Applied verifyToken here globally for safety)
 app.use('/api/users', verifyToken, userRoutes);

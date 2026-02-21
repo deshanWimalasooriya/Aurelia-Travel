@@ -216,60 +216,6 @@ const ManagerFinance = () => {
           </div>
       )}
 
-      {/* --- LIVE CHAT WIDGET --- */}
-      <AnimatePresence>
-          {showChat && (
-              <motion.div 
-                  className="mf-chat-widget"
-                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 30, scale: 0.95 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-              >
-                  {/* Chat Header */}
-                  <div className="mf-chat-header">
-                      <div className="mf-chat-header-info">
-                          <div className="mf-chat-avatar">
-                              <span className="online-dot"></span>
-                              A
-                          </div>
-                          <div>
-                              <h4>Aurelia Support</h4>
-                              <p>Typically replies in under 5 mins</p>
-                          </div>
-                      </div>
-                      <button onClick={() => setShowChat(false)} className="mf-chat-close"><X size={18}/></button>
-                  </div>
-                  
-                  {/* Chat Messages */}
-                  <div className="mf-chat-body">
-                      {messages.map(msg => (
-                          <div key={msg.id} className={`mf-chat-bubble-wrapper ${msg.sender}`}>
-                              <div className="mf-chat-bubble">{msg.text}</div>
-                              <span className="mf-chat-time">
-                                  {msg.time} {msg.sender === 'me' && <CheckCheck size={12} color="#10b981"/>}
-                              </span>
-                          </div>
-                      ))}
-                      <div ref={messagesEndRef} />
-                  </div>
-
-                  {/* Chat Input */}
-                  <form onSubmit={handleSendMessage} className="mf-chat-footer">
-                      <button type="button" className="mf-chat-attach" title="Attach file"><Paperclip size={18}/></button>
-                      <input 
-                          type="text" 
-                          placeholder="Type your message..." 
-                          value={newMessage}
-                          onChange={(e) => setNewMessage(e.target.value)}
-                      />
-                      <button type="submit" className="mf-chat-send" disabled={!newMessage.trim()}>
-                          <Send size={16}/>
-                      </button>
-                  </form>
-              </motion.div>
-          )}
-      </AnimatePresence>
     </div>
   );
 };

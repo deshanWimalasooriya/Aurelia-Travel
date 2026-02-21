@@ -7,6 +7,7 @@ import {
   DollarSign, MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext'; 
+import LiveChatWidget from '../../components/ui/LiveChatWidget';
 import './styles/dashboard-layout.css';
 
 const DashboardLayout = () => {
@@ -96,6 +97,8 @@ const DashboardLayout = () => {
         <div className="dashboard-content-area">
           <Outlet />
         </div>
+        {/* ✅ ADD THE WIDGET HERE */}
+        <LiveChatWidget />
       </main>
     </div>
   );

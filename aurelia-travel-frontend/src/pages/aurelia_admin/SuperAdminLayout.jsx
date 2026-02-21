@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Building2, Users, DollarSign, 
-  MessageSquare, Settings, LogOut, ShieldCheck, Search, ClipboardList, Inbox 
+  MessageSquare, Settings, LogOut, ShieldCheck, Search, ClipboardList, Inbox, MessageCircle 
 } from 'lucide-react';
 import NotificationBell from '../../components/ui/NotificationBell'; 
 import { useAuth } from '../../context/AuthContext'; 
@@ -89,6 +89,9 @@ const SuperAdminLayout = () => {
                     </Link>
                     <Link to="/superAdmin/users" className={`sa-nav-item ${isActive('users') ? 'active' : ''}`}>
                         <Users size={20}/> User Base
+                    </Link>
+                    <Link to="/superAdmin/live-chat" className={`sa-nav-item ${isActive('live-chat') ? 'active' : ''}`}>
+                        <MessageCircle size={20}/> Live Support
                     </Link>
 
                     <div className="sa-nav-label" style={{ marginTop: '20px' }}>Management</div>
