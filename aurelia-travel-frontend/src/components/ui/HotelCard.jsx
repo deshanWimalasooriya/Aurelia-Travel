@@ -11,6 +11,7 @@ const HotelCard = ({ hotel }) => {
   const { isInWishlist, toggleWishlist } = useWishlist(); 
   const isSaved = isInWishlist(hotel.id);
 
+
   return (
     <div className="hotel-card">
       <div className="hotel-image-container">
