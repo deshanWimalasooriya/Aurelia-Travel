@@ -143,3 +143,20 @@
 .sa-admin-name { font-weight: 600; font-size: 0.95rem; color: var(--color-dark); }
 
 .sa-content-scrollable { flex: 1; overflow-y: auto; padding: 40px; }
+
+
+/* --- SIDEBAR BADGE --- */
+.sa-nav-badge {
+  background: #ef4444;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 12px;
+  margin-left: auto;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}

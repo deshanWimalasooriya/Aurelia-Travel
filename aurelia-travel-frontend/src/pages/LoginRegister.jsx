@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/userContext'
+import { useAuth } from '../context/AuthContext'
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react'
 import './styles/LoginRegister.css'
 import axios from 'axios'
@@ -24,6 +25,7 @@ const FacebookIcon = () => (
 export default function Auth(){
   const navigate = useNavigate()
   const { refreshUser } = useUser()
+  const { checkAuth } = useAuth()
   
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -85,6 +87,7 @@ export default function Auth(){
         })
 
         await refreshUser()
+        await checkAuth()
         navigate('/profile')
       } else {
         const response = await axios.post('http://localhost:5000/api/auth/register', {

@@ -355,19 +355,75 @@ const SuperUsers = () => {
             )}
             </AnimatePresence>
 
-            {/* OTP MODAL */}
+            {/* EDIT/CREATE MODAL */}
             <AnimatePresence>
-            {showOtpModal && (
-                <motion.div className="sa-modal-overlay" style={{zIndex: 1100}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                    <motion.div className="sa-modal-content narrow-modal text-center" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}>
-                        <div className="sa-modal-header" style={{border: 'none', paddingBottom: 0}}><button onClick={() => setShowOtpModal(false)} className="sa-btn-close ml-auto"><X size={20}/></button></div>
-                        <div className="sa-modal-body" style={{paddingTop: 0}}>
-                            <div className="otp-icon-wrapper"><Smartphone size={32} color="var(--color-primary)"/></div>
-                            {otpStep === 'request' ? (
-                                <><h3 style={{margin:'0 0 10px', color:'var(--color-dark)'}}>Security Verification</h3><p className="modal-text">Confirm sensitive action via OTP.</p><button className="btn-primary-large" onClick={requestOtp} disabled={isOtpLoading}>{isOtpLoading ? <Loader2 className="animate-spin mx-auto" /> : "Send OTP"}</button></>
-                            ) : (
-                                <form onSubmit={verifyAndExecute} className="otp-form"><h3 style={{margin:'0 0 10px', color:'var(--color-dark)'}}>Enter Code</h3><p className="modal-text">Dev Code: 123456</p><input className="otp-input" maxLength={6} value={otpInput} onChange={e => setOtpInput(e.target.value)} autoFocus/><button type="submit" className="btn-danger-large" disabled={isOtpLoading || otpInput.length < 6}>{isOtpLoading ? <Loader2 className="animate-spin mx-auto" /> : "Verify & Execute"}</button></form>
-                            )}
+            {showEditModal && (
+                <motion.div className="sa-modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <motion.div className="sa-modal-content" initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}>
+                        
+                        <div className="sa-modal-header" style={{ paddingBottom: '20px', alignItems: 'flex-start' }}>
+                            <div>
+                                <h3 style={{ margin: '0 0 6px 0', fontSize: '1.4rem' }}>{isEditing ? 'Edit User Profile' : 'Create New User'}</h3>
+                                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                                    {isEditing ? 'Update user details, roles, and permissions.' : 'Add a new traveler, partner, or admin.'}
+                                </p>
+                            </div>
+                            <button onClick={() => setShowEditModal(false)} className="sa-btn-close"><X size={20}/></button>
+                        </div>
+
+                        <div className="sa-modal-body">
+                            <form onSubmit={handleSaveUser} className="premium-form">
+                                
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>First Name</label>
+                                        <input className="sa-input" placeholder="e.g. John" value={formData.first_name} onChange={e => setFormData({...formData, first_name: e.target.value})} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Last Name</label>
+                                        <input className="sa-input" placeholder="e.g. Doe" value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})} />
+                                    </div>
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Username <span className="req">*</span></label>
+                                        <input className="sa-input" required placeholder="johndoe123" value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Email Address <span className="req">*</span></label>
+                                        <input className="sa-input" type="email" required placeholder="john@example.com" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                                    </div>
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Platform Role</label>
+                                        <select className="sa-input" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}>
+                                            <option value="user">Traveler</option>
+                                            <option value="hotel_manager">Hotel Partner</option>
+                                            <option value="admin">System Admin</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Phone Number</label>
+                                        <input className="sa-input" placeholder="+1 234 567 8900" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                                    </div>
+                                </div>
+
+                                <div className="form-group full-width">
+                                    <label>{isEditing ? 'New Password (Leave blank to keep current)' : 'Account Password *'}</label>
+                                    <input className="sa-input" type="password" placeholder="••••••••" required={!isEditing} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+                                </div>
+
+                                <div className="sa-modal-footer">
+                                    <button type="button" className="btn-ghost" onClick={() => setShowEditModal(false)}>Cancel</button>
+                                    <button type="submit" className="btn-primary-compact">
+                                        <Save size={18}/> {isEditing ? 'Save Changes' : 'Create User'}
+                                    </button>
+                                </div>
+
+                            </form>
                         </div>
                     </motion.div>
                 </motion.div>

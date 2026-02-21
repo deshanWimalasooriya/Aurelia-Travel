@@ -5,6 +5,16 @@ const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 
 // Prefix: /api/platform
 
+// ==========================================
+// 🔓 PUBLIC ROUTES (Must be ABOVE middleware!)
+// ==========================================
+router.get('/settings/public', platformController.getPublicSettings);
+router.post('/contact', platformController.submitContact);
+
+// ==========================================
+// 🔒 PROTECTED SUPER ADMIN ROUTES
+// ==========================================
+// Everything below these two lines is locked and requires an Admin Token
 router.use(verifyToken);
 router.use(checkRole('admin'));
 
@@ -17,8 +27,8 @@ router.put('/hotels/:id/status', platformController.updateHotelStatus);
 
 // Users
 router.get('/users', platformController.getAllUsers);
-router.put('/users/:id', platformController.updateUser); // ✅ NEW: Edit User Route
-router.post('/users/:id/action', platformController.manageUser); // Ban/Delete
+router.put('/users/:id', platformController.updateUser); 
+router.post('/users/:id/action', platformController.manageUser);
 
 // Finance
 router.get('/finance', platformController.getPlatformTransactions);
@@ -31,11 +41,10 @@ router.delete('/reviews/:id', platformController.deleteReview);
 router.get('/settings', platformController.getSettings);
 router.put('/settings', platformController.updateSettings);
 
-// ✅ NEW: Logs
+// Logs
 router.get('/logs', platformController.getSystemLogs);
 
-router.post('/contact', platformController.submitContact);
-// ✅ NEW PROTECTED ROUTES FOR MESSAGES
+// Messages
 router.get('/messages', platformController.getMessages);
 router.put('/messages/:id/read', platformController.markMessageRead);
 router.delete('/messages/:id', platformController.deleteMessage);

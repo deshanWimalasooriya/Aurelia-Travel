@@ -237,9 +237,34 @@ exports.getSystemLogs = async (req, res) => {
 };
 
 // ==========================================
-// CONTACT MESSAGES
+// SETTINGS & CONTACT SYSTEM
 // ==========================================
-// 🔓 PUBLIC: Submit Form
+
+// 🔓 PUBLIC: Safe settings for the frontend (Footer, Contact page)
+exports.getPublicSettings = async (req, res) => {
+    try {
+        const settings = await platformModel.getSettings();
+        if (settings) {
+            delete settings.commission_rate;
+            delete settings.maintenance_mode;
+        }
+        res.json(settings || {}); // Returns directly so res.data works on frontend
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch public settings' });
+    }
+};
+
+// 🔒 ADMIN: Returns everything including financial configurations
+exports.getAdminSettings = async (req, res) => {
+    try {
+        const settings = await platformModel.getSettings();
+        res.json(settings || { commission_rate: 5.0, support_email: 'support@aureliatravel.com' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch settings' });
+    }
+};
+
+// 🔓 PUBLIC: Submit Contact Form
 exports.submitContact = async (req, res) => {
     try {
         const { name, email, message } = req.body;
@@ -247,8 +272,11 @@ exports.submitContact = async (req, res) => {
         
         await platformModel.createContactMessage({ name, email, message });
         
-        // Alert Super Admins in real-time
-        await notifyAdmins("New Inquiry", `Message received from ${name} (${email}).`, "info", "/superAdmin/messages");
+        // Alert Super Admins via Socket/Notification
+        const { notifyAdmins } = require('./notificationController');
+        if (notifyAdmins) {
+             await notifyAdmins("New Inquiry", `Message received from ${name}.`, "info", "/superAdmin/messages");
+        }
 
         res.json({ success: true, message: "Message sent successfully" });
     } catch (err) {
@@ -257,7 +285,7 @@ exports.submitContact = async (req, res) => {
     }
 };
 
-// 🔒 ADMIN: Get all messages
+// 🔒 ADMIN: Message Management
 exports.getMessages = async (req, res) => {
     try {
         const messages = await platformModel.getContactMessages();
@@ -265,7 +293,6 @@ exports.getMessages = async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed to fetch messages' }); }
 };
 
-// 🔒 ADMIN: Mark as read
 exports.markMessageRead = async (req, res) => {
     try {
         await platformModel.updateMessageStatus(req.params.id, 'read');
@@ -273,10 +300,29 @@ exports.markMessageRead = async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed to update' }); }
 };
 
-// 🔒 ADMIN: Delete message
 exports.deleteMessage = async (req, res) => {
     try {
         await platformModel.deleteMessage(req.params.id);
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: 'Failed to delete' }); }
+};
+
+// 🔓 PUBLIC: Safe settings for the frontend (Footer, Contact page)
+exports.getPublicSettings = async (req, res) => {
+    try {
+        const settings = await platformModel.getSettings();
+        
+        if (settings) {
+            // SECURITY: Never expose financial configurations to the public
+            delete settings.commission_rate;
+            delete settings.maintenance_mode;
+        }
+        
+        res.json({
+            success: true, 
+            data: settings
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch public settings' });
+    }
 };

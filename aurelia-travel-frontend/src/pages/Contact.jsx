@@ -19,10 +19,12 @@ const Contact = () => {
     message: ''
   });
 
-  // ✅ Fetch Platform Settings on Mount
   useEffect(() => {
-    api.get('/platform/settings')
-      .then(res => setSiteInfo(res.data))
+    api.get('/platform/settings/public')
+      .then(res => {
+         const data = res.data.data || res.data;
+         setSiteInfo(data);
+      })
       .catch(err => console.error("Failed to fetch site contact info:", err));
   }, []);
 
@@ -91,7 +93,7 @@ const Contact = () => {
             <div>
               <span className="label">Email</span>
               {/* ✅ Dynamic Email */}
-              <p>{siteInfo?.support_email || 'support@aureliatravel.com'}</p>
+              <p>{siteInfo?.support_email}</p>
             </div>
           </div>
           <div className="info-item">
@@ -99,7 +101,7 @@ const Contact = () => {
             <div>
               <span className="label">Phone</span>
               {/* ✅ Dynamic Phone */}
-              <p>{siteInfo?.contact_phone || '+94 11 234 5678'}</p>
+              <p>{siteInfo?.contact_phone}</p>
             </div>
           </div>
           <div className="info-item">
@@ -107,7 +109,7 @@ const Contact = () => {
             <div>
               <span className="label">Office</span>
               {/* ✅ Dynamic Address */}
-              <p>{siteInfo?.office_address || 'Colombo, Sri Lanka'}</p>
+              <p>{siteInfo?.office_address}</p>
             </div>
           </div>
         </div>
