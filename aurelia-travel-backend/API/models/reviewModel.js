@@ -60,3 +60,28 @@ exports.hasReview = async (userId, bookingId) => {
         .first();
     return !!existing;
 };
+
+// ✅ NEW: Recalculate and update the hotel's average rating
+exports.updateHotelRating = async (hotelId) => {
+    // 1. Calculate the new average and count from the reviews table
+    const result = await knex('reviews')
+        .where({ hotel_id: hotelId, is_approved: true }) // Only count approved reviews
+        .select(
+            knex.raw('COUNT(id) as total_reviews'),
+            knex.raw('AVG(rating) as average_rating')
+        )
+        .first();
+
+    const total = result.total_reviews || 0;
+    const average = result.average_rating ? parseFloat(result.average_rating).toFixed(1) : 0;
+
+    // 2. Save the new calculated numbers into the hotels table
+    await knex('hotels')
+        .where({ id: hotelId })
+        .update({
+            total_reviews: total,
+            rating_average: average
+        });
+        
+    return { total, average };
+};

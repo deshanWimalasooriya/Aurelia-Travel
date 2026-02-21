@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Search, Heart, User, LogOut, Settings, LayoutDashboard, Building2, Menu, X } from 'lucide-react' 
 import { useUser } from '../../context/userContext'
+import { useAuth } from '../../context/AuthContext'
 import { useNotifications } from '../../context/NotificationContext'
 import NotificationBell from '../ui/NotificationBell'
 import axios from 'axios'
@@ -13,6 +14,7 @@ const Header = () => {
   const navigate = useNavigate()
   
   const { user, clearUser, isAdmin, isManager } = useUser()
+  const { checkAuth } = useAuth();
   const { wishlist } = useWishlist();
   
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -58,10 +60,12 @@ const Header = () => {
       localStorage.removeItem('token');
       sessionStorage.removeItem('token');
       clearUser();
+      await checkAuth();
       navigate('/auth');
     } catch (err) {
       console.error('Logout error:', err);
       clearUser();
+      await checkAuth();
       navigate('/auth');
     }
   };

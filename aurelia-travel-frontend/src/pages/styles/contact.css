@@ -33,6 +33,7 @@
   display: grid;
   grid-template-columns: 1fr 1.8fr;
   gap: 40px;
+  padding-bottom: 100px;
 }
 
 /* Info Card (Left) */
@@ -111,6 +112,18 @@
 
 .contact-form-card textarea {
   resize: vertical;
+
+  min-height: 150px;
+  
+  /* 1. Forces the font and line-height to match the scaled text */
+  font-family: var(--font-main);
+  line-height: 1.6;
+  padding: 16px;
+  
+  /* 2. Hardware acceleration fix for the Chrome 'zoom: 0.8' cursor bug */
+  position: relative;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .btn-primary.full-width {

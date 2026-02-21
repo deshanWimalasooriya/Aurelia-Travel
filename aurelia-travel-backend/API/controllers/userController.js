@@ -1,5 +1,6 @@
 const userModel = require('../models/userModel');
 const bookingModel = require('../models/bookingModel'); // Needed for Dashboard
+const logService = require('../services/logService');
 const bcrypt = require('bcrypt');
 
 // 1. GET USER (Admin or Self)
@@ -36,10 +37,19 @@ exports.updateUser = async (req, res) => {
 
         const updateData = {};
 
-        // ✅ Add Admin-Only Fields Logic
+        // ✅ LOGGING EXACT CHANGES
         if (currentUserRole === 'admin') {
-            if (role) updateData.role = role;
-            if (is_active !== undefined) updateData.is_active = is_active;
+            let changes = [];
+            for (const key in updateData) {
+                if (key === 'password') changes.push('Password reset');
+                // Compare old vs new loosely
+                else if (oldUser[key] != updateData[key]) {
+                    changes.push(`${key}: '${oldUser[key] || ''}' -> '${updateData[key]}'`);
+                }
+            }
+            if (changes.length > 0) {
+                await logService.logAction(currentUserId, 'UPDATE_USER', 'Users', oldUser.username, changes.join(' | '), 'info');
+            }
         }
 
         // Profile Fields
@@ -128,6 +138,12 @@ exports.getMyCustomers = async (req, res) => {
 exports.deleteUser = async (req, res) => {
     try {
         await userModel.softDelete(req.params.id);
+
+        // ✅ LOGGING
+        if (req.user.role === 'admin') {
+            await logService.logAction(req.user.userId, 'DELETE_USER', 'Users', user ? user.username : `ID ${req.params.id}`, 'User account permanently deactivated.', 'error');
+        }
+        
         res.json({ success: true, message: "User deactivated" });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -151,6 +167,12 @@ exports.createUser = async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         await userModel.create({ username, email, password: hashedPassword, role });
+
+        // ✅ LOGGING
+        if (req.user.role === 'admin') {
+            await logService.logAction(req.user.userId, 'CREATE_USER', 'Users', username, `Admin created new ${role} account.`, 'success');
+        }
+
         res.status(201).json({ message: 'User created' });
     } catch (err) { res.status(500).json({ error: err.message }); }
 };
