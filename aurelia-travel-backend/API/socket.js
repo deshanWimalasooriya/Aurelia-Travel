@@ -15,11 +15,24 @@ exports.init = (server) => {
   });
 
   io.use((socket, next) => {
-    // Authenticate Socket Connections using the same JWT
-    const token = socket.handshake.auth.token;
-    if (!token) return next(new Error("Authentication error"));
-
     try {
+      // ✅ Manually parse cookies from the handshake headers
+      const cookieString = socket.handshake.headers.cookie;
+      let token = null;
+
+      if (cookieString) {
+        const cookies = cookieString.split(';').reduce((res, c) => {
+          const [key, val] = c.trim().split('=');
+          res[key] = val;
+          return res;
+        }, {});
+        token = cookies.token;
+      }
+
+      // Fallback if provided via auth payload
+      if (!token) token = socket.handshake.auth.token;
+      if (!token) return next(new Error("Authentication error"));
+
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
       socket.userId = decoded.userId;
       next();

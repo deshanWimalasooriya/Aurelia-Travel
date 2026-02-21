@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import platformService from '../../services/platformService'; // ✅ Import Service
+import platformService from '../../services/platformService'; 
 import { 
   Search, Calendar, Filter, Clock, Download, 
   Loader2, Info 
@@ -10,70 +10,55 @@ const SuperLogs = () => {
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Filter States
     const [filterDate, setFilterDate] = useState('');
     const [search, setSearch] = useState('');
     const [filterAction, setFilterAction] = useState('all');
 
-    // Dynamic Action Types (could also be hardcoded)
     const actionTypes = ['DELETE', 'UPDATE', 'CREATE', 'BAN', 'RESOLVE'];
 
-    // ✅ FETCH DATA FUNCTION
     const fetchLogs = useCallback(async () => {
         setLoading(true);
         try {
             const res = await platformService.getLogs({
-                search,
-                date: filterDate,
-                action: filterAction
+                search, date: filterDate, action: filterAction
             });
-            
-            if (res.success) {
-                setLogs(res.data);
-            }
+            if (res.success) setLogs(res.data);
         } catch (err) {
             console.error("Failed to load logs:", err);
         } finally {
             setLoading(false);
         }
-    }, [search, filterDate, filterAction]); // Re-fetch when filters change
+    }, [search, filterDate, filterAction]);
 
-    // Debounce Search to prevent too many API calls
     useEffect(() => {
-        const timer = setTimeout(() => {
-            fetchLogs();
-        }, 500); // 500ms delay
+        const timer = setTimeout(() => fetchLogs(), 500); 
         return () => clearTimeout(timer);
     }, [fetchLogs]);
 
-    // Helper for Badge Styles
     const getBadgeStyle = (action) => {
         if (!action) return 'sa-badge-neutral';
-        if (action.includes('DELETE') || action.includes('BAN')) return 'sa-badge-banned';
+        if (action.includes('DELETE') || action.includes('BAN')) return 'sa-role-banned';
         if (action.includes('UPDATE') || action.includes('EDIT')) return 'sa-role-admin';
-        if (action.includes('CREATE') || action.includes('ADD')) return 'sa-badge-active';
-        return 'sa-role-hotel_manager';
+        if (action.includes('CREATE') || action.includes('ADD')) return 'sa-role-manager';
+        return 'sa-role-user';
     };
 
     return (
-        <div style={{ position: 'relative' }}>
+        <div>
             {/* HEADER */}
             <div className="sa-header-row">
                 <div>
                     <h1 className="sa-page-title" style={{ marginBottom: '5px' }}>Activity Logs</h1>
-                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
-                        Audit trail of all administrator actions.
-                    </p>
+                    <p className="sa-page-subtitle" style={{ margin: 0 }}>Audit trail of all administrator actions.</p>
                 </div>
-                <button className="sa-btn-export" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer' }}>
+                <button className="sa-btn-export" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: 'var(--color-surface)', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, color: 'var(--text-secondary)' }}>
                     <Download size={18} /> Export CSV
                 </button>
             </div>
 
             {/* FILTERS */}
-            <div className="sa-table-controls" style={{ marginBottom: '20px', display: 'flex', gap: '15px', background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
+            <div className="sa-table-controls" style={{ marginBottom: '24px', display: 'flex', gap: '20px', background: 'var(--color-surface)', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', flexWrap: 'wrap', boxShadow: 'var(--shadow-sm)' }}>
                 
-                {/* Search */}
                 <div className="sa-search-wrapper" style={{ flex: 2, minWidth: '250px' }}>
                     <Search size={18} className="sa-search-icon" />
                     <input 
@@ -85,7 +70,6 @@ const SuperLogs = () => {
                     />
                 </div>
 
-                {/* Action Type Filter */}
                 <div className="sa-search-wrapper" style={{ flex: 1, minWidth: '180px' }}>
                     <Filter size={18} className="sa-search-icon" />
                     <select 
@@ -101,7 +85,6 @@ const SuperLogs = () => {
                     </select>
                 </div>
 
-                {/* Date Picker */}
                 <div className="sa-search-wrapper" style={{ flex: 1, minWidth: '180px' }}>
                     <Calendar size={18} className="sa-search-icon" />
                     <input 
@@ -130,7 +113,7 @@ const SuperLogs = () => {
                         {loading ? (
                             <tr>
                                 <td colSpan="5" style={{ textAlign: 'center', padding: '60px' }}>
-                                    <div style={{display:'flex', justifyContent:'center', alignItems:'center', gap:'10px', color: '#64748b'}}>
+                                    <div style={{display:'flex', justifyContent:'center', alignItems:'center', gap:'10px', color: 'var(--text-muted)'}}>
                                         <Loader2 className="animate-spin" /> Loading Logs...
                                     </div>
                                 </td>
@@ -140,45 +123,45 @@ const SuperLogs = () => {
                                 <tr key={log.id}>
                                     <td>
                                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <span style={{ fontWeight: 600, color: '#334155' }}>
+                                            <span style={{ fontWeight: 700, color: 'var(--color-dark)' }}>
                                                 {new Date(log.timestamp).toLocaleDateString()}
                                             </span>
-                                            <span style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
                                                 <Clock size={12}/> {new Date(log.timestamp).toLocaleTimeString()}
                                             </span>
                                         </div>
                                     </td>
                                     <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <div style={{ width: '32px', height: '32px', background: '#e0e7ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4338ca', fontSize: '0.8rem', fontWeight: 700 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div style={{ width: '36px', height: '36px', background: '#e0e7ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4338ca', fontSize: '0.9rem', fontWeight: 800 }}>
                                                 {log.admin ? log.admin.charAt(0).toUpperCase() : 'S'}
                                             </div>
-                                            <span className="sa-user-name">{log.admin}</span>
+                                            <span style={{ fontWeight: 600, color: 'var(--color-dark)' }}>{log.admin}</span>
                                         </div>
                                     </td>
                                     <td>
-                                        <span style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 500, background: '#f8fafc', padding: '4px 8px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600, background: 'var(--color-background)', padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
                                             {log.module}
                                         </span>
                                     </td>
                                     <td>
-                                        <span className={getBadgeStyle(log.action)}>
+                                        <span className={`sa-role-badge ${getBadgeStyle(log.action)}`}>
                                             {log.action}
                                         </span>
                                     </td>
-                                    <td style={{ color: '#334155', fontWeight: 500 }}>
+                                    <td style={{ color: 'var(--text-main)', fontWeight: 500, fontSize: '0.95rem' }}>
                                         {log.target}
                                     </td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="5" style={{ textAlign: 'center', padding: '60px', color: '#64748b' }}>
+                                <td colSpan="5" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
                                     <Info size={32} style={{ margin: '0 auto 10px', opacity: 0.5 }} />
-                                    <p>No activity found for these filters.</p>
+                                    <p style={{fontSize: '1rem', margin: 0}}>No activity found for these filters.</p>
                                     <button 
                                         onClick={() => { setSearch(''); setFilterDate(''); setFilterAction('all'); }}
-                                        style={{ marginTop: '10px', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                                        style={{ marginTop: '15px', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontWeight: 600 }}
                                     >
                                         Clear Filters
                                     </button>

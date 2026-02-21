@@ -1,50 +1,32 @@
-/* src/pages/admin/styles/dashboard-layout.css */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+/* =========================================
+   PREMIUM DASHBOARD LAYOUT STYLES
+   ========================================= */
 
-:root {
-  --primary-dark: #0f172a;
-  --accent-gold: #f59e0b;
-  --bg-body: #f8fafc;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-on-dark: #f1f5f9;
-  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-body {
-  font-family: 'Inter', sans-serif;
-  background-color: var(--bg-body);
-  margin: 0;
-  overflow-x: hidden;
-}
-
-/* --- WRAPPER --- */
 .dashboard-wrapper {
   display: flex;
-  height: 100vh;
+  height: 125vh;
+  width: 125vw;
   overflow: hidden;
-  background: var(--bg-body);
+  background: var(--color-background);
+  font-family: var(--font-main);
 }
 
 /* --- SIDEBAR --- */
 .dashboard-sidebar {
   width: 280px;
-  background: var(--primary-dark);
-  color: var(--text-on-dark);
+  background: var(--color-dark);
   display: flex;
   flex-direction: column;
   height: 100%;
   position: relative;
   z-index: 50;
-  box-shadow: 4px 0 24px rgba(0,0,0,0.1);
-  transition: width 0.3s ease, opacity 0.3s ease;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.08);
+  overflow: hidden;
 }
 
 .dashboard-sidebar.closed {
   width: 0;
   opacity: 0;
-  overflow: hidden;
 }
 
 .sidebar-header {
@@ -58,14 +40,10 @@ body {
   font-weight: 800;
   letter-spacing: -0.5px;
   color: white;
-  background: linear-gradient(to right, #fff, #cbd5e1);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 .brand-logo span {
-  color: var(--accent-gold);
-  -webkit-text-fill-color: var(--accent-gold);
+  color: var(--color-primary);
   font-weight: 400;
   margin-left: 4px;
   font-size: 1.2rem;
@@ -77,7 +55,7 @@ body {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .nav-item {
@@ -85,33 +63,34 @@ body {
   align-items: center;
   gap: 14px;
   padding: 14px 16px;
-  border-radius: 12px;
-  color: #94a3b8;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
   text-decoration: none;
   font-weight: 500;
   font-size: 0.95rem;
-  transition: var(--transition);
+  transition: var(--transition-smooth);
   position: relative;
   overflow: hidden;
 }
 
 .nav-item:hover {
   background: rgba(255,255,255,0.05);
-  color: #fff;
+  color: white;
   transform: translateX(4px);
 }
 
 .nav-item.active {
-  background: linear-gradient(90deg, rgba(245, 158, 11, 0.15) 0%, rgba(15, 23, 42, 0) 100%);
-  color: var(--accent-gold);
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.15) 0%, transparent 100%);
+  color: #60a5fa; /* Lighter primary blue for dark bg */
   font-weight: 600;
 }
 
 .nav-item.active::before {
   content: '';
-  position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-  background: var(--accent-gold);
-  box-shadow: 0 0 10px var(--accent-gold);
+  position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: var(--color-primary);
+  border-radius: 0 4px 4px 0;
+  box-shadow: 0 0 10px var(--color-primary);
 }
 
 .sidebar-footer {
@@ -124,71 +103,84 @@ body {
   padding: 12px;
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.05);
-  color: #cbd5e1;
-  border-radius: 12px;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 10px;
   font-weight: 600;
-  transition: var(--transition);
+  transition: var(--transition-smooth);
+  font-size: 0.95rem;
 }
 
 .logout-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: #fca5a5;
-  border-color: rgba(239, 68, 68, 0.2);
+  background: #fef2f2;
+  color: #ef4444;
+  border-color: #fecaca;
 }
 
-/* --- MAIN CONTENT --- */
+/* --- MAIN CONTENT AREA --- */
 .dashboard-main {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--bg-body);
+  background: var(--color-background);
 }
 
 .dashboard-topbar {
-  height: 80px;
+  height: 85px;
   padding: 0 40px;
-  background: rgba(255,255,255,0.8);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-subtle, #e2e8f0);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: sticky; top: 0; z-index: 40;
+  position: sticky; 
+  top: 0; 
+  z-index: 40;
+}
+
+.flex-align {
+  display: flex;
+  align-items: center;
 }
 
 .page-title-box h2 {
   font-size: 1.5rem;
   font-weight: 800;
-  color: var(--primary-dark);
+  color: var(--color-dark);
   margin: 0;
   letter-spacing: -0.5px;
 }
 
 .page-title-box p {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   margin: 4px 0 0 0;
 }
 
 .admin-profile {
   display: flex; align-items: center; gap: 12px;
   padding: 6px 16px 6px 6px;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--color-surface);
+  border: 1px solid var(--border-subtle, #e2e8f0);
   border-radius: 40px;
   box-shadow: var(--shadow-sm);
+  transition: var(--transition-smooth);
+  cursor: default;
 }
 
+.admin-profile:hover { box-shadow: var(--shadow-md); }
+
 .admin-avatar {
-  width: 36px; height: 36px;
-  background: var(--primary-dark);
-  color: var(--accent-gold);
+  width: 40px; height: 40px;
+  background: var(--color-primary);
+  color: white;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-weight: 700;
+  font-size: 1.1rem;
 }
 
 .dashboard-content-area {
@@ -198,14 +190,14 @@ body {
   scroll-behavior: smooth;
 }
 
-/* Button Icon Reset */
 .btn-icon {
   background: transparent;
   border: none;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   padding: 8px;
-  border-radius: 8px;
-  transition: background 0.2s;
+  border-radius: var(--radius-sm);
+  transition: var(--transition-smooth);
+  color: var(--text-secondary);
 }
-.btn-icon:hover { background: #f1f5f9; }
+.btn-icon:hover { background: #e2e8f0; color: var(--color-dark); }

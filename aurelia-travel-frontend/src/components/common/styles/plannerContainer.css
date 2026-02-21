@@ -1,29 +1,27 @@
 /* =========================================
-   1. CONTAINER GRID LAYOUT
+   PREMIUM PLANNER CONTAINER STYLES
    ========================================= */
+
 .planner-container {
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1.8fr 1fr; /* Left (Form) vs Right (Sidebar) ratio */
-  gap: 20px;
+  grid-template-columns: 1.8fr 1fr; 
+  gap: 30px;
 }
 
-/* =========================================
-   2. PLANNER CARD (THE FORM)
-   ========================================= */
+/* --- THE FORM CARD --- */
 .planner-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(15px);
-  border: 1px solid var(--glass-border);
-  padding: 30px;
+  background: var(--color-surface);
   border-radius: var(--radius-lg);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-float);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  padding: 40px;
 }
 
 /* Input Groups */
 .input-group {
-  margin-bottom: 15px;
+  margin-bottom: 24px;
   display: flex;
   flex-direction: column;
 }
@@ -32,172 +30,176 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
-  color: var(--primary-gold);
-  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-weight: 700;
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
+.input-group label svg {
+  color: var(--color-primary);
+}
+
 /* Inputs & Selects */
 .input-group input, 
 .input-group select {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--glass-border);
-  padding: 10px 12px;
+  background: var(--color-surface) !important;
+  border: 1px solid #cbd5e1;
+  padding: 14px 16px;
   border-radius: var(--radius-sm);
-  color: white;
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
+  color: var(--text-main) !important;
+  font-size: 1rem;
+  transition: var(--transition-smooth);
   width: 100%;
-  box-sizing: border-box; /* Fixes padding width issues */
+  box-sizing: border-box; 
 }
 
 .input-group input:focus,
 .input-group select:focus {
-  border-color: var(--primary-gold);
+  border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Remove default dark mode indicator for date picker */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+}
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 /* Split Rows (2 Columns) */
 .input-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 15px;
+  gap: 20px;
 }
 
-/* Date Picker Specifics */
-input[type="datetime-local"] {
-  color-scheme: dark; 
-  cursor: pointer;
-}
-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-  filter: invert(1); 
-  opacity: 0.6;
-  cursor: pointer;
-}
-input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-}
-
-/* =========================================
-   3. PACE SELECTOR
-   ========================================= */
+/* --- PACE SELECTOR --- */
 .pace-selector {
-  margin-top: 5px;
+  margin-top: 10px;
 }
 
 .pace-selector label {
   display: block;
-  margin-bottom: 8px;
-  color: var(--primary-gold);
-  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+  font-weight: 700;
   font-size: 0.85rem;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .pace-options {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 25px;
+  gap: 12px;
+  margin-bottom: 30px;
 }
 
 .pace-options button {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  padding: 10px;
+  background: var(--color-background);
+  border: 1px solid #cbd5e1;
+  padding: 14px;
   border-radius: var(--radius-sm);
-  color: white;
+  color: var(--text-secondary);
+  font-weight: 600;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  transition: var(--transition-smooth);
 }
 
 .pace-options button:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: #e2e8f0;
+  color: var(--text-main);
 }
 
 .pace-options button.active {
-  background: var(--primary-gold);
-  color: black;
-  font-weight: bold;
-  border-color: var(--primary-gold);
+  background: var(--color-dark);
+  color: white;
+  border-color: var(--color-dark);
 }
 
-/* =========================================
-   4. ACTION BUTTONS
-   ========================================= */
+/* --- ACTION BUTTON --- */
 .generate-btn {
   width: 100%;
-  background: linear-gradient(135deg, var(--primary-gold), var(--primary-gold-hover));
-  color: black;
+  background: var(--color-primary);
+  color: white;
   border: none;
-  padding: 14px;
-  border-radius: 12px;
-  font-size: 1rem;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: var(--transition-smooth);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
 .generate-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+  background: var(--color-primary-hover);
 }
 
-/* =========================================
-   5. SIDEBAR (Right Side)
-   ========================================= */
+/* --- SIDEBAR (Right Side) --- */
 .safety-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: 30px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  height: fit-content;
 }
 
 .safety-sidebar h3 {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--text-main);
-  margin-bottom: 5px;
-  font-size: 1.1rem;
+  color: var(--color-dark);
+  margin-bottom: 20px;
+  font-size: 1.2rem;
+  font-weight: 800;
 }
 
+.icon-primary { color: var(--color-primary); }
+
 .insight-item {
-  background: var(--glass-bg);
-  padding: 15px;
-  border-radius: 16px;
-  border-left: 3px solid var(--primary-gold);
+  background: #fffbeb;
+  padding: 20px 16px;
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--color-accent);
   display: flex;
   gap: 12px;
   align-items: flex-start;
 }
 
 .insight-item p {
-  font-size: 0.85rem;
-  line-height: 1.4;
-  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #92400e; /* Deep amber text for readability on yellow */
   margin: 0;
 }
 
 .warning-icon {
-  color: #fbbf24;
+  color: var(--color-accent);
   flex-shrink: 0;
+  margin-top: 2px;
 }
 
-/* =========================================
-   6. RESPONSIVE DESIGN
-   ========================================= */
+/* --- RESPONSIVE DESIGN --- */
 @media (max-width: 900px) {
   .planner-container {
-    grid-template-columns: 1fr; /* Stack sidebar under form */
-    max-width: 500px;
+    grid-template-columns: 1fr; 
+    max-width: 600px;
   }
   
   .input-row {
-    grid-template-columns: 1fr; /* Stack inputs vertically */
+    grid-template-columns: 1fr; 
   }
 }

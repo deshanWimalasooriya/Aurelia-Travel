@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { useNotifications } from '../../context/NotificationContext'; // ✅ Import Hook
+import { useNotifications } from '../../context/NotificationContext'; 
 import { DollarSign, Users, Building, Calendar, Bell } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
@@ -12,7 +12,7 @@ const SuperOverview = () => {
     const [chartData, setChartData] = useState([]);
     const [loading, setLoading] = useState(true);
     
-    // ✅ Get real-time notifications from Context
+    // Get real-time notifications from Context
     const { notifications } = useNotifications();
 
     useEffect(() => {
@@ -40,17 +40,31 @@ const SuperOverview = () => {
     };
 
     const getCardColor = (index) => {
-        const colors = [{ bg: '#e0e7ff', text: '#4f46e5' }, { bg: '#fee2e2', text: '#ef4444' }, { bg: '#dbeafe', text: '#2563eb' }, { bg: '#dcfce7', text: '#16a34a' }];
+        const colors = [
+            { bg: '#eff6ff', text: 'var(--color-primary)' }, 
+            { bg: '#fffbeb', text: 'var(--color-accent)' }, 
+            { bg: '#f1f5f9', text: 'var(--color-dark)' }, 
+            { bg: '#ecfdf5', text: '#10b981' }
+        ];
         return colors[index % colors.length];
     };
 
+    if (loading) {
+        return <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading Overview...</div>;
+    }
+
     return (
         <div>
-            {/* Header omitted (handled by Layout now) */}
+            <div className="sa-header-row" style={{marginBottom: '20px'}}>
+                <div>
+                    <h1 className="sa-page-title" style={{marginBottom: 0}}>Dashboard Overview</h1>
+                    <p className="sa-page-subtitle" style={{marginTop: '4px'}}>Real-time platform metrics and alerts</p>
+                </div>
+            </div>
             
             <div className="sa-overview-grid">
                 {/* LEFT COLUMN: Stats & Charts */}
-                <div className="sa-main-column">
+                <div className="sa-main-column" style={{ minWidth: 0 }}>
                     {/* Stats Cards */}
                     <div className="sa-stats-grid">
                         {stats.map((stat, index) => {
@@ -75,20 +89,23 @@ const SuperOverview = () => {
                             <h3 className="sa-chart-title">Revenue Analytics</h3>
                             <span className="sa-chart-badge">Last 6 Months</span>
                         </div>
-                        <div className="sa-chart-container" style={{ height: 350 }}>
+                        <div className="sa-chart-container" style={{ height: 350, minWidth: 0 }}>
                              <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.2}/>
-                                            <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                                            <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
                                         </linearGradient>
                                     </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} dy={10} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', padding: '12px 16px' }} />
-                                    <Area type="monotone" dataKey="value" stroke="#f43f5e" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} dy={10} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} tickFormatter={(val) => `$${val}`} />
+                                    <Tooltip 
+                                        contentStyle={{ borderRadius: '12px', border: 'none', background: 'var(--color-dark)', color: 'white' }} 
+                                        itemStyle={{ color: 'white' }}
+                                    />
+                                    <Area type="monotone" dataKey="value" stroke="var(--color-primary)" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
                                 </AreaChart>
                              </ResponsiveContainer>
                         </div>
@@ -105,13 +122,13 @@ const SuperOverview = () => {
                             {notifications.length === 0 ? (
                                 <p className="sa-empty-feed">No recent alerts.</p>
                             ) : (
-                                notifications.slice(0, 6).map((notif) => (
+                                notifications.slice(0, 8).map((notif) => (
                                     <div key={notif.id} className={`sa-feed-item ${!notif.is_read ? 'unread' : ''}`}>
                                         <div className={`sa-feed-dot ${notif.type}`}></div>
                                         <div>
                                             <div className="sa-feed-title">{notif.title}</div>
                                             <div className="sa-feed-msg">{notif.message}</div>
-                                            <div className="sa-feed-time">{new Date(notif.created_at).toLocaleDateString()}</div>
+                                            <div className="sa-feed-time">{new Date(notif.created_at).toLocaleString()}</div>
                                         </div>
                                     </div>
                                 ))

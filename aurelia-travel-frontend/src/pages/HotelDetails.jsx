@@ -8,10 +8,10 @@ import {
   Bed, Eye, X, Image as ImageIcon, Heart 
 } from 'lucide-react';
 import { useUser } from '../context/userContext';
-import { useWishlist } from '../context/WishlistContext'; // Ensure this context exists or remove if not
+import { useWishlist } from '../context/WishlistContext'; 
 import ImageGallery from '../components/ui/ImageGallery'; 
-import HotelDetailsSkeleton from '../components/ui/HotelDetailsSkeleton'; // Your skeleton loader
-import './styles/hotelDetails.css';
+import HotelDetailsSkeleton from '../components/ui/HotelDetailsSkeleton'; 
+import './styles/HotelDetails.css';
 
 const HotelDetails = () => {
   const { id } = useParams();
@@ -45,7 +45,7 @@ const HotelDetails = () => {
   const [dates, setDates] = useState({ checkIn: '', checkOut: '' });
   const [guests, setGuests] = useState({ adults: 2, children: 0 });
 
-  // --- 1. FETCH DATA ---
+  // --- 1. FETCH DATA (ORIGINAL LOGIC) ---
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -77,7 +77,7 @@ const HotelDetails = () => {
     if (id) fetchData();
   }, [id]);
 
-  // --- 2. CALCULATIONS ---
+  // --- 2. CALCULATIONS (ORIGINAL LOGIC) ---
   const calculateDays = (start, end) => {
     if (!start || !end) return 0;
     const startDate = new Date(start);
@@ -89,7 +89,7 @@ const HotelDetails = () => {
 
   const nightCount = calculateDays(dates.checkIn, dates.checkOut); 
 
-  // --- 3. AUTO-UPDATE PRICE ---
+  // --- 3. AUTO-UPDATE PRICE (ORIGINAL LOGIC) ---
   useEffect(() => {
     if (selectedRoomId) {
         const room = rooms.find(r => (r._id || r.id) === selectedRoomId);
@@ -118,7 +118,7 @@ const HotelDetails = () => {
       setViewingRoom(room);
   };
 
-  // Helper to extract room images for gallery
+  // Helper to extract room images for gallery (ORIGINAL LOGIC)
   const getRoomImages = (room) => {
       if (!room) return [];
       let imgs = [];
@@ -134,7 +134,7 @@ const HotelDetails = () => {
 
   const currentRoomImages = viewingRoom ? getRoomImages(viewingRoom) : [];
 
-  // --- 4. HANDLE RESERVATION ---
+  // --- 4. HANDLE RESERVATION (ORIGINAL LOGIC) ---
   const handleReserve = async () => {
     if (!user) { 
         if(!window.confirm("You need to login to book. Proceed to login?")) return;
@@ -193,8 +193,8 @@ const HotelDetails = () => {
                 <Star 
                     key={i} 
                     size={14} 
-                    fill={i < rating ? "#fbbf24" : "none"} 
-                    color={i < rating ? "#fbbf24" : "#cbd5e1"} 
+                    fill={i < rating ? "var(--color-accent)" : "none"} 
+                    color={i < rating ? "var(--color-accent)" : "#cbd5e1"} 
                 />
             ))}
         </div>
@@ -204,7 +204,7 @@ const HotelDetails = () => {
   if (loading) return <HotelDetailsSkeleton />;
   if (!hotel) return <div className="loading-screen">Hotel not found</div>;
 
-  // --- IMAGES & LOCATION LOGIC ---
+  // --- IMAGES & LOCATION LOGIC (ORIGINAL + FIX FOR MAP URL) ---
   const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80';
   
   let rawImages = [];
@@ -224,6 +224,8 @@ const HotelDetails = () => {
       layoutImages.push(layoutImages[0] || DEFAULT_IMAGE);
   }
 
+  // --- MAP PREVIEW URL FIX ---
+  // Using standard valid google maps iframe embed link.
   const mapUrl = hotel.latitude && hotel.longitude 
     ? `https://maps.google.com/maps?q=${hotel.latitude},${hotel.longitude}&z=15&output=embed`
     : `https://maps.google.com/maps?q=${encodeURIComponent(hotel.name + ' ' + hotel.city)}&z=15&output=embed`;
@@ -237,32 +239,31 @@ const HotelDetails = () => {
             <div className="hotel-headline">
                 <div>
                     <h1 className="hotel-title">{hotel.name}</h1>
-                    <div style={{display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px'}}>
-                        {/* --- WISHLIST BUTTON --- */}
+                    <div style={{display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px'}}>
                         <button 
                             onClick={() => toggleWishlist(hotel)}
                             style={{
-                                background: isSaved ? '#fee2e2' : 'transparent',
+                                background: isSaved ? '#fef2f2' : 'var(--color-surface)',
                                 border: `1px solid ${isSaved ? '#ef4444' : '#cbd5e1'}`,
-                                borderRadius: '50px', padding: '6px 12px',
-                                display: 'flex', alignItems: 'center', gap: '6px',
+                                borderRadius: '50px', padding: '6px 16px',
+                                display: 'flex', alignItems: 'center', gap: '8px',
                                 cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
-                                color: isSaved ? '#b91c1c' : '#64748b', transition: 'all 0.2s'
+                                color: isSaved ? '#b91c1c' : 'var(--text-secondary)', transition: 'var(--transition-smooth)'
                             }}
                         >
                             <Heart size={16} fill={isSaved ? "currentColor" : "none"} />
-                            {isSaved ? 'Saved' : 'Save'}
+                            {isSaved ? 'Saved to Wishlist' : 'Save Property'}
                         </button>
                     </div>
                     <div className="hotel-meta">
-                        <span className="meta-item"><MapPin size={16} className="icon-blue"/> {hotel.address_line_1}, {hotel.city}, {hotel.country}</span>
+                        <span className="meta-item"><MapPin size={16}/> {hotel.address_line_1}, {hotel.city}, {hotel.country}</span>
                         <div className="rating-pill">
                             <Star size={14} fill="currentColor" /> {hotel.rating_average || 4.8} ({hotel.total_reviews || 0} reviews)
                         </div>
                     </div>
                 </div>
                 <div className="price-lead">
-                    <span className="from-text">from</span>
+                    <span className="from-text">From</span>
                     <span className="price-amount">${parseFloat(hotel.price_per_night_from || rooms[0]?.base_price_per_night || 0).toLocaleString()}</span>
                     <span className="per-night">/ night</span>
                 </div>
@@ -272,16 +273,12 @@ const HotelDetails = () => {
         {/* HERO: GALLERY + MAP */}
         <section className="hero-split-section">
             <div className="gallery-container">
-                <div 
-                    className="main-image" 
-                    style={{backgroundImage: `url('${layoutImages[0]}')`}}
-                    onClick={() => setIsGalleryOpen(true)}
-                ></div>
+                <div className="main-image" style={{backgroundImage: `url('${layoutImages[0]}')`}} onClick={() => setIsGalleryOpen(true)}></div>
                 <div className="sub-images">
                     <div className="sub-img" style={{backgroundImage: `url('${layoutImages[1]}')`}} onClick={() => setIsGalleryOpen(true)}></div>
                     <div className="sub-img" style={{backgroundImage: `url('${layoutImages[2]}')`}} onClick={() => setIsGalleryOpen(true)}></div>
                     <div className="sub-img more-photos" style={{backgroundImage: `url('${layoutImages[3]}')`}} onClick={() => setIsGalleryOpen(true)}>
-                        <div className="view-more"><span>+ View Gallery</span></div>
+                        <div className="view-more"><span>View Gallery</span></div>
                     </div>
                 </div>
             </div>
@@ -304,7 +301,7 @@ const HotelDetails = () => {
                         {hotel.description || "Enjoy a relaxing stay at " + hotel.name + ". This property offers excellent accommodation and services to make your visit memorable."}
                     </p>
                     
-                    <h3 className="section-title" style={{fontSize: '18px', marginTop: '30px'}}>Popular Amenities</h3>
+                    <h3 className="section-title" style={{fontSize: '1.2rem', marginTop: '40px'}}>Popular Amenities</h3>
                     <div className="amenities-container">
                          {Array.isArray(hotel.amenities) && hotel.amenities.length > 0 ? (
                              hotel.amenities.map((item, index) => (
@@ -327,7 +324,7 @@ const HotelDetails = () => {
 
                 {/* ROOMS TABLE */}
                 <div className="section-card" ref={roomsRef}>
-                    <h2 className="section-title">Available Rooms</h2>
+                    <h2 className="section-title">Available Suites & Rooms</h2>
                     <div className="rooms-table-wrapper">
                         <table className="rooms-table">
                             <thead>
@@ -335,7 +332,7 @@ const HotelDetails = () => {
                                     <th>Room Type</th>
                                     <th>Capacity</th>
                                     <th>Details</th>
-                                    <th style={{textAlign:'center'}}>Nr. Rooms</th> 
+                                    <th style={{textAlign:'center'}}>Qty</th> 
                                     <th>Price</th>
                                     <th>Action</th>
                                 </tr>
@@ -356,24 +353,17 @@ const HotelDetails = () => {
                                         <tr key={room.id} className={isSelected ? 'selected-row' : ''}>
                                             <td>
                                                 <div className="room-cell-main">
-                                                    {/* IMAGE THUMBNAIL */}
                                                     <div className="room-table-thumbnail" onClick={() => handleViewDetails(room)}>
                                                         {previewImage ? (
                                                             <img src={previewImage} alt={room.title} />
                                                         ) : (
-                                                            <div className="room-placeholder-icon"><Bed size={20}/></div>
+                                                            <div className="no-room-img"><Bed size={20} color="var(--text-muted)"/></div>
                                                         )}
                                                     </div>
 
-                                                    <div className="room-meta-group">
-                                                        {/* Clickable Title */}
-                                                        <strong 
-                                                            className="clickable-room-title" 
-                                                            onClick={() => handleViewDetails(room)}
-                                                        >
-                                                            {room.title}
-                                                        </strong>
-                                                        <span className="room-sub-text">{room.bed_type || 'Double Bed'}</span>
+                                                    <div>
+                                                        <strong className="clickable-room-title" onClick={() => handleViewDetails(room)}>{room.title}</strong>
+                                                        <div style={{fontSize:'0.8rem', color:'var(--text-muted)', marginTop:'4px'}}>{room.bed_type || 'Double Bed'}</div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -382,25 +372,17 @@ const HotelDetails = () => {
                                                 <div className="features-cell">
                                                     <span className="feature"><Maximize size={14}/> {room.size_sqm || 30}m²</span>
                                                     <span className="feature"><Mountain size={14}/> {room.view_type || 'View'}</span>
-                                                    {/* View Details Button */}
-                                                    <button 
-                                                        className="view-details-small-btn" 
-                                                        onClick={() => handleViewDetails(room)}
-                                                        title="View Room Details"
-                                                    >
-                                                        <Eye size={14}/> View
-                                                    </button>
+                                                    <button className="view-details-small-btn" onClick={() => handleViewDetails(room)}><Eye size={14}/> View</button>
                                                 </div>
                                             </td>
                                             <td style={{textAlign:'center'}}>
                                                 <select 
-                                                    className="qty-select"
                                                     value={isSelected ? roomQty : 1}
                                                     onChange={(e) => {
                                                         setSelectedRoomId(room.id); 
                                                         setRoomQty(parseInt(e.target.value)); 
                                                     }}
-                                                    style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#0f172a' }}
+                                                    style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600' }}
                                                 >
                                                     {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
                                                 </select>
@@ -428,7 +410,7 @@ const HotelDetails = () => {
                 {/* REVIEWS SECTION */}
                 <div className="section-card reviews-section">
                     <div className="reviews-header-bar">
-                        <h2 className="section-title">Guest Reviews</h2>
+                        <h2 className="section-title" style={{marginBottom: 0}}>Guest Reviews</h2>
                         <div className="rating-summary-box">
                             <div className="score-box">{hotel.rating_average || 4.8}</div>
                             <div className="score-text">
@@ -463,9 +445,9 @@ const HotelDetails = () => {
 
                                         {/* Display Manager Response */}
                                         {rev.hotel_response && (
-                                            <div className="hotel-response-public" style={{marginTop:'15px', background:'#f8fafc', padding:'12px', borderRadius:'8px', borderLeft:'3px solid #3b82f6'}}>
-                                                <span style={{fontSize:'0.75rem', fontWeight:'700', color:'#3b82f6', textTransform:'uppercase', display:'block', marginBottom:'4px'}}>Response from Property</span>
-                                                <p style={{fontSize:'0.9rem', color:'#334155', margin:0}}>{rev.hotel_response}</p>
+                                            <div className="hotel-response-public">
+                                                <span className="response-label">Response from Property</span>
+                                                <p>{rev.hotel_response}</p>
                                             </div>
                                         )}
                                     </div>
@@ -473,7 +455,7 @@ const HotelDetails = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className="no-reviews" style={{textAlign:'center', padding:'40px', color:'#666'}}>
+                        <div className="no-reviews">
                             <Info size={24} style={{marginBottom:'10px'}}/>
                             <p>No reviews yet. Be the first to share your experience!</p>
                         </div>
@@ -488,27 +470,26 @@ const HotelDetails = () => {
                         <div className="price-display">
                             <span className="currency">$</span>
                             <span className="amount">{totalPrice > 0 ? totalPrice.toLocaleString() : (parseFloat(hotel.price_per_night_from || 0))}</span>
-                            <span className="text">{nightCount > 0 ? ` total` : ' / night'}</span>
+                            <span className="text" style={{fontSize: '0.9rem', color: 'var(--text-muted)'}}>{nightCount > 0 ? ` total` : ' / night'}</span>
                         </div>
                         <div className="demand-badge"><TrendingUp size={14}/> High Demand</div>
                     </div>
+                    
                     <div className="picker-grid">
                         <div className="input-box"><label>CHECK-IN</label><input type="date" value={dates.checkIn} onChange={(e) => setDates({...dates, checkIn: e.target.value})} /></div>
                         <div className="input-box"><label>CHECK-OUT</label><input type="date" value={dates.checkOut} onChange={(e) => setDates({...dates, checkOut: e.target.value})} /></div>
                     </div>
-                    <div className="input-box" style={{marginBottom: '20px'}}>
+                    
+                    <div className="input-box" style={{marginBottom: '24px'}}>
                         <label>GUESTS</label>
                         <select value={guests.adults} onChange={e => setGuests({...guests, adults: parseInt(e.target.value)})}>
                             <option value="1">1 Adult</option><option value="2">2 Adults</option><option value="3">3 Adults</option><option value="4">4 Adults</option>
                         </select>
                     </div>
-                    {selectedRoomId ? (
-                        <div className="notification success"><Check size={16}/> {roomQty} Room{roomQty > 1 ? 's' : ''} Selected</div>
-                    ) : (
-                        <div className="notification warning"><Info size={16}/> Select a room from the table</div>
-                    )}
+                    
                     <button className="book-btn" onClick={handleReserve}>{selectedRoomId ? 'Reserve Securely' : 'Check Availability'}</button>
                     <p className="no-charge-text">You won't be charged yet</p>
+                    
                     {totalPrice > 0 && (
                         <div className="total-row"><span>Total (Tax incl.)</span><span>${(totalPrice * 1.1).toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
                     )}

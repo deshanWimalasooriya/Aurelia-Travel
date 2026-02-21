@@ -17,7 +17,8 @@ exports.logAction = async (adminId, action, module, target, details, status = 's
             module: module,
             target: target,
             details: details,
-            status: status
+            status: status,
+            created_at: new Date()
         });
     } catch (err) {
         // Log to console if DB logging fails, but don't crash the request

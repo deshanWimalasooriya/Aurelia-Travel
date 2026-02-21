@@ -1,7 +1,8 @@
 const platformModel = require('../models/platformModel');
 const bcrypt = require('bcrypt'); // ✅ Ensure bcrypt is imported
-const { sendNotification } = require('./notificationController'); // Import helper
-const logService = require('../services/logService'); // ✅ IMPORT SERVICE
+const { sendNotification, notifyAdmins } = require('./notificationController');
+const logService = require('../services/logService');
+const reviewModel = require('../models/reviewModel');
 
 // ... (Existing Overview and Hotel functions) ...
 
@@ -154,10 +155,35 @@ exports.getAllReviews = async (req, res) => {
 
 exports.deleteReview = async (req, res) => {
     try {
-        await platformModel.deleteReview(req.params.id);
-        res.json({ success: true, message: 'Review removed' });
+        const reviewId = req.params.id;
+
+        // 1. Fetch the review so we know which hotel it belongs to
+        const review = await platformModel.getReviewById(reviewId);
+        
+        if (!review) {
+            return res.status(404).json({ error: 'Review not found' });
+        }
+
+        // 2. Delete the review
+        await platformModel.deleteReview(reviewId);
+        
+        // 3. ✅ RECALCULATE the hotel's overall average rating
+        await reviewModel.updateHotelRating(review.hotel_id);
+        
+        // 4. Log the action
+        await logService.logAction(
+            req.user.userId, 
+            'DELETE_REVIEW', 
+            'Moderation', 
+            `Review ID: ${reviewId}`, 
+            'Admin permanently removed a guest review.', 
+            'error'
+        );
+
+        res.json({ success: true, message: 'Review removed and hotel rating updated' });
     } catch (err) {
-        res.status(500).json({ error: 'Delete failed' });
+        console.error(err);
+        res.status(500).json({ error: 'Delete failed' }); 
     }
 };
 
@@ -191,15 +217,15 @@ exports.updateSettings = async (req, res) => {
             changes.push(`Maintenance: ${req.body.maintenance_mode ? 'ENABLED' : 'DISABLED'}`);
         }
 
-        // Only log if something actually changed
+        for (const key in req.body) {
+            if (oldSettings[key] != req.body[key]) {
+                 changes.push(`${key}: '${oldSettings[key] || ''}' -> '${req.body[key]}'`);
+            }
+        }
+
         if (changes.length > 0) {
             await logService.logAction(
-                req.user.userId,       // Who did it?
-                'UPDATE_CONFIG',       // Action Code
-                'System',              // Module
-                'Platform Settings',   // Target
-                changes.join(', '),    // Details: "Commission: 5% -> 8%"
-                'warning'              // Status (Orange badge)
+                req.user.userId, 'UPDATE_CONFIG', 'System', 'Platform Settings', changes.join(' | '), 'warning'
             );
         }
 
@@ -218,20 +244,127 @@ exports.getSystemLogs = async (req, res) => {
         const logs = await platformModel.getActivityLogs({ search, date, action });
         
         // Format for frontend
-        const formatted = logs.map(log => ({
-            id: log.id,
-            admin: log.admin_name || 'System',
-            action: log.action_type,
-            target: log.target,
-            module: log.module,
-            timestamp: log.created_at,
-            status: log.status,
-            details: log.details
-        }));
+        const formatted = logs.map(log => {
+            let exactTime = log.created_at;
+            
+            // ✅ FIX: Safely force the database time into a strict UTC string.
+            // This prevents the server from applying its own timezone, allowing 
+            // your React app in Sri Lanka to correctly add the +5:30 offset itself.
+            if (exactTime instanceof Date) {
+                exactTime = exactTime.toISOString();
+            } else if (typeof exactTime === 'string' && !exactTime.endsWith('Z')) {
+                // If MySQL returned a raw string without a timezone, append 'Z' (UTC marker)
+                exactTime += 'Z'; 
+            }
+
+            return {
+                id: log.id,
+                admin: log.admin_name || 'System',
+                action: log.action_type,
+                target: log.target,
+                module: log.module,
+                timestamp: exactTime, 
+                status: log.status,
+                details: log.details
+            };
+        });
 
         res.json({ success: true, data: formatted });
     } catch (err) {
         console.error("Logs Error:", err);
         res.status(500).json({ error: 'Failed to fetch logs' });
+    }
+};
+
+// ==========================================
+// SETTINGS & CONTACT SYSTEM
+// ==========================================
+
+// 🔓 PUBLIC: Safe settings for the frontend (Footer, Contact page)
+exports.getPublicSettings = async (req, res) => {
+    try {
+        const settings = await platformModel.getSettings();
+        if (settings) {
+            delete settings.commission_rate;
+            delete settings.maintenance_mode;
+        }
+        res.json(settings || {}); // Returns directly so res.data works on frontend
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch public settings' });
+    }
+};
+
+// 🔒 ADMIN: Returns everything including financial configurations
+exports.getAdminSettings = async (req, res) => {
+    try {
+        const settings = await platformModel.getSettings();
+        res.json(settings || { commission_rate: 5.0, support_email: 'support@aureliatravel.com' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch settings' });
+    }
+};
+
+// 🔓 PUBLIC: Submit Contact Form
+exports.submitContact = async (req, res) => {
+    try {
+        const { name, email, message } = req.body;
+        if (!name || !email || !message) return res.status(400).json({ error: "Missing fields" });
+        
+        await platformModel.createContactMessage({ name, email, message });
+        
+        // Alert Super Admins via Socket/Notification
+        const { notifyAdmins } = require('./notificationController');
+        if (notifyAdmins) {
+             await notifyAdmins("New Inquiry", `Message received from ${name}.`, "info", "/superAdmin/messages");
+        }
+
+        res.json({ success: true, message: "Message sent successfully" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to send message' });
+    }
+};
+
+// 🔒 ADMIN: Message Management
+exports.getMessages = async (req, res) => {
+    try {
+        const messages = await platformModel.getContactMessages();
+        res.json({ success: true, data: messages });
+    } catch (err) { res.status(500).json({ error: 'Failed to fetch messages' }); }
+};
+
+exports.markMessageRead = async (req, res) => {
+    try {
+        await platformModel.updateMessageStatus(req.params.id, 'read');
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Failed to update' }); }
+};
+
+exports.deleteMessage = async (req, res) => {
+    try {
+        await platformModel.deleteMessage(req.params.id);
+        // ✅ LOG MESSAGE DELETION
+        await logService.logAction(req.user.userId, 'DELETE_MESSAGE', 'Support', `Inbox Msg ID: ${req.params.id}`, 'Admin deleted a support message.', 'error');
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Failed to delete' }); }
+};
+
+// 🔓 PUBLIC: Safe settings for the frontend (Footer, Contact page)
+exports.getPublicSettings = async (req, res) => {
+    try {
+        const settings = await platformModel.getSettings();
+        
+        if (settings) {
+            // SECURITY: Never expose financial configurations to the public
+            delete settings.commission_rate;
+            delete settings.maintenance_mode;
+        }
+        
+        res.json({
+            success: true, 
+            data: settings
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch public settings' });
     }
 };

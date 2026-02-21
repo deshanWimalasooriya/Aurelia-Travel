@@ -27,7 +27,8 @@ export const NotificationProvider = ({ children }) => {
 
       // Connect Socket
       const socket = io("http://localhost:5000", {
-        auth: { token: localStorage.getItem('token') } // Ensure token is stored in LS or use cookie logic
+        withCredentials: true, // ✅ Forces cookies to be sent
+        transports: ['websocket', 'polling'] // ✅ Fallback if websocket drops // Ensure token is stored in LS or use cookie logic
       });
 
       socket.on("notification", (newNotif) => {

@@ -27,8 +27,8 @@ const SuperReviews = () => {
 
     return (
         <div>
-            <h1 className="sa-page-title" style={{marginBottom: '10px'}}>Content Moderation</h1>
-            <p style={{ color: '#64748b', marginBottom: '30px' }}>Monitor and remove inappropriate guest reviews.</p>
+            <h1 className="sa-page-title" style={{marginBottom: '5px'}}>Content Moderation</h1>
+            <p className="sa-page-subtitle" style={{marginBottom: '30px'}}>Monitor and remove inappropriate guest reviews.</p>
 
             <div className="sa-reviews-grid">
                 {reviews.map(review => (
@@ -36,16 +36,16 @@ const SuperReviews = () => {
                         <div className="sa-review-header">
                             <div className="sa-reviewer-info">
                                 <div className="sa-reviewer-img">
-                                    {review.profile_image ? <img src={review.profile_image} alt="" /> : null}
+                                    {review.profile_image ? <img src={review.profile_image} alt="" /> : review.guest.charAt(0)}
                                 </div>
                                 <div>
                                     <div className="sa-reviewer-name">{review.guest}</div>
-                                    <div className="sa-reviewer-sub">Stayed at {review.hotel_name}</div>
+                                    <div className="sa-reviewer-sub">Stayed at <strong>{review.hotel_name}</strong></div>
                                 </div>
                             </div>
                             <div className="sa-stars">
                                 {[...Array(5)].map((_, i) => (
-                                    <Star key={i} size={12} fill={i < review.rating ? "currentColor" : "none"} />
+                                    <Star key={i} size={14} fill={i < review.rating ? "currentColor" : "none"} />
                                 ))}
                             </div>
                         </div>
@@ -57,12 +57,12 @@ const SuperReviews = () => {
                         <div className="sa-review-footer">
                             <span className="sa-review-date">{new Date(review.created_at).toLocaleDateString()}</span>
                             <button className="sa-btn-delete-review" onClick={() => handleDelete(review.id)}>
-                                <Trash2 size={14}/> Remove
+                                <Trash2 size={16}/> Remove
                             </button>
                         </div>
                     </div>
                 ))}
-                {reviews.length === 0 && <div className="sa-no-reviews">No reviews found.</div>}
+                {reviews.length === 0 && <div className="sa-no-reviews">No reviews found for moderation.</div>}
             </div>
         </div>
     );

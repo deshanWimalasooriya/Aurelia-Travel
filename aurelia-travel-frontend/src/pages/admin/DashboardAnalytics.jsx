@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { motion } from 'framer-motion';
+import api from '../../services/api'; // ✅ Replaced axios with your configured API service
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend 
@@ -21,7 +20,8 @@ const DashboardAnalytics = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  const COLORS = ['#0f172a', '#f59e0b', '#3b82f6', '#10b981', '#64748b'];
+  // Use Premium colors for pie charts
+  const COLORS = ['#0f172a', '#d97706', '#2563eb', '#10b981', '#64748b'];
 
   useEffect(() => {
     fetchAnalytics();
@@ -29,23 +29,18 @@ const DashboardAnalytics = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const token = localStorage.getItem('token');
+      // ✅ Now uses the clean, centralized API call
+      const res = await api.get('/finance/analytics');
       
-      // FIX 1: URL Changed to '/api/finance/analytics' (Manager Endpoint)
-      const res = await axios.get('http://localhost:5000/api/finance/analytics', { 
-          withCredentials: true,
-          headers: {
-              'Authorization': `Bearer ${token}`
-          }
-      });
-      
-      if (res.data) {
+      const responseData = res.data.data || res.data; // Handles different backend wrapping structures
+
+      if (responseData) {
           setData({
-              revenue: res.data.revenue || [],
-              byHotel: res.data.byHotel || [],
-              byStatus: res.data.byStatus || [],
-              summary: res.data.summary || { totalBookings: 0, totalRevenue: 0, totalCommission: 0, netIncome: 0 },
-              hotelFinancials: res.data.hotelFinancials || []
+              revenue: responseData.revenue || [],
+              byHotel: responseData.byHotel || [],
+              byStatus: responseData.byStatus || [],
+              summary: responseData.summary || { totalBookings: 0, totalRevenue: 0, totalCommission: 0, netIncome: 0 },
+              hotelFinancials: responseData.hotelFinancials || []
           });
       }
     } catch (err) {
@@ -56,106 +51,90 @@ const DashboardAnalytics = () => {
   };
 
   const SummaryCard = ({ title, value, subtext, icon, color, bg }) => (
-    <div className="table-card" style={{ padding: '25px', display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <div style={{ background: bg, padding: '15px', borderRadius: '12px', color: color }}>
-            {icon}
-        </div>
+    <div className="analytics-card kpi-layout">
+        <div className="kpi-icon" style={{ background: bg, color: color }}>{icon}</div>
         <div>
-            <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem', fontWeight: 600 }}>{title}</p>
-            <h3 style={{ margin: '5px 0', fontSize: '1.8rem', fontWeight: 800, color: '#0f172a' }}>{value}</h3>
-            {subtext && <p style={{ margin: 0, fontSize: '0.8rem', color: color, fontWeight: 600 }}>{subtext}</p>}
+            <p className="kpi-title">{title}</p>
+            <h3 className="kpi-value">{value}</h3>
+            {subtext && <p className="kpi-subtext" style={{ color: color }}>{subtext}</p>}
         </div>
     </div>
   );
 
-  // FIX 2: Removed 'motion.div' animation on the container to prevent Ref issues with Recharts
-  // FIX 3: Added explicit inline style={{ width: '100%', height: '300px' }} for the wrapper
   const ChartCard = ({ title, icon, children }) => (
-    <div 
-      className="table-card"
-      style={{ padding: '30px', display: 'flex', flexDirection: 'column' }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '10px', color: '#0f172a' }}>
-                  {icon}
-              </div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color:'#0f172a' }}>{title}</h3>
+    <div className="analytics-card flex-col">
+      <div className="chart-header">
+          <div className="chart-title-group">
+              <div className="chart-icon-box">{icon}</div>
+              <h3>{title}</h3>
           </div>
       </div>
-      
-      {/* EXPLICIT HEIGHT CONTAINER FOR RECHARTS */}
-      <div style={{ width: '100%', height: '300px', minHeight: '300px' }}>
+      <div className="chart-render-area">
           {children}
       </div>
     </div>
   );
 
-  if (loading) return <div style={{padding:'50px', textAlign:'center'}}>Loading Analytics...</div>;
+  if (loading) return <div className="analytics-loading">Loading Analytics...</div>;
 
   return (
     <div className="analytics-page">
-      <div className="table-header-action table-card" style={{marginBottom: '30px'}}>
+      <div className="analytics-header-card">
         <div>
-           <h1 style={{fontSize: '1.5rem', fontWeight: 800, margin:0, color:'#0f172a'}}>Financial Reports</h1>
-           <p style={{color: '#64748b', margin:'5px 0 0'}}>Revenue, commissions, and performance metrics</p>
+           <h1>Financial Reports</h1>
+           <p>Revenue, commissions, and performance metrics</p>
         </div>
-        <button className="btn-secondary">
+        <button className="btn-export">
             <Download size={18} /> Export PDF
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+      <div className="analytics-grid-4">
           <SummaryCard 
              title="Total Revenue" 
              value={`$${(data.summary.totalRevenue || 0).toLocaleString()}`} 
              subtext="Gross from Bookings"
              icon={<DollarSign size={28} />}
-             color="#0f172a"
-             bg="#f1f5f9"
+             color="var(--color-dark)" bg="#f1f5f9"
           />
           <SummaryCard 
              title="Aurelia Commission" 
              value={`$${(data.summary.totalCommission || 0).toLocaleString()}`} 
              subtext="Platform Earnings"
              icon={<CreditCard size={28} />}
-             color="#f59e0b"
-             bg="#fffbeb"
+             color="var(--color-accent)" bg="#fffbeb"
           />
           <SummaryCard 
              title="Net Income" 
              value={`$${(data.summary.netIncome || 0).toLocaleString()}`} 
              subtext="Hotel Payouts"
              icon={<Wallet size={28} />}
-             color="#10b981"
-             bg="#ecfdf5"
+             color="#10b981" bg="#ecfdf5"
           />
           <SummaryCard 
              title="Total Bookings" 
              value={data.summary.totalBookings || 0} 
              subtext="Confirmed stays"
              icon={<Building2 size={28} />}
-             color="#3b82f6"
-             bg="#eff6ff"
+             color="var(--color-primary)" bg="#eff6ff"
           />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '30px', marginBottom: '30px' }}>
-        
+      <div className="analytics-grid-2">
         {/* REVENUE CHART */}
         <ChartCard title="Revenue Trends (Last 6 Months)" icon={<BarChart3 size={20}/>}>
            {data.revenue.length > 0 ? (
              <ResponsiveContainer width="100%" height="100%">
-               <BarChart data={data.revenue}>
-                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize:12}} dy={10} />
-                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize:12}} tickFormatter={val => `$${val}`} />
-                 <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '12px', border: 'none', background:'#0f172a', color:'#fff' }} />
-                 <Bar dataKey="value" fill="#0f172a" radius={[6, 6, 0, 0]} barSize={40} />
+               <BarChart data={data.revenue} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
+                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'var(--text-muted)', fontSize:12}} dy={10} />
+                 <YAxis axisLine={false} tickLine={false} tick={{fill: 'var(--text-muted)', fontSize:12}} tickFormatter={val => `$${val}`} />
+                 <Tooltip cursor={{fill: 'var(--color-background)'}} contentStyle={{ borderRadius: '12px', border: 'none', background:'var(--color-dark)', color:'white' }} />
+                 <Bar dataKey="value" fill="var(--color-dark)" radius={[6, 6, 0, 0]} barSize={40} />
                </BarChart>
              </ResponsiveContainer>
            ) : (
-             <div style={{display:'flex', alignItems:'center', justifyContent:'center', height:'100%', color:'#94a3b8'}}>No Revenue Data</div>
+             <div className="empty-chart">No Revenue Data</div>
            )}
         </ChartCard>
 
@@ -174,14 +153,12 @@ const DashboardAnalytics = () => {
                </PieChart>
              </ResponsiveContainer>
            ) : (
-             <div style={{display:'flex', alignItems:'center', justifyContent:'center', height:'100%', color:'#94a3b8'}}>No Hotel Data</div>
+             <div className="empty-chart">No Hotel Data</div>
            )}
         </ChartCard>
-
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '30px' }}>
-         
+      <div className="analytics-grid-2">
          {/* STATUS PIE CHART */}
          <ChartCard title="Booking Status" icon={<TrendingUp size={20}/>}>
             {data.byStatus.length > 0 ? (
@@ -193,7 +170,7 @@ const DashboardAnalytics = () => {
                         if (entry.name === 'confirmed') color = '#10b981';
                         if (entry.name === 'pending') color = '#f59e0b';
                         if (entry.name === 'cancelled') color = '#ef4444';
-                        if (entry.name === 'completed') color = '#3b82f6';
+                        if (entry.name === 'completed') color = '#2563eb';
                         return <Cell key={`cell-${index}`} fill={color} />;
                     })}
                     </Pie>
@@ -201,47 +178,46 @@ const DashboardAnalytics = () => {
                 </PieChart>
                 </ResponsiveContainer>
             ) : (
-                <div style={{display:'flex', alignItems:'center', justifyContent:'center', height:'100%', color:'#94a3b8'}}>No Status Data</div>
+                <div className="empty-chart">No Status Data</div>
             )}
          </ChartCard>
 
-         <div className="table-card" style={{ padding: '0', overflow: 'hidden', display:'flex', flexDirection:'column' }}>
-            <div style={{ padding: '25px', borderBottom: '1px solid #f1f5f9' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color:'#0f172a' }}>Property Performance</h3>
-                <p style={{ margin: '5px 0 0', fontSize: '0.85rem', color: '#64748b' }}>Revenue breakdown per hotel</p>
+         <div className="analytics-card no-pad flex-col">
+            <div className="prop-perf-header">
+                <h3>Property Performance</h3>
+                <p>Revenue breakdown per hotel</p>
             </div>
-            <div style={{ overflowX: 'auto' }}>
-                <table className="dashboard-table" style={{ width: '100%' }}>
+            <div className="table-responsive">
+                <table className="modern-table">
                     <thead>
-                        <tr style={{ textAlign: 'left', background: '#f8fafc' }}>
-                            <th style={{ padding: '15px 25px', fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>PROPERTY</th>
-                            <th style={{ padding: '15px 25px', fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>BOOKINGS</th>
-                            <th style={{ padding: '15px 25px', fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>REVENUE</th>
-                            <th style={{ padding: '15px 25px', fontSize: '0.8rem', color: '#f59e0b', fontWeight: 700 }}>COMMISSION</th>
-                            <th style={{ padding: '15px 25px', fontSize: '0.8rem', color: '#10b981', fontWeight: 700 }}>NET</th>
+                        <tr>
+                            <th>PROPERTY</th>
+                            <th>BOOKINGS</th>
+                            <th>REVENUE</th>
+                            <th>COMMISSION</th>
+                            <th>NET</th>
                         </tr>
                     </thead>
                     <tbody>
                         {data.hotelFinancials.length > 0 ? (
                             data.hotelFinancials.map((hotel, index) => (
-                                <tr key={index} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                    <td style={{ padding: '20px 25px', fontWeight: 600, color: '#0f172a' }}>{hotel.name}</td>
-                                    <td style={{ padding: '20px 25px', color: '#64748b' }}>{hotel.bookings}</td>
-                                    <td style={{ padding: '20px 25px', fontWeight: 700, color: '#0f172a' }}>${hotel.revenue.toLocaleString()}</td>
-                                    <td style={{ padding: '20px 25px', fontWeight: 600, color: '#f59e0b' }}>-${hotel.commission.toLocaleString()}</td>
-                                    <td style={{ padding: '20px 25px', fontWeight: 700, color: '#10b981' }}>
+                                <tr key={index}>
+                                    <td className="font-bold">{hotel.name}</td>
+                                    <td>{hotel.bookings}</td>
+                                    <td className="font-bold">${hotel.revenue.toLocaleString()}</td>
+                                    <td className="text-warning">-${hotel.commission.toLocaleString()}</td>
+                                    <td className="text-success font-bold">
                                         ${(hotel.revenue - hotel.commission).toLocaleString()}
                                     </td>
                                 </tr>
                             ))
                         ) : (
-                            <tr><td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>No data available</td></tr>
+                            <tr><td colSpan="5" className="empty-chart">No data available</td></tr>
                         )}
                     </tbody>
                 </table>
             </div>
          </div>
-
       </div>
     </div>
   );

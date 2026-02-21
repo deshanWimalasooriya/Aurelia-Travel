@@ -31,25 +31,32 @@ exports.addReview = async (req, res) => {
             is_approved: true
         };
 
-        // 3. Notify Manager
+        // 3. Save the Review
+        await reviewModel.create(reviewData);
+
+        // 4. ✅ RECALCULATE HOTEL RATING
+        await reviewModel.updateHotelRating(hotel_id);
+
+        // 5. ✅ NOTIFY THE MANAGER (Real-time Socket & DB)
         const hotel = await hotelModel.getById(hotel_id);
         if (hotel && hotel.manager_id) {
             await sendNotification(
-                hotel.manager_id,
-                "New Guest Review",
-                `Received ${rating}-star review for ${hotel.name}.`,
-                "info",
-                "/admin/reviews"
+                hotel.manager_id,                  // To the manager
+                "New Guest Review",                // Title
+                `Received a ${rating}-star review for ${hotel.name}.`, // Message
+                "info",                            // Blue info dot
+                "/admin/reviews"                   // Link to click
             );
         }
 
-        await reviewModel.create(reviewData);
         res.status(201).json({ success: true, message: "Review posted successfully" });
 
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
 };
+
+// ... (Keep your other existing functions: getHotelReviews, getManagerReviews, replyToReview) ...
 
 exports.getHotelReviews = async (req, res) => {
     try {
