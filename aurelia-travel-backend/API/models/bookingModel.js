@@ -10,49 +10,67 @@ const generateReference = () => {
 exports.createBooking = async (bookingData, paymentData) => {
     return await knex.transaction(async (trx) => {
         
-        // STEP A: Double-Check Availability (Locking)
-        // We query the inventory for the specific room and dates.
-        // .forUpdate() locks these rows so no one else can book them simultaneously.
-        const unavailableDays = await trx('room_availability')
+        // STEP A: Double-Check Availability (With Validation)
+        const checkAvailability = await trx('room_availability')
             .where('room_id', bookingData.room_id)
             .whereBetween('date', [bookingData.check_in, bookingData.check_out])
-            .andWhere('available_quantity', '<', 1) // If 0 left, it's taken
-            .forUpdate();
+            .orderBy('date', 'asc') // Prevents Deadlocks
+            .forUpdate();           // Locks Rows
 
-        if (unavailableDays.length > 0) {
+        // ✅ FIX 1: Prevent "Ghost" Bookings
+        // If the admin hasn't created these dates in the DB yet, we must stop.
+        if (checkAvailability.length === 0) {
+            throw new Error('Room configuration not found for these dates.');
+        }
+
+        // Logic Check: Filter for sold out days
+        const soldOutDays = checkAvailability.filter(day => day.available_quantity < 1);
+        if (soldOutDays.length > 0) {
             throw new Error('Room is no longer available for these dates.');
         }
 
         // STEP B: Decrement Inventory
-        // Reduce 'available_quantity' by 1 for every day of the stay
         await trx('room_availability')
             .where('room_id', bookingData.room_id)
             .whereBetween('date', [bookingData.check_in, bookingData.check_out])
             .decrement('available_quantity', 1);
 
         // STEP C: Insert Booking
-        const reference = generateReference();
+        // Generate Reference
+        const reference = typeof generateReference === 'function' 
+            ? generateReference() 
+            : `BK-${Date.now()}`;
+
+        // ✅ FIX 2: Dynamic Status (Prevent "False Paid" records)
+        // Only mark as 'confirmed'/'paid' if we actually have payment data.
+        const isPaid = !!paymentData; 
+
         const [bookingId] = await trx('bookings').insert({
             ...bookingData,
             booking_reference: reference,
-            status: 'confirmed', // Assuming payment succeeds immediately
-            payment_status: 'paid'
+            
+            // If paymentData exists -> 'confirmed'. If not -> 'pending_payment'
+            status: isPaid ? 'confirmed' : 'pending_payment', 
+            
+            // If paymentData exists -> 'paid'. If not -> 'unpaid'
+            payment_status: isPaid ? 'paid' : 'unpaid'
         });
 
-        // STEP D: Record Payment Transaction
-        if (paymentData) {
+        // STEP D: Record Payment Transaction (Only if payment exists)
+        if (isPaid) {
             await trx('payment_transactions').insert({
                 booking_id: bookingId,
                 user_id: bookingData.user_id,
-                transaction_id: paymentData.token_id, // Stripe/PayPal ID
+                transaction_id: paymentData.token_id, 
                 payment_provider: paymentData.provider,
                 amount: bookingData.total_price,
                 status: 'succeeded',
-                transaction_type: 'payment'
+                transaction_type: 'payment',
+                created_at: new Date()
             });
         }
 
-        return { bookingId, reference };
+        return { bookingId, reference, status: isPaid ? 'confirmed' : 'pending_payment' };
     });
 };
 
