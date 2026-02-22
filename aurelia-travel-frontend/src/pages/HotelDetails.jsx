@@ -506,42 +506,92 @@ const HotelDetails = () => {
       />
 
       {/* ROOM DETAILS MODAL */}
+      {/* ROOM DETAILS MODAL */}
       {viewingRoom && (
           <div className="room-modal-overlay" onClick={() => setViewingRoom(null)}>
               <div className="room-modal-content" onClick={e => e.stopPropagation()}>
-                  <button className="room-modal-close" onClick={() => setViewingRoom(null)}><X size={20}/></button>
+                  
+                  {/* Floating Top-Left Close Button */}
+                  <button className="room-modal-close" onClick={() => setViewingRoom(null)}>
+                      <X size={20}/>
+                  </button>
+
                   <div className="room-modal-scroll-area">
+                      
+                      {/* Hero Image & Gallery Button */}
                       <div className="room-modal-hero" style={{backgroundImage: `url('${currentRoomImages[0] || DEFAULT_IMAGE}')`}}>
                           <button className="view-gallery-btn" onClick={() => setIsRoomGalleryOpen(true)}>
-                              <ImageIcon size={16} /> View Photos
+                              <ImageIcon size={18} /> View Photos
                           </button>
                       </div>
+
                       <div className="room-modal-body">
+                          {/* Header: Title & Badge */}
                           <div className="room-modal-header">
                               <h2>{viewingRoom.title}</h2>
                               <span className="room-type-badge">{viewingRoom.room_type}</span>
                           </div>
-                          <div className="room-modal-description" dangerouslySetInnerHTML={{ __html: viewingRoom.description }} />
+
+                          {/* 2x2 Features Grid (Matches Screenshot) */}
                           <div className="room-features-grid">
-                              <div className="feature-item"><Users size={20}/> {viewingRoom.max_adults} Adults, {viewingRoom.max_children} Kids</div>
-                              <div className="feature-item"><Maximize size={20}/> {viewingRoom.size_sqm || '-'} m²</div>
-                              <div className="feature-item"><Bed size={20}/> {viewingRoom.bed_type || 'Double Bed'}</div>
-                              <div className="feature-item"><Mountain size={20}/> {viewingRoom.view_type || 'Standard View'}</div>
+                              <div className="feature-item">
+                                  <Users size={22}/> 
+                                  <span>{viewingRoom.max_adults} Adults, {viewingRoom.max_children} Kids</span>
+                              </div>
+                              <div className="feature-item">
+                                  <Maximize size={22}/> 
+                                  <span>{viewingRoom.size_sqm || '- '} m²</span>
+                              </div>
+                              <div className="feature-item">
+                                  <Bed size={22}/> 
+                                  <span>{viewingRoom.bed_type || 'King'}</span>
+                              </div>
+                              <div className="feature-item">
+                                  <Mountain size={22}/> 
+                                  <span>{viewingRoom.view_type || 'City'}</span>
+                              </div>
                           </div>
+
+                          {/* Amenities Pills (Green for yes, Red for no) */}
                           <div className="room-amenities-list">
-                              {viewingRoom.has_breakfast ? <span className="modal-pill"><Coffee size={16}/> Breakfast Included</span> : null}
-                              {viewingRoom.is_refundable ? <span className="modal-pill"><Check size={16}/> Free Cancellation</span> : null}
-                              {viewingRoom.smoking_allowed ? <span className="modal-pill"><Check size={16}/> Smoking Allowed</span> : <span className="modal-pill"><Ban size={16} className="ban-icon"/> Non-Smoking</span>}
+                              {viewingRoom.has_breakfast && (
+                                  <span className="modal-pill green">
+                                      <Coffee size={16} /> Breakfast Included
+                                  </span>
+                              )}
+                              
+                              {viewingRoom.is_refundable && (
+                                  <span className="modal-pill green">
+                                      <Check size={16} /> Free Cancellation
+                                  </span>
+                              )}
+                              
+                              {viewingRoom.smoking_allowed ? (
+                                  <span className="modal-pill green">
+                                      <Check size={16} /> Smoking Allowed
+                                  </span>
+                              ) : (
+                                  <span className="modal-pill red">
+                                      <Ban size={16} /> Non-Smoking
+                                  </span>
+                              )}
                           </div>
+                          
+                          {/* Description (Pushed below the grid and pills to match the clean layout) */}
+                          {viewingRoom.description && (
+                              <div className="room-modal-description" dangerouslySetInnerHTML={{ __html: viewingRoom.description }} />
+                          )}
                       </div>
                   </div>
+
+                  {/* Sticky Footer: Pricing & Action Button */}
                   <div className="room-modal-footer">
                       <div className="modal-price">
                           <span className="amount">${viewingRoom.base_price_per_night}</span>
                           <span className="text">per night</span>
                       </div>
                       <button 
-                          className="modal-select-btn"
+                          className={`modal-select-btn ${selectedRoomId === viewingRoom.id ? 'selected' : ''}`}
                           onClick={() => {
                               handleRoomSelect(viewingRoom.id);
                               setViewingRoom(null); 
