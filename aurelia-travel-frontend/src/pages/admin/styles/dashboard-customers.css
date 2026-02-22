@@ -1,0 +1,53 @@
+/* src/pages/admin/styles/dashboard-customers.css */
+:root {
+  --dh-bg: #f8fafc;
+  --dh-surface: #ffffff;
+  --dh-text-main: #0f172a;
+  --dh-text-muted: #64748b;
+  --dh-border: #e2e8f0;
+  --dh-radius: 8px;
+  --dh-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.customers-dashboard-wrapper {
+  color: var(--dh-text-main);
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* GRID */
+.customer-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.customer-card {
+  background: var(--dh-surface); padding: 30px 20px; border-radius: 16px;
+  text-align: center; border: 1px solid var(--dh-border); box-shadow: var(--dh-shadow);
+  transition: all 0.2s; cursor: pointer; position: relative;
+}
+
+.card-header-badge {
+  position: absolute; top: 16px; right: 16px; padding: 4px 10px;
+  border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  display: flex; align-items: center; gap: 4px;
+}
+
+.customer-avatar-large {
+  width: 80px; height: 80px; margin: 0 auto 16px; border-radius: 50%;
+  background: #f1f5f9; display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; overflow: hidden; font-weight: 700; color: var(--dh-text-muted);
+}
+.customer-avatar-large img { width: 100%; height: 100%; object-fit: cover; }
+
+.customer-name { margin: 0 0 4px; font-size: 1.1rem; color: var(--dh-text-main); font-weight: 700; }
+.customer-email { margin: 0 0 24px; color: var(--dh-text-muted); font-size: 0.9rem; }
+
+.customer-stats-bar {
+    display: flex; justify-content: space-between; background: #f8fafc;
+    padding: 12px; border-radius: 12px; border: 1px solid var(--dh-border);
+}
+.stat-block { flex: 1; text-align: center; }
+.stat-label { font-size: 0.75rem; color: var(--dh-text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
+.stat-num { font-size: 1.1rem; font-weight: 800; color: var(--dh-text-main); }
+.text-success { color: #16a34a; }
+.stat-divider { width: 1px; background: var(--dh-border); }

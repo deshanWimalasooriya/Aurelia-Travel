@@ -1,129 +1,228 @@
-import { useState, useEffect } from 'react'
-import axios from 'axios'
-import HotelCard from '../components/ui/HotelCard'
-import SearchForm from '../components/ui/SearchForm'
-import Slider from '../components/ui/Slider'
-import Stats from '../components/ui/Stats'
-import './styles/Home.css'
+import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import Slider from '../components/ui/Slider';
+import api from '../services/api'; // ✨ Import your API service
+import './styles/Home.css';
+
+// ✨ FORMATTER FUNCTION (Handles K and M conversions)
+const formatStatNumber = (num) => {
+    if (!num) return "0";
+    if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M+';
+    if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K+';
+    return num.toString() + '+';
+};
 
 const Home = () => {
-  const [topRatedHotels, setTopRatedHotels] = useState([])
-  const [newestHotels, setNewestHotels] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [showIntro, setShowIntro] = useState(true);
   
-  // New State for the Cinematic Intro
-  const [showIntro, setShowIntro] = useState(true)
+  // ✨ STATE FOR LIVE STATS
+  const [stats, setStats] = useState({
+      users: 0,
+      hotels: 0,
+      locations: 154, // Example Data
+      transports: 42  // Example Data
+  });
+  
+  // Scroll Reveal Logic
+  const revealRefs = useRef([]);
+  const addToRefs = (el) => {
+    if (el && !revealRefs.current.includes(el)) {
+      revealRefs.current.push(el);
+    }
+  };
 
   useEffect(() => {
-    // 1. Fetch Data
-    const fetchHotels = async () => {
-      try {
-        setError(null)
-        console.log('🔍 Fetching hotels from backend...')
-        
-        const [topRatedRes, newestRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/hotels/top-rated'),
-          axios.get('http://localhost:5000/api/hotels/newest')
-        ])
-        
-        setTopRatedHotels(Array.isArray(topRatedRes.data) ? topRatedRes.data : topRatedRes.data.data || [])
-        setNewestHotels(Array.isArray(newestRes.data) ? newestRes.data : newestRes.data.data || [])
-        
-      } catch (err) {
-        console.error('❌ Error fetching hotels:', err)
-        setError(err.response?.data?.message || 'Failed to load hotels')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchHotels()
-
-    // 2. Handle the 2-Second Intro Timer
+    // 1. Cinematic Timer
     const timer = setTimeout(() => {
-        setShowIntro(false)
-    }, 2500); // 2.5s total (2s display + 0.5s fade out buffer)
+        setShowIntro(false);
+    }, 2500); 
 
-    return () => clearTimeout(timer)
-  }, [])
+    // 2. Scroll Observer Setup
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      },
+      { threshold: 0.1 } 
+    );
 
-  // --- RENDER ---
+    revealRefs.current.forEach((el) => observer.observe(el));
+
+    // ✨ 3. FETCH LIVE PLATFORM STATS
+    const fetchStats = async () => {
+        try {
+            // Using the public route we discussed earlier
+            const res = await api.get('/platform/stats/public');
+            if (res.data && res.data.success) {
+                setStats(prev => ({
+                    ...prev,
+                    users: res.data.data.users,
+                    hotels: res.data.data.hotels
+                }));
+            }
+        } catch (err) {
+            console.error("Failed to fetch live stats", err);
+        }
+    };
+    
+    fetchStats();
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [showIntro]);
 
   return (
     <>
-      {/* CINEMATIC PRELOADER */}
+      {/* --- CINEMATIC PRELOADER --- */}
       <div className={`preloader-overlay ${!showIntro ? 'fade-out' : ''}`}>
           <div className="brand-container">
-              {/* This text now has the Gradient + Light Shine animation */}
               <h1 className="brand-text">Aurelia Travel</h1>
               <span className="brand-subtext">Discover the world</span>
           </div>
       </div>
 
-      {/* MAIN CONTENT (Blurred Background) */}
-      <div className={`min-h-screen content-wrapper ${showIntro ? 'blurred' : 'clear'}`}>
-
-        {/* (Just for context - keep your existing Slider, SearchForm, etc here) */}
-        <section className="hero">
-             <Slider />
+      {/* --- MAIN CONTENT --- */}
+      <div className={`content-wrapper ${showIntro ? 'blurred' : 'clear'}`}>
+        
+        {/* SECTION 1: HERO - The Hook */}
+        <header className="hero-section">
+             <div className="hero-bg"><Slider /></div>
+             <div className="hero-overlay"></div>
+             
              <div className="hero-content">
-               <div className="hero-text">
-                 <h1>Discover Your Perfect Stay</h1>
-                 <p>Book luxury hotels, resorts and more at unbeatable prices</p>
-                 <SearchForm />
+               <div className="animate-hero-text">
+                 <h1 className="hero-title">
+                   Stop Planning.<br />
+                   <span className="gradient-text">Start Traveling.</span>
+                 </h1>
+                 <p className="hero-subtitle">
+                   The world's first AI-powered travel concierge designed for the busy professional. 
+                   Recover your time. We handle the details.
+                 </p>
+                 <div className="hero-cta-group">
+                    <Link to="/travel-plan" className="btn-primary-glow">Generate My Trip</Link>
+                    <a href="#how-it-works" className="btn-secondary-outline">How it Works</a>
+                 </div>
                </div>
              </div>
+             
+             {/* Scroll Down Indicator */}
+             <div className="scroll-indicator">
+                <span>Explore</span>
+                <div className="mouse"></div>
+             </div>
+        </header>
+
+        {/* ✨ SECTION 1.5: FLOATING GLASS STATS */}
+        <section className="stats-glass-section" ref={addToRefs}>
+            <div className="container">
+                <div className="stats-glass-panel">
+                    <div className="stat-glass-item">
+                        <h3 className="stat-number gradient-text">{formatStatNumber(stats.users)}</h3>
+                        <p className="stat-label">Happy Travelers</p>
+                    </div>
+                    <div className="stat-glass-item">
+                        <h3 className="stat-number gradient-text">{formatStatNumber(stats.hotels)}</h3>
+                        <p className="stat-label">Premium Properties</p>
+                    </div>
+                    <div className="stat-glass-item">
+                        <h3 className="stat-number gradient-text">{formatStatNumber(stats.locations)}</h3>
+                        <p className="stat-label">Global Destinations</p>
+                    </div>
+                    <div className="stat-glass-item">
+                        <h3 className="stat-number gradient-text">{formatStatNumber(stats.transports)}</h3>
+                        <p className="stat-label">Transport Options</p>
+                    </div>
+                </div>
+            </div>
         </section>
 
-        <section className="listings">
-          <div className="container">
-            <Stats />
-            
-            {/* Top Rated Hotels */}
-            <section>
-              <h2>Top Rated Hotels</h2>
-              {loading && !showIntro ? (
-                  // Small fallback spinner if API is slower than the 2s intro
-                  <div className="text-center py-8">Loading amazing stays...</div>
-              ) : error ? (
-                <div className="text-center py-8">
-                  <p className="text-red-500 mb-4">{error}</p>
-                  <button onClick={() => window.location.reload()} className="bg-blue-500 text-white px-4 py-2 rounded">
-                    Retry
-                  </button>
+        {/* SECTION 2: THE "WHY" */}
+        <section className="features-section">
+            <div className="container">
+                <div className="section-header" ref={addToRefs}>
+                    <span className="badge">THE PROBLEM</span>
+                    <h2>Planning a trip takes 30+ hours. <br/>We do it in 30 seconds.</h2>
                 </div>
-              ) : topRatedHotels.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No top rated hotels found</p>
-              ) : (
-                <div className="hotel-grid">
-                  {topRatedHotels.slice(0, 8).map((hotel) => (
-                    <HotelCard key={hotel.id} hotel={hotel} />
-                  ))}
-                </div>
-              )}
-            </section>
 
-            {/* Newest Hotels */}
-            <section>
-              <h2>New Hotels</h2>
-              {loading && !showIntro ? (
-                  <div className="text-center py-8">Loading...</div>
-              ) : topRatedHotels.length === 0 && newestHotels.length === 0 && !error ? (
-                <p className="text-gray-500 text-center py-8">No new hotels found</p>
-              ) : (
-                <div className="hotel-grid">
-                  {newestHotels.slice(0, 8).map((hotel) => (
-                    <HotelCard key={hotel.id} hotel={hotel} />
-                  ))}
+                <div className="feature-grid">
+                    <div className="feature-card" ref={addToRefs}>
+                        <div className="icon-box">🧠</div>
+                        <h3>AI-Driven Personalization</h3>
+                        <p>Our algorithms learn your preferences to curate hotels and activities that match your specific taste, not generic lists.</p>
+                    </div>
+                    
+                    <div className="feature-card" ref={addToRefs}>
+                        <div className="icon-box">⚡</div>
+                        <h3>Instant Itineraries</h3>
+                        <p>Forget spreadsheets. Get a day-by-day plan optimized for logistics, opening times, and your energy levels.</p>
+                    </div>
+
+                    <div className="feature-card" ref={addToRefs}>
+                        <div className="icon-box">💎</div>
+                        <h3>Exclusive Access</h3>
+                        <p>We aggregate premium stays and hidden gems that standard booking engines often miss.</p>
+                    </div>
                 </div>
-              )}
-            </section>
-          </div>
+            </div>
         </section>
+
+        {/* SECTION 3: IMMERSIVE PARALLAX BANNER */}
+        <section className="parallax-banner" ref={addToRefs}>
+            <div className="parallax-overlay"></div>
+            <div className="parallax-content">
+                <h2>"Time is the only luxury you can't buy back."</h2>
+                <p>Don't waste it scrolling through reviews.</p>
+            </div>
+        </section>
+
+        {/* SECTION 4: HOW IT WORKS */}
+        <section id="how-it-works" className="steps-section">
+            <div className="container">
+                <div className="section-header" ref={addToRefs}>
+                    <span className="badge">THE PROCESS</span>
+                    <h2>Your Journey in 3 Steps</h2>
+                </div>
+                
+                <div className="steps-row">
+                    <div className="step-item" ref={addToRefs}>
+                        <div className="step-number">01</div>
+                        <h4>Tell us your vibe</h4>
+                        <p>Select your dates and style (Relaxed, Adventure, Business).</p>
+                    </div>
+                    <div className="step-line"></div>
+                    <div className="step-item" ref={addToRefs}>
+                        <div className="step-number">02</div>
+                        <h4>AI Generation</h4>
+                        <p>Our engine scans 10,000+ data points to build your plan.</p>
+                    </div>
+                    <div className="step-line"></div>
+                    <div className="step-item" ref={addToRefs}>
+                        <div className="step-number">03</div>
+                        <h4>Pack & Go</h4>
+                        <p>Book hotels and activities instantly with one click.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {/* SECTION 5: FINAL CTA */}
+        <section className="final-cta-section">
+            <div className="cta-content" ref={addToRefs}>
+                <h2>Ready to upgrade your travel experience?</h2>
+                <p>Join thousands of smart travelers using Aurelia.</p>
+                <Link to="/travel-plan" className="btn-white-shine">Start Free Trial</Link>
+            </div>
+        </section>
+
       </div>
     </>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;

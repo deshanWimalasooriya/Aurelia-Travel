@@ -1,0 +1,61 @@
+.lc-floating-btn {
+    position: fixed; bottom: 40px; right: 40px; width: 60px; height: 60px;
+    background: var(--color-primary); color: white; border: none; border-radius: 50%;
+    cursor: pointer; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4); z-index: 9999;
+    display: flex; align-items: center; justify-content: center; transition: var(--transition-smooth);
+}
+.lc-floating-btn:hover { transform: scale(1.1); }
+
+.lc-widget-container {
+    position: fixed; bottom: 40px; right: 40px; width: 360px; height: 550px;
+    background: white; border-radius: var(--radius-lg); box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+    border: 1px solid #e2e8f0; display: flex; flex-direction: column; z-index: 9999; overflow: hidden;
+}
+
+.lc-header {
+    background: linear-gradient(135deg, var(--color-dark) 0%, var(--color-primary) 100%);
+    color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center;
+}
+.lc-header-info { display: flex; align-items: center; gap: 12px; }
+.lc-avatar { width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; position: relative; }
+.online-dot { position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; background: #10b981; border: 2px solid var(--color-primary); border-radius: 50%; }
+.lc-header h4 { margin: 0 0 4px; font-size: 1rem; font-weight: 800; }
+.lc-header p { margin: 0; font-size: 0.75rem; opacity: 0.9; }
+.lc-close { background: rgba(255,255,255,0.1); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+.lc-close:hover { background: rgba(255,255,255,0.3); }
+
+.lc-body { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background: #f8fafc; }
+.lc-welcome-msg { text-align: center; font-size: 0.8rem; color: #94a3b8; margin-bottom: 10px; }
+
+.lc-bubble-wrapper { display: flex; flex-direction: column; max-width: 85%; }
+.lc-bubble-wrapper.support { align-self: flex-start; }
+.lc-bubble-wrapper.me { align-self: flex-end; align-items: flex-end; }
+.lc-bubble { padding: 12px 16px; font-size: 0.95rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+.support .lc-bubble { background: white; color: var(--color-dark); border-radius: 16px 16px 16px 4px; border: 1px solid #e2e8f0; }
+.me .lc-bubble { background: var(--color-primary); color: white; border-radius: 16px 16px 4px 16px; }
+.lc-time { font-size: 0.7rem; color: #94a3b8; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+
+.lc-footer { padding: 16px; background: white; border-top: 1px solid #e2e8f0; display: flex; align-items: center; gap: 12px; }
+.lc-attach { background: none; border: none; color: #94a3b8; cursor: pointer; }
+.lc-footer input { flex: 1; border: none; outline: none; font-size: 0.95rem; }
+.lc-send { background: var(--color-primary); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.lc-send:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+/* ✅ Unread Badge for Floating Button */
+.lc-unread-badge {
+    position: absolute; 
+    top: -5px; 
+    right: -5px; 
+    background: #ef4444; 
+    color: white;
+    font-size: 0.75rem; 
+    font-weight: 800; 
+    width: 22px; 
+    height: 22px; 
+    border-radius: 50%;
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    border: 2px solid white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}

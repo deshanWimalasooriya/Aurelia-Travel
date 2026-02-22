@@ -1,153 +1,388 @@
-/* LoginRegister.css */
+/* =========================================
+   AUTHENTICATION PAGE STYLES
+   ========================================= */
 
-/* 1. Main Container - Centers the card on the screen */
-.auth-container {
-  min-height: 100vh;
+.auth-page-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f0f4f8; /* Light blue-grey background */
-  padding: 20px;
+  min-height: calc(100vh - 76px); /* Account for header height */
+  padding: 40px 20px;
+  background-color: var(--color-background);
 }
 
-/* 2. The Auth Card */
-.auth-card {
-  background: #ffffff;
-  width: 100%;
-  max-width: 420px;
-  padding: 2.5rem;
-  border-radius: 16px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 
-              0 8px 10px -6px rgba(0, 0, 0, 0.01);
-  transition: all 0.3s ease;
-}
-
-/* 3. Header Section (Title + Toggle Button) */
-.auth-header {
-  margin-bottom: 2rem;
-  text-align: center;
-}
-
-.auth-title {
-  font-size: 1.875rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 0.5rem;
-}
-
-.auth-toggle {
-  margin-top: 0.5rem;
-}
-
-/* 4. Form Layout */
-.auth-form {
+.auth-card-container {
   display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #64748b;
-  margin-left: 2px;
-}
-
-.form-input {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  font-size: 1rem;
-  color: #334155;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  background-color: #f8fafc;
+  max-width: 1000px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+  min-height: 650px;
+  position: relative;
+  border: 1px solid var(--border-subtle);
 }
 
-/* Input Focus State */
-.form-input:focus {
-  outline: none;
-  border-color: #3b82f6; /* Primary Blue */
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  background-color: #fff;
-}
-
-/* 5. Error Message */
-.auth-error {
-  background-color: #fef2f2;
-  border: 1px solid #fee2e2;
-  color: #ef4444;
-  padding: 0.75rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  text-align: center;
-}
-
-/* 6. Action Buttons Container */
-.auth-actions {
-  margin-top: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-/* 7. Primary Submit Button */
-.btn-primary {
-  width: 100%;
-  padding: 0.875rem;
-  border-radius: 8px;
-  border: none;
-  background-color: #3b82f6; /* Primary Blue */
+/* --- LEFT SIDE: VISUALS --- */
+.auth-visual-side {
+  width: 50%;
+  background-image: url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center;
+  position: relative;
   color: white;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
 }
 
-.btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
+.visual-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(15, 23, 42, 0.4), var(--color-dark));
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.btn-primary:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
+.visual-tag {
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    font-weight: 700;
+    opacity: 0.8;
+    color: var(--color-accent);
 }
 
-/* 8. Secondary "Pill" Buttons (Toggle & Clear) */
-.pill {
-  background: transparent;
-  border: none;
-  color: #3b82f6;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  border-radius: 9999px; /* Fully rounded pill shape */
-  transition: background-color 0.2s, color 0.2s;
+.visual-heading {
+    font-size: 2.5rem;
+    line-height: 1.1;
+    font-weight: 800;
+    margin-bottom: 15px;
+    color: var(--color-surface);
 }
 
-.pill:hover {
-  background-color: #eff6ff;
-  text-decoration: underline;
+.visual-subtext {
+    font-size: 1rem;
+    opacity: 0.9;
+    line-height: 1.6;
+    max-width: 90%;
 }
 
-/* Specific adjustment for the 'Clear' button to make it look subtle */
-.auth-actions .pill {
-  color: #64748b;
-  font-size: 0.875rem;
-  width: fit-content;
-  align-self: center; /* Center the clear button */
+.glass-testimonial {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 24px;
+    border-radius: var(--radius-md);
+    margin-top: auto;
 }
 
-.auth-actions .pill:hover {
-  color: #ef4444; /* Turn red on hover for 'Clear' */
-  background-color: #fef2f2;
-  text-decoration: none;
+.quote-text {
+    font-style: italic;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 15px;
+    opacity: 0.95;
+}
+
+.quote-author {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.author-avatar {
+    width: 36px;
+    height: 36px;
+    background: var(--color-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.author-name {
+    display: block;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.author-role {
+    display: block;
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+/* --- RIGHT SIDE: FORM --- */
+.auth-form-side {
+  width: 50%;
+  padding: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow-y: auto;
+  background-color: var(--color-surface);
+}
+
+.form-header h2 {
+    font-size: 1.8rem;
+    color: var(--color-dark);
+    margin-bottom: 8px;
+    font-weight: 800;
+}
+
+.sub-header {
+    color: var(--text-muted);
+    margin-bottom: 30px;
+    font-size: 0.95rem;
+}
+
+/* Social Buttons */
+.social-login-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--color-surface);
+    border: 1px solid #cbd5e1;
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.social-btn:hover {
+    background: var(--color-background);
+    border-color: var(--text-muted);
+}
+
+/* Divider */
+.divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 25px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.divider span {
+    padding: 0 10px;
+}
+
+/* --- FORM INPUTS --- */
+.modern-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.input-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+    z-index: 10;
+}
+
+.modern-input.with-icon {
+    padding-left: 45px;
+}
+
+.modern-input:focus + .input-icon {
+    color: var(--color-primary);
+}
+
+.password-toggle {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.password-toggle:hover { color: var(--text-main); }
+
+/* Checkbox & Options */
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.checkbox-label input { display: none; }
+
+.checkbox-custom {
+    width: 18px;
+    height: 18px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-smooth);
+    background: white;
+}
+
+.checkbox-label input:checked + .checkbox-custom {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.checkbox-label input:checked + .checkbox-custom::after {
+    content: '✓';
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.link-btn-small {
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    font-weight: 600;
+    cursor: pointer;
+}
+.link-btn-small:hover { text-decoration: underline; }
+
+/* Submit Button */
+.submit-btn-animated {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--color-dark);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    margin-top: 10px;
+}
+
+.submit-btn-animated:hover {
+    background: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.submit-btn-animated:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Bottom Text */
+.bottom-text {
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-top: 10px;
+}
+
+.link-btn-text {
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 5px;
+}
+
+.link-btn-text:hover { text-decoration: underline; }
+
+/* Error Banner */
+.error-banner {
+    background: #fef2f2;
+    color: #ef4444;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #fecaca;
+    font-weight: 500;
+}
+
+/* Animation */
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-in-element {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .auth-card-container {
+        flex-direction: column;
+        max-width: 500px;
+        min-height: auto;
+    }
+    .auth-visual-side {
+        width: 100%;
+        height: 250px;
+    }
+    .visual-subtext, .glass-testimonial {
+        display: none;
+    }
+    .auth-form-side {
+        width: 100%;
+        padding: 40px 24px;
+    }
 }

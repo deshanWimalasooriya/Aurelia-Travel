@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, Wallet, Car, CloudRain, AlertTriangle, Clock } from 'lucide-react';
-import './styles/plannerContainer.css'; // Ensure path is correct
+import './styles/plannerContainer.css';
 
-// ACCEPT NEW PROP: onSubmit (Optional)
 const PlannerContainer = ({ onSubmit }) => {
   const navigate = useNavigate();
 
@@ -33,14 +32,13 @@ const PlannerContainer = ({ onSubmit }) => {
   return (
     <div className="planner-container">
       <form className="planner-card" onSubmit={handleGenerate}>
-        {/* ... Inputs remain exactly the same ... */}
         
         {/* Starting Location */}
         <div className="input-group">
-          <label><MapPin size={18} /> Starting From</label>
+          <label><MapPin size={16} /> Starting From</label>
           <input 
             type="text" 
-            placeholder="Enter City" 
+            placeholder="e.g. Colombo, Sri Lanka" 
             value={formData.startLocation}
             onChange={(e) => setFormData({...formData, startLocation: e.target.value})}
             required
@@ -50,7 +48,7 @@ const PlannerContainer = ({ onSubmit }) => {
         {/* Date & Vehicle */}
         <div className="input-row">
           <div className="input-group">
-            <label><Clock size={18} /> Start Date</label>
+            <label><Clock size={16} /> Start Date</label>
             <input 
               type="datetime-local" 
               value={formData.startDate}
@@ -60,13 +58,13 @@ const PlannerContainer = ({ onSubmit }) => {
           </div>
 
           <div className="input-group">
-            <label><Car size={18} /> Vehicle</label>
+            <label><Car size={16} /> Transportation</label>
             <select 
               value={formData.hasVehicle}
               onChange={(e) => setFormData({...formData, hasVehicle: e.target.value})}
             >
-              <option value="no">Need Vehicle</option>
-              <option value="yes">Have Vehicle</option>
+              <option value="no">Need Vehicle Arranged</option>
+              <option value="yes">Have Own Vehicle</option>
             </select>
           </div>
         </div>
@@ -74,22 +72,22 @@ const PlannerContainer = ({ onSubmit }) => {
         {/* Duration & Budget */}
         <div className="input-row">
           <div className="input-group">
-            <label><Calendar size={18} /> Duration</label>
+            <label><Calendar size={16} /> Duration</label>
             <select 
               value={formData.duration}
               onChange={(e) => setFormData({...formData, duration: e.target.value})}
             >
-              <option value={1}>1 Day</option>
-              <option value={2}>2 Days</option>
-              <option value={3}>3 Days</option>
+              <option value={1}>1 Day Break</option>
+              <option value={2}>2 Days Weekend</option>
+              <option value={3}>3 Days Extended</option>
             </select>
           </div>
 
           <div className="input-group">
-            <label><Wallet size={18} /> Budget</label>
+            <label><Wallet size={16} /> Total Budget (LKR)</label>
             <input 
               type="number" 
-              placeholder="LKR" 
+              placeholder="e.g. 50000" 
               value={formData.budget}
               onChange={(e) => setFormData({...formData, budget: e.target.value})}
               required
@@ -99,7 +97,7 @@ const PlannerContainer = ({ onSubmit }) => {
 
         {/* Pace Selection */}
         <div className="pace-selector">
-          <label>Trip Pace</label>
+          <label>Desired Trip Pace</label>
           <div className="pace-options">
             {['Adrenaline', 'Chill', 'Cultural'].map(p => (
               <button 
@@ -115,17 +113,17 @@ const PlannerContainer = ({ onSubmit }) => {
         </div>
 
         <button type="submit" className="generate-btn">
-          {onSubmit ? "Add to Current Trip" : "Generate My Travel Plan"}
+          {onSubmit ? "Add to Current Trip" : "Generate Itinerary"}
         </button>
       </form>
 
-      {/* Sidebar - HIDDEN in Popup Mode to save space (Optional) */}
+      {/* Sidebar - HIDDEN in Popup Mode to save space */}
       {!onSubmit && (
         <aside className="safety-sidebar">
-          <h3><CloudRain size={20} /> Smart Insights</h3>
+          <h3><CloudRain size={20} className="icon-primary"/> Smart Insights</h3>
           <div className="insight-item">
-            <AlertTriangle className="warning-icon" />
-            <p>Risk Check: Weather & Road Closures</p>
+            <AlertTriangle className="warning-icon" size={20} />
+            <p><strong>Real-time Check:</strong> Weather patterns and road closures will be factored into your routing.</p>
           </div>
         </aside>
       )}

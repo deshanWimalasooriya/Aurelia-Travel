@@ -1,216 +1,203 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import axios from 'axios'
+import api from '../services/api'
 import HotelCard from '../components/ui/HotelCard'
+import SkeletonCard from '../components/ui/SkeletonCard'
 import SearchForm from '../components/ui/SearchForm'
-import { Filter, Search } from 'lucide-react' // Clean icons
-import './styles/HotelPage.css'
+import { Filter, SlidersHorizontal, X } from 'lucide-react'
+import './styles/hotelPage.css'
 
 const HotelPage = () => {
+  // ... (Keep existing states) ...
   const [searchParams] = useSearchParams();
-  
-  // Data States
-  const [hotels, setHotels] = useState([]) 
+  const [allHotels, setAllHotels] = useState([])
+  const [topHotels, setTopHotels] = useState([]) 
+  const [newHotels, setNewHotels] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  // Filter States
-  const [selectedFilters, setSelectedFilters] = useState([])
-  const [availableAmenities, setAvailableAmenities] = useState([]) 
-  const [amenityCounts, setAmenityCounts] = useState({}) // Stores count: { "Pool": 5, "WiFi": 10 }
   
-  // Price States
-  const [priceRange, setPriceRange] = useState(1000) 
-  const [maxPriceLimit, setMaxPriceLimit] = useState(1000)
+  const [selectedFilters, setSelectedFilters] = useState([]) 
+  const [availableAmenities, setAvailableAmenities] = useState([])
+  const [amenityCounts, setAmenityCounts] = useState({})
+  
+  const [priceRange, setPriceRange] = useState([0, 50000]) 
+  const [maxPriceLimit, setMaxPriceLimit] = useState(50000)
+  const [minRating, setMinRating] = useState(0)
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
 
-  // --- 1. FETCH DATA ---
   useEffect(() => {
-    const fetchHotels = async () => {
+    const fetchData = async () => {
       try {
-        setLoading(true)
-        const [topRes, newRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/hotels/top-rated'),
-          axios.get('http://localhost:5000/api/hotels/newest')
-        ])
+        setLoading(true);
+        const [allRes, topRes, newRes] = await Promise.all([
+          api.get('/hotels'),
+          api.get('/hotels/top-rated'),
+          api.get('/hotels/newest')
+        ]);
 
-        // Combine & Deduplicate
-        const allFetched = [...(topRes.data.data || topRes.data), ...(newRes.data.data || newRes.data)];
-        const uniqueHotels = Array.from(new Map(allFetched.map(item => [item.id || item._id, item])).values());
-        
-        setHotels(uniqueHotels)
+        const allData = Array.isArray(allRes.data) ? allRes.data : (allRes.data.data || []);
+        const topData = Array.isArray(topRes.data) ? topRes.data : (topRes.data.data || []);
+        const newData = Array.isArray(newRes.data) ? newRes.data : (newRes.data.data || []);
 
-        // --- DYNAMIC DATA EXTRACTION ---
-        const allAmenities = new Set();
+        setAllHotels(allData);
+        setTopHotels(topData.slice(0, 5));
+        setNewHotels(newData.slice(0, 5));
+
+        const highestPrice = Math.max(...allData.map(h => parseFloat(h.base_price_per_night || h.price || 0)));
+        if(highestPrice > 0) {
+            setMaxPriceLimit(highestPrice);
+            setPriceRange([0, highestPrice]); 
+        }
+
         const counts = {};
-        let highestPrice = 0;
-
-        uniqueHotels.forEach(h => {
-             // 1. Process Price
-             if (h.price > highestPrice) highestPrice = h.price;
-
-             // 2. Process Amenities
-             const list = Array.isArray(h.amenities) ? h.amenities : (h.amenities || '').split(',');
-             list.forEach(rawA => {
-                 const a = rawA.trim();
-                 if(a) {
-                     allAmenities.add(a);
-                     counts[a] = (counts[a] || 0) + 1;
-                 }
-             });
+        const uniqueAmenities = new Set();
+        allData.forEach(hotel => {
+            const list = Array.isArray(hotel.amenities) ? hotel.amenities : [];
+            list.forEach(a => {
+                const name = typeof a === 'string' ? a : a.name;
+                if (name) {
+                    uniqueAmenities.add(name);
+                    counts[name] = (counts[name] || 0) + 1;
+                }
+            });
         });
-
-        setAvailableAmenities(Array.from(allAmenities).sort());
+        setAvailableAmenities(Array.from(uniqueAmenities).sort());
         setAmenityCounts(counts);
-        
-        // Add buffer to max price
-        const limit = Math.ceil(highestPrice + 100);
-        setMaxPriceLimit(limit);
-        setPriceRange(limit);
 
       } catch (err) {
-        console.error('Fetch Error:', err)
-        setError('Could not load hotels.')
+        console.error('Fetch error:', err);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    fetchHotels()
-  }, [])
+    };
+    fetchData();
+  }, []);
 
-  // --- 2. HANDLERS ---
   const handleFilterChange = (amenity) => {
-    setSelectedFilters(prev => 
+    setSelectedFilters(prev =>
       prev.includes(amenity) ? prev.filter(i => i !== amenity) : [...prev, amenity]
     )
   }
 
-  // --- 3. FILTERING LOGIC ---
-  const filteredHotels = hotels.filter(hotel => {
-    // A. Search Bar Params
-    const locationParam = searchParams.get('location')?.toLowerCase() || '';
-    const matchesLocation = !locationParam || hotel.location.toLowerCase().includes(locationParam) || hotel.name.toLowerCase().includes(locationParam);
-    
-    // B. Sidebar: Amenities
-    let matchesAmenities = true;
-    if (selectedFilters.length > 0) {
-        const hotelAmenities = Array.isArray(hotel.amenities) 
-            ? hotel.amenities.map(a => a.toLowerCase().trim())
-            : (hotel.amenities || '').toLowerCase().split(',').map(a => a.trim());
-        matchesAmenities = selectedFilters.every(filter => hotelAmenities.includes(filter.toLowerCase()));
-    }
+  const filteredHotels = useMemo(() => {
+    if (!allHotels) return [];
+    const locationQuery = (searchParams.get('location') || '').toLowerCase().trim();
+    const searchQuery = (searchParams.get('q') || '').toLowerCase().trim();
 
-    // C. Sidebar: Price
-    const matchesPrice = (hotel.price || 0) <= priceRange;
+    return allHotels.filter(hotel => {
+      const name = (hotel.name || '').toLowerCase();
+      const city = (hotel.city || '').toLowerCase();
+      const matchesLocation = !locationQuery || city.includes(locationQuery) || (hotel.state || '').toLowerCase().includes(locationQuery);
+      const matchesSearch = !searchQuery || name.includes(searchQuery) || city.includes(searchQuery);
+      const price = parseFloat(hotel.base_price_per_night || hotel.price || 0);
+      const matchesPrice = price >= priceRange[0] && price <= priceRange[1];
+      const rating = parseFloat(hotel.rating_average || hotel.rating || 0);
+      const matchesRating = rating >= minRating;
+      const matchesAmenities = selectedFilters.length === 0 ||
+        selectedFilters.every(filter => {
+            const list = Array.isArray(hotel.amenities) ? hotel.amenities : [];
+            return list.some(a => {
+               const name = typeof a === 'string' ? a : a.name;
+               return name && name.toLowerCase() === filter.toLowerCase();
+            });
+        });
+      return matchesLocation && matchesSearch && matchesPrice && matchesRating && matchesAmenities;
+    });
+  }, [allHotels, searchParams, priceRange, minRating, selectedFilters]);
 
-    return matchesLocation && matchesAmenities && matchesPrice;
-  });
-
-  if (loading) return <div className="loading-container">Loading hotels...</div>
 
   return (
     <div className="page-wrapper">
       
       {/* HEADER */}
-      <div className="page-header-section">
-        <div className="header-content">
-          <h1>Find your next stay</h1>
-          <div className="search-container-wrapper">
+      <div className="modern-header">
+        <div className="header-bg-overlay"></div>
+        <div className="header-content-centered">
+          <h1>Find your sanctuary</h1>
+          <p>Discover luxury, comfort, and unparalleled experiences.</p>
+          <div className="floating-search-bar">
             <SearchForm /> 
           </div>
         </div>
       </div>
 
-      <div className="main-content-container">
+      <div className="main-layout-grid">
         
-        {/* --- LEFT SIDEBAR (BOOKING.COM STYLE) --- */}
-        <aside className="filter-sidebar">
-          
-          {/* Header */}
-          <div className="sidebar-title-section">
-             <h3>Filter by:</h3>
+        {/* MOBILE FILTER TOGGLE */}
+        <button className="mobile-filter-btn" onClick={() => setIsMobileFilterOpen(true)}>
+            <SlidersHorizontal size={20} /> Filter Results
+        </button>
+
+        {/* LEFT SIDEBAR */}
+        <aside className={`filter-sidebar ${isMobileFilterOpen ? 'mobile-open' : ''}`}>
+          <div className="sidebar-header-mobile">
+            <h3>Refine Search</h3>
+            <button onClick={() => setIsMobileFilterOpen(false)}><X size={24}/></button>
           </div>
 
-          <div className="filter-card">
-            
-            {/* 1. Budget Section with Histogram */}
-            <div className="filter-group">
-                <h4>Your budget (per night)</h4>
-                
-                {/* Visual Histogram Bars */}
-                <div className="price-histogram">
-                    {[30, 50, 40, 70, 90, 60, 40, 80, 50, 30, 60, 40, 20].map((h, i) => (
-                        <div key={i} className="hist-bar" style={{height: `${h}%`}}></div>
-                    ))}
+          {!loading ? (
+            <div className="sidebar-sticky-content">
+                <div className="filter-card">
+                   <div className="card-header">
+                       <h4>Maximum Price</h4>
+                   </div>
+                   <div className="histogram-wrapper">
+                       <div className="range-value-display">Up to ${priceRange[1].toLocaleString()}</div>
+                       <input type="range" min="0" max={maxPriceLimit} value={priceRange[1]} onChange={(e) => setPriceRange([0, Number(e.target.value)])} className="modern-range" />
+                   </div>
                 </div>
 
-                <div className="price-slider-container">
-                    <div className="price-display">LKR 0 – LKR {priceRange}+</div>
-                    <input 
-                        type="range" 
-                        min="0" 
-                        max={maxPriceLimit} 
-                        value={priceRange} 
-                        onChange={(e) => setPriceRange(Number(e.target.value))}
-                        className="range-slider"
-                    />
-                </div>
-            </div>
-            
-            {/* 2. Amenities Section (Popular Filters) */}
-            <div className="filter-group">
-              <h4>Popular filters</h4>
-              <div className="checkbox-list">
-                {availableAmenities.map(amenity => (
-                  <div key={amenity} className="filter-row">
-                      <label className="custom-checkbox">
-                        <input 
-                          type="checkbox" 
-                          checked={selectedFilters.includes(amenity)}
-                          onChange={() => handleFilterChange(amenity)}
-                        />
-                        <span className="checkmark"></span>
-                        <span className="label-text">{amenity}</span>
-                      </label>
-                      <span className="count-badge">{amenityCounts[amenity] || 0}</span>
+                <div className="filter-card">
+                  <div className="card-header">
+                      <h4>Popular Amenities</h4>
+                      {(selectedFilters.length > 0 || priceRange[1] < maxPriceLimit) && (
+                        <button onClick={() => { setSelectedFilters([]); setPriceRange([0, maxPriceLimit]); }} className="reset-link">Clear All</button>
+                      )}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Clear Button */}
-            {(selectedFilters.length > 0 || priceRange < maxPriceLimit) && (
-                <div className="filter-footer">
-                    <button onClick={() => {setSelectedFilters([]); setPriceRange(maxPriceLimit);}} className="clear-btn-full">
-                        Clear all filters
-                    </button>
+                  <div className="amenities-scroll-area">
+                    {availableAmenities.map(amenity => (
+                      <label key={amenity} className="amenity-row">
+                          <input type="checkbox" checked={selectedFilters.includes(amenity)} onChange={() => handleFilterChange(amenity)} />
+                          <span className="custom-check"></span>
+                          <span className="amenity-name">{amenity}</span>
+                          <span className="amenity-count">({amenityCounts[amenity] || 0})</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-            )}
-
-          </div>
-        </aside>
-
-        {/* --- RIGHT CONTENT --- */}
-        <main className="hotel-results-area">
-          <div className="results-header">
-            <h2>{filteredHotels.length} properties found</h2>
-            <div className="sort-dropdown">
-               Sort by: <strong>Top Picks</strong>
-            </div>
-          </div>
-
-          {filteredHotels.length === 0 ? (
-            <div className="no-results-box">
-              <Filter size={40} className="text-gray-400 mb-4"/>
-              <h3>No properties found</h3>
-              <p>Try changing your filters or search area.</p>
-              <button onClick={() => { setSelectedFilters([]); setPriceRange(maxPriceLimit); }} className="btn-reset">
-                Reset Filters
-              </button>
             </div>
           ) : (
-            <div className="hotel-cards-grid">
+            <div className="sidebar-sticky-content">
+                <div className="filter-card"><div className="skeleton-pulse" style={{height:'100px', borderRadius:'12px'}}></div></div>
+                <div className="filter-card"><div className="skeleton-pulse" style={{height:'300px', borderRadius:'12px'}}></div></div>
+            </div>
+          )}
+        </aside>
+
+        {/* RIGHT CONTENT */}
+        <main className="results-feed">
+          <div className="results-toolbar">
+            <div className="result-count">
+                <strong>{loading ? '...' : filteredHotels.length}</strong> properties found
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="hotel-grid-modern">
+                {Array(6).fill(0).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          ) : filteredHotels.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon-circle"><Filter size={36} /></div>
+              <h3>No Matches Found</h3>
+              <p>We couldn't find any properties matching your specific filters. Try broadening your search.</p>
+              <button onClick={() => { setSelectedFilters([]); setPriceRange([0, maxPriceLimit]); }} className="btn-primary-outline">Clear Filters</button>
+            </div>
+          ) : (
+            <div className="hotel-grid-modern">
               {filteredHotels.map(hotel => (
-                <HotelCard key={hotel.id || hotel._id} hotel={hotel} />
+                <div className="hotel-card-wrapper" key={hotel.id || hotel._id}>
+                    <HotelCard hotel={hotel} />
+                </div>
               ))}
             </div>
           )}

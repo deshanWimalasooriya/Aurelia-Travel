@@ -1,177 +1,156 @@
-// controllers/authController.js
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const userModel = require('../models/userModel');
+const userModel = require('../models/userModel'); // Uses the new Phase 1 Model
+// Import the helper
+const { sendNotification, notifyAdmins } = require('./notificationController'); // Import both
 
-
-// User Registration
+// 1. REGISTER
 exports.register = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    // 1. Input Validation
+    const { username, email, password, role, first_name, last_name } = req.body;
 
-    // Validate required fields
     if (!username || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Username, email, and password are required'
-      });
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    // Check if user already exists
-    const existingUser = await userModel.getUserByEmail(email);
-    if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: 'User with this email already exists'
-      });
-    }
+    console.time("ProcessTime"); // Start timer for performance debugging
 
-    // Hash the password
+    // 2. Hash Password
+    // We do this BEFORE the DB call. Yes, it costs CPU, but it prevents the "Scope Error"
+    // and is necessary for the atomic "Try-Catch" pattern below.
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
-    const newUser = {
+    // 3. ATOMIC CREATION (Fixes Race Condition)
+    // We removed "findByEmail". We try to create immediately.
+    // If the email exists, the Database will throw a specific error (Code 1062).
+    // This guarantees no two users can register the same email, even if they click at the same millisecond.
+    const newUser = await userModel.create({
       username,
       email,
-      password: hashedPassword
-    };
+      password: hashedPassword, // Now this variable is accessible!
+      role: role || 'user',
+      first_name,
+      last_name,
+      is_active: true
+    });
 
-    const createdUser = await userModel.createUser(newUser);
+    console.timeEnd("ProcessTime"); // End timer
 
+    // 4. NON-BLOCKING NOTIFICATIONS
+    // We use Promise.allSettled() but do NOT 'await' the result.
+    // This allows the response to be sent to the user IMMEDIATELY without waiting for emails to send.
+    Promise.allSettled([
+        notifyAdmins(
+            "New User Registration",
+            `User ${newUser.username} (${newUser.email}) just registered as a ${newUser.role}.`,
+            "info",
+            "/superAdmin/users"
+        ),
+        sendNotification(
+            newUser.id,
+            "Welcome to Aurelia!",
+            "Your account has been created. Complete your profile to get started.",
+            "success",
+            "/profile"
+        )
+    ]).catch(err => console.error("Background Notification Error:", err));
+
+    // 5. Send Success Response Immediately
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
-      data: {
-        id: createdUser.id,
-        username: createdUser.username,
-        email: createdUser.email
-      }
+      user: { id: newUser.id, email: newUser.email, role: newUser.role }
     });
+
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    // 6. CATCH DUPLICATES (The Safety Net)
+    // If the DB says "Duplicate Entry" (Error 1062), we tell the user the email is taken.
+    if (err.code === 'ER_DUP_ENTRY' || err.errno === 1062) {
+      return res.status(409).json({ 
+          success: false, 
+          message: 'Email or Username already exists' 
+      });
+    }
+
+    console.error("Register Error:", err);
+    res.status(500).json({ success: false, error: "Registration failed." });
   }
-}
-// Login user
+};
+
+// 2. LOGIN
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate required fields
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and password are required'
-      });
-    }
-
-    // Find user by email
-    const user = await userModel.getUserByEmail(email);
-
+    // A. Find User
+    const user = await userModel.findByEmail(email);
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
+        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+    
+    // B. Check Password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+        return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    // Compare password with hashed password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
+    // C. Check Active
+    if (!user.is_active) {
+        return res.status(403).json({ success: false, message: 'Account is deactivated' });
     }
 
-    // Generate JWT token
+    // D. Generate Token
     const token = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email,
-        username: user.username,
-        role: user.role 
-      },
-      process.env.JWT_SECRET || 'your_secret_key_change_this',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+      { userId: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || 'secret',
+      { expiresIn: '24h' }
     );
 
-     // ✅ Set token in HTTP-only cookie
+    // E. Set Cookie (HttpOnly)
     res.cookie('token', token, {
-      httpOnly: true,  // Prevents JavaScript access (XSS protection)
-      secure: false,  // HTTPS only in production
-      sameSite: 'lax',  // CSRF protection
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-      path: '/', // Cookie valid for entire site
-      domain: 'localhost' // Adjust domain as needed
+      httpOnly: true, // Frontend JS cannot read this (Security)
+      secure: false, // Set 'true' in production (HTTPS)
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 1 Day
     });
 
-    // Return success response with token
-    res.status(200).json({
+    // F. Send Response (Frontend uses 'role' to redirect)
+    res.json({
       success: true,
       message: 'Login successful',
-      data: {
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role: user.role
-        },
-        token: token
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        image: user.profile_image
       }
     });
 
   } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({
-      success: false,
-      error: err.message
-    });
+    console.error("Login Error:", err);
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
-// Logout user
-exports.logout = async (req, res) => {
-  try {
-    // ✅ Clear the cookie
-    res.clearCookie('token');
-    // For JWT, logout is handled on client side by removing token
-    res.status(200).json({
-      success: true,
-      message: 'Logout successful'
-    });
-  } catch (err) {
-    console.error('Logout error:', err);
-    res.status(500).json({
-      success: false,
-      error: err.message
-    });
-  }
+// 3. LOGOUT
+exports.logout = (req, res) => {
+  res.clearCookie('token');
+  res.json({ success: true, message: 'Logged out successfully' });
 };
 
+// 4. GET CURRENT USER (Persistent Session)
 exports.getCurrentUser = async (req, res) => {
   try {
-    // 🔍 DEBUG: Print the decoded token to the console
-    console.log("Decoded User from Token:", req.user);
-
-    // Handle both 'id' (new standard) and 'userId' (old standard) to be safe
-    const userId = req.user.id || req.user.userId;
-
-    if (!userId) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Token is missing ID. Please logout and login again." 
-      });
-    }
-
-    const user = await userModel.findById(userId);
-    
+    // req.user comes from verifyToken middleware
+    const user = await userModel.findById(req.user.userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const { password, ...others } = user;
-    res.status(200).json({ success: true, data: others });
+    const { password, ...safeUser } = user; // Remove password
+    res.json({ success: true, data: safeUser });
+
   } catch (err) {
-    console.error("GetCurrentUser Error:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 };

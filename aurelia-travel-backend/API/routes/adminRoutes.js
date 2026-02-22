@@ -3,12 +3,14 @@ const router = express.Router();
 const adminController = require('../controllers/adminController');
 const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 
-// Route: GET /api/admin/stats
-// Protected: Only 'admin' role can access
-router.get('/stats', verifyToken, checkRole('admin'), adminController.getDashboardStats);
+// All Admin routes require 'admin' role
+router.use(verifyToken, checkRole('admin'));
 
-// Route: GET /api/admin/bookings
-// Protected: Only 'admin' role can access
-router.get('/bookings', verifyToken, checkRole('admin'), adminController.getRecentBookings);
+router.get('/stats', adminController.getDashboardStats);
+router.get('/bookings', adminController.getRecentBookings);
+router.get('/analytics', adminController.getAnalyticsData);
+
+// ✅ NEW ROUTE
+router.get('/finance', adminController.getFinanceRecords);
 
 module.exports = router;

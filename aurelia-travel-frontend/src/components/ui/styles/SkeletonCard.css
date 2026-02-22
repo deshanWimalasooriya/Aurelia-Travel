@@ -1,0 +1,56 @@
+.skeleton-card {
+  pointer-events: none; /* Prevent clicks while loading */
+}
+
+/* Base Pulse Animation */
+.skeleton-pulse {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Specific Element Sizes to match HotelCard */
+.skeleton-image {
+  width: 100%;
+  height: 200px;
+  border-radius: 16px 16px 0 0; /* Matches card radius */
+}
+
+.skeleton-text {
+  margin-bottom: 10px;
+}
+
+.skeleton-text.title {
+  height: 24px;
+  width: 80%;
+}
+
+.skeleton-text.location {
+  height: 16px;
+  width: 60%;
+  margin-bottom: 20px;
+}
+
+.skeleton-text.rating {
+  height: 16px;
+  width: 30%;
+}
+
+.skeleton-text.price {
+  height: 24px;
+  width: 20%;
+  align-self: flex-end; /* Matches price alignment */
+}
+
+.skeleton-btn {
+  height: 40px;
+  width: 120px;
+  border-radius: 8px;
+  margin-left: auto; /* Push to right like the real button */
+}

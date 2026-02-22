@@ -1,49 +1,83 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { MapPin, Wifi, Car, Coffee, Star, Check, Users, Info } from 'lucide-react'
-import { useUser } from '../context/UserContext'
-import './styles/hotelDetails.css'
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import api from '../services/api';
+import { 
+  MapPin, Star, Check, Wifi, Car, Coffee, Info, ArrowRight, 
+  ShieldCheck, Utensils, Calendar, Users, TrendingUp, 
+  Maximize, Mountain, User, Clock, AlertCircle, Ban, Dog, 
+  Bed, Eye, X, Image as ImageIcon, Heart 
+} from 'lucide-react';
+import { useUser } from '../context/userContext';
+import { useWishlist } from '../context/WishlistContext'; 
+import ImageGallery from '../components/ui/ImageGallery'; 
+import HotelDetailsSkeleton from '../components/ui/HotelDetailsSkeleton'; 
+import './styles/HotelDetails.css';
 
 const HotelDetails = () => {
-  const { id } = useParams()
-  const navigate = useNavigate()
-  const { user } = useUser()
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useUser();
+  const roomsRef = useRef(null);
   
-  const [hotel, setHotel] = useState(null)
-  const [rooms, setRooms] = useState([])
-  const [loading, setLoading] = useState(true)
+  // Data States
+  const [hotel, setHotel] = useState(null);
+  const [rooms, setRooms] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
   
-  // Selection State
-  const [selectedRoomId, setSelectedRoomId] = useState(null)
-  const [totalPrice, setTotalPrice] = useState(0)
+  // Wishlist Logic
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const isSaved = hotel ? isInWishlist(hotel.id) : false;
   
-  // Booking Data State
-  const [dates, setDates] = useState({ checkIn: '', checkOut: '' })
-  const [guests, setGuests] = useState({ adults: 2, children: 0 })
+  // Gallery State
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
-  // --- 1. FETCH DATA ---
+  // Room Popup & Gallery State
+  const [viewingRoom, setViewingRoom] = useState(null);
+  const [isRoomGalleryOpen, setIsRoomGalleryOpen] = useState(false);
+
+  // Selection State
+  const [selectedRoomId, setSelectedRoomId] = useState(null);
+  const [roomQty, setRoomQty] = useState(1); 
+  const [totalPrice, setTotalPrice] = useState(0);
+  
+  // Booking Data
+  const [dates, setDates] = useState({ checkIn: '', checkOut: '' });
+  const [guests, setGuests] = useState({ adults: 2, children: 0 });
+
+  // --- 1. FETCH DATA (ORIGINAL LOGIC) ---
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true)
-        const [hotelRes, roomRes] = await Promise.all([
-          axios.get(`http://localhost:5000/api/hotels/${id}`),
-          axios.get(`http://localhost:5000/api/rooms/hotel/${id}`)
+        setLoading(true);
+        const [hotelRes, roomRes, reviewRes] = await Promise.all([
+          api.get(`/hotels/${id}`),
+          api.get(`/rooms/hotel/${id}`),
+          api.get(`/reviews/hotel/${id}`).catch(() => ({ data: { data: [] } }))
         ]);
         
-        setHotel(Array.isArray(hotelRes.data) ? hotelRes.data[0] : hotelRes.data);
-        setRooms(Array.isArray(roomRes.data) ? roomRes.data : (roomRes.data.data || []));
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false)
-      }
-    }
-    if (id) fetchData()
-  }, [id])
+        const hotelData = hotelRes.data.data || hotelRes.data;
+        
+        // Handle raw room data
+        const rawRooms = Array.isArray(roomRes.data) ? roomRes.data : (roomRes.data.data || []);
+        const activeRooms = rawRooms.filter(room => room.is_active);
 
-  // --- 2. HELPER: CALCULATE NIGHTS ---
+        // Handle Reviews
+        const reviewsData = Array.isArray(reviewRes.data.data) ? reviewRes.data.data : [];
+        
+        setHotel(hotelData);
+        setRooms(activeRooms); 
+        setReviews(reviewsData);
+      } catch (err) {
+        console.error("Fetch details error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) fetchData();
+  }, [id]);
+
+  // --- 2. CALCULATIONS (ORIGINAL LOGIC) ---
   const calculateDays = (start, end) => {
     if (!start || !end) return 0;
     const startDate = new Date(start);
@@ -53,196 +87,535 @@ const HotelDetails = () => {
     return diffDays > 0 ? diffDays : 0;
   };
 
-  // --- 3. AUTO-UPDATE TOTAL PRICE ---
+  const nightCount = calculateDays(dates.checkIn, dates.checkOut); 
+
+  // --- 3. AUTO-UPDATE PRICE (ORIGINAL LOGIC) ---
   useEffect(() => {
     if (selectedRoomId) {
         const room = rooms.find(r => (r._id || r.id) === selectedRoomId);
         if (room) {
-            const pricePerNight = room.price_per_night || room.price || 0;
-            const nights = calculateDays(dates.checkIn, dates.checkOut);
-            const effectiveNights = nights > 0 ? nights : 1;
-            setTotalPrice(pricePerNight * effectiveNights);
+            const pricePerNight = parseFloat(room.base_price_per_night || room.price_per_night || 0);
+            const effectiveNights = nightCount > 0 ? nightCount : 1;
+            setTotalPrice(pricePerNight * effectiveNights * roomQty);
         }
     } else {
         setTotalPrice(0);
     }
-  }, [selectedRoomId, dates, rooms]);
+  }, [selectedRoomId, nightCount, rooms, roomQty]);
 
-  const handleRoomSelect = (room) => {
-    if (selectedRoomId === (room._id || room.id)) {
-        setSelectedRoomId(null);
+  const handleRoomSelect = (roomId) => {
+    if (selectedRoomId !== roomId) {
+        setSelectedRoomId(roomId);
+        if (selectedRoomId !== roomId) setRoomQty(1); 
     } else {
-        setSelectedRoomId(room._id || room.id);
+        setSelectedRoomId(null);
+        setRoomQty(1);
     }
   };
 
-  // --- 4. HANDLE RESERVATION ---
+  // Handle View Details Modal
+  const handleViewDetails = (room) => {
+      setViewingRoom(room);
+  };
+
+  // Helper to extract room images for gallery (ORIGINAL LOGIC)
+  const getRoomImages = (room) => {
+      if (!room) return [];
+      let imgs = [];
+      if (room.images && Array.isArray(room.images)) {
+          imgs = room.images.map(img => typeof img === 'object' ? img.url || img.image_url : img);
+      } else if (room.images_meta && Array.isArray(room.images_meta)) {
+          imgs = room.images_meta.map(img => img.url);
+      } else if (room.main_image) {
+          imgs = [room.main_image];
+      }
+      return imgs.filter(Boolean);
+  };
+
+  const currentRoomImages = viewingRoom ? getRoomImages(viewingRoom) : [];
+
+  // --- 4. HANDLE RESERVATION (ORIGINAL LOGIC) ---
   const handleReserve = async () => {
-    if (!user) { alert("Please login."); navigate('/auth'); return; }
-    if (!selectedRoomId) { alert("Please select a room."); return; }
-    if (!dates.checkIn || !dates.checkOut) { alert("Please select dates."); return; }
+    if (!user) { 
+        if(!window.confirm("You need to login to book. Proceed to login?")) return;
+        navigate('/auth'); 
+        return; 
+    }
+    if (!selectedRoomId) { 
+        roomsRef.current?.scrollIntoView({ behavior: 'smooth' });
+        alert("Please select a room from the table below.");
+        return; 
+    }
+    if (!dates.checkIn || !dates.checkOut) { alert("Please select check-in and check-out dates."); return; }
 
     try {
+        let paymentToken = "tok_cash_on_arrival";
+        try {
+            const walletRes = await api.get('/wallet');
+            if (walletRes.data.data && walletRes.data.data.length > 0) {
+                paymentToken = walletRes.data.data[0].payment_method_id;
+            }
+        } catch (e) { console.warn("Wallet check skipped"); }
+
         const bookingPayload = {
             room_id: selectedRoomId,
             check_in: dates.checkIn,
             check_out: dates.checkOut,
             adults: guests.adults,
             children: guests.children,
-            total_price: totalPrice,
-            status: "confirmed"
+            room_count: roomQty, 
+            total_price: totalPrice, 
+            payment_token: paymentToken,
+            payment_provider: 'stripe'
         };
-        const res = await axios.post('http://localhost:5000/api/bookings', bookingPayload, {
-            withCredentials: true
-        });
+
+        const res = await api.post('/bookings', bookingPayload);
+        
         if (res.status === 200 || res.status === 201) {
-            alert("🎉 Reservation Successful!");
+            alert(`🎉 Reservation Successful! Ref: ${res.data.reference}`);
             navigate('/profile');
         }
     } catch (err) {
-        alert(err.response?.data?.message || "Booking Failed");
+        if (err.response && err.response.status === 401) {
+            alert("Session expired. Please login again.");
+            navigate('/auth');
+        } else {
+            alert(err.response?.data?.message || "Booking Failed.");
+        }
     }
   };
 
-  if (loading) return <div className="loading-screen">Loading...</div>
-  if (!hotel) return <div className="error-screen">Hotel not found</div>
+  // Helper: Render Stars
+  const renderStars = (rating) => {
+    return (
+        <div style={{display:'flex', gap:'2px'}}>
+            {[...Array(5)].map((_, i) => (
+                <Star 
+                    key={i} 
+                    size={14} 
+                    fill={i < rating ? "var(--color-accent)" : "none"} 
+                    color={i < rating ? "var(--color-accent)" : "#cbd5e1"} 
+                />
+            ))}
+        </div>
+    );
+  };
 
-  const images = hotel.photos?.length > 0 ? hotel.photos : [
-    hotel.image_url || 'https://images.unsplash.com/photo-1566073771259-6a8506099945',
-    'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b',
-    'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa'
-  ];
+  if (loading) return <HotelDetailsSkeleton />;
+  if (!hotel) return <div className="loading-screen">Hotel not found</div>;
 
-  // ⚠️ CRITICAL FIX: Define nightCount BEFORE the return statement
-  const nightCount = calculateDays(dates.checkIn, dates.checkOut); 
+  // --- IMAGES & LOCATION LOGIC (ORIGINAL + FIX FOR MAP URL) ---
+  const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80';
+  
+  let rawImages = [];
+  if (Array.isArray(hotel.images) && hotel.images.length > 0) {
+      rawImages = hotel.images.map(img => (typeof img === 'object' && img.image_url ? img.image_url : img));
+  } else if (hotel.main_image) {
+      rawImages = [hotel.main_image];
+  } 
+  
+  let cleanGalleryImages = rawImages.filter(img => img); 
+  if (cleanGalleryImages.length === 0) {
+      cleanGalleryImages = [DEFAULT_IMAGE];
+  }
+
+  let layoutImages = [...cleanGalleryImages];
+  while(layoutImages.length < 4) {
+      layoutImages.push(layoutImages[0] || DEFAULT_IMAGE);
+  }
+
+  // --- MAP PREVIEW URL FIX ---
+  // Using standard valid google maps iframe embed link.
+  const mapUrl = hotel.latitude && hotel.longitude 
+    ? `https://maps.google.com/maps?q=${hotel.latitude},${hotel.longitude}&z=15&output=embed`
+    : `https://maps.google.com/maps?q=${encodeURIComponent(hotel.name + ' ' + hotel.city)}&z=15&output=embed`;
 
   return (
     <div className="hotel-details-page">
       <div className="container">
         
         {/* HEADER */}
-        <div className="aurelia-header">
-            <div>
-                <h1 className="hotel-title">{hotel.name}</h1>
-                <div className="hotel-location">
-                    <MapPin size={18} className="text-primary" /> {hotel.location}
+        <section className="header-section">
+            <div className="hotel-headline">
+                <div>
+                    <h1 className="hotel-title">{hotel.name}</h1>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px'}}>
+                        <button 
+                            onClick={() => toggleWishlist(hotel)}
+                            style={{
+                                background: isSaved ? '#fef2f2' : 'var(--color-surface)',
+                                border: `1px solid ${isSaved ? '#ef4444' : '#cbd5e1'}`,
+                                borderRadius: '50px', padding: '6px 16px',
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
+                                color: isSaved ? '#b91c1c' : 'var(--text-secondary)', transition: 'var(--transition-smooth)'
+                            }}
+                        >
+                            <Heart size={16} fill={isSaved ? "currentColor" : "none"} />
+                            {isSaved ? 'Saved to Wishlist' : 'Save Property'}
+                        </button>
+                    </div>
+                    <div className="hotel-meta">
+                        <span className="meta-item"><MapPin size={16}/> {hotel.address_line_1}, {hotel.city}, {hotel.country}</span>
+                        <div className="rating-pill">
+                            <Star size={14} fill="currentColor" /> {hotel.rating_average || 4.8} ({hotel.total_reviews || 0} reviews)
+                        </div>
+                    </div>
+                </div>
+                <div className="price-lead">
+                    <span className="from-text">From</span>
+                    <span className="price-amount">${parseFloat(hotel.price_per_night_from || rooms[0]?.base_price_per_night || 0).toLocaleString()}</span>
+                    <span className="per-night">/ night</span>
                 </div>
             </div>
-            <div className="rating-box">
-                <span className="rating-score">4.8</span>
-                <div className="rating-text">
-                    <span className="rating-status">Excellent</span>
-                    <span className="rating-count">124 reviews</span>
+        </section>
+
+        {/* HERO: GALLERY + MAP */}
+        <section className="hero-split-section">
+            <div className="gallery-container">
+                <div className="main-image" style={{backgroundImage: `url('${layoutImages[0]}')`}} onClick={() => setIsGalleryOpen(true)}></div>
+                <div className="sub-images">
+                    <div className="sub-img" style={{backgroundImage: `url('${layoutImages[1]}')`}} onClick={() => setIsGalleryOpen(true)}></div>
+                    <div className="sub-img" style={{backgroundImage: `url('${layoutImages[2]}')`}} onClick={() => setIsGalleryOpen(true)}></div>
+                    <div className="sub-img more-photos" style={{backgroundImage: `url('${layoutImages[3]}')`}} onClick={() => setIsGalleryOpen(true)}>
+                        <div className="view-more"><span>View Gallery</span></div>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        {/* GALLERY */}
-        <div className="modern-gallery">
-            <div className="gallery-main"><img src={images[0]} alt="Main" /></div>
-            <div className="gallery-side">
-                <img src={images[1]} alt="Side 1" />
-                <img src={images[2]} alt="Side 2" />
+            
+            <div className="map-container">
+                <iframe title="Location" width="100%" height="100%" frameBorder="0" src={mapUrl}></iframe>
             </div>
-        </div>
+        </section>
 
+        {/* MAIN CONTENT GRID */}
         <div className="content-grid">
-            <div className="details-column">
-                <div className="info-card">
-                    <h2 className="section-title">About this stay</h2>
-                    <p className="description-text">{hotel.description || "Experience the best of local hospitality..."}</p>
-                    <div className="amenities-pills">
-                        <div className="pill"><Wifi size={16}/> Free WiFi</div>
-                        <div className="pill"><Car size={16}/> Parking</div>
-                        <div className="pill"><Coffee size={16}/> Breakfast</div>
+            
+            {/* LEFT COLUMN */}
+            <div className="details-content">
+                
+                {/* --- DESCRIPTION & AMENITIES --- */}
+                <div className="section-card">
+                    <h2 className="section-title">Experience the Stay</h2>
+                    <p className="description-text">
+                        {hotel.description || "Enjoy a relaxing stay at " + hotel.name + ". This property offers excellent accommodation and services to make your visit memorable."}
+                    </p>
+                    
+                    <h3 className="section-title" style={{fontSize: '1.2rem', marginTop: '40px'}}>Popular Amenities</h3>
+                    <div className="amenities-container">
+                         {Array.isArray(hotel.amenities) && hotel.amenities.length > 0 ? (
+                             hotel.amenities.map((item, index) => (
+                                 <div key={index} className="amenity-pill">
+                                     <Check size={18} /> 
+                                     {typeof item === 'object' ? item.name : item}
+                                 </div>
+                             ))
+                         ) : (
+                             <>
+                                <div className="amenity-pill"><Wifi size={18}/> Free WiFi</div>
+                                <div className="amenity-pill"><ShieldCheck size={18}/> 24/7 Security</div>
+                                <div className="amenity-pill"><Utensils size={18}/> Restaurant</div>
+                                <div className="amenity-pill"><Car size={18}/> Free Parking</div>
+                                <div className="amenity-pill"><Coffee size={18}/> Breakfast Included</div>
+                             </>
+                         )}
                     </div>
                 </div>
 
-                {/* ROOM TABLE */}
-                <div id="rooms-section" className="rooms-section">
-                    <h2 className="section-title">Choose your Room</h2>
-                    <div className="table-wrapper">
-                        <table className="aurelia-table">
+                {/* ROOMS TABLE */}
+                <div className="section-card" ref={roomsRef}>
+                    <h2 className="section-title">Available Suites & Rooms</h2>
+                    <div className="rooms-table-wrapper">
+                        <table className="rooms-table">
                             <thead>
                                 <tr>
                                     <th>Room Type</th>
                                     <th>Capacity</th>
-                                    <th>Benefits</th>
-                                    <th>Price / Night</th>
-                                    <th>Select</th>
+                                    <th>Details</th>
+                                    <th style={{textAlign:'center'}}>Qty</th> 
+                                    <th>Price</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {rooms.map((room) => {
                                     const isSelected = selectedRoomId === (room._id || room.id);
-                                    const priceDisplay = room.price_per_night || room.price || 0;
+                                    const price = parseFloat(room.base_price_per_night || room.price_per_night || 0);
+                                    
+                                    // Robust Image Selection for Preview
+                                    let previewImage = room.main_image;
+                                    if (!previewImage && room.images && room.images.length > 0) {
+                                        const first = room.images[0];
+                                        previewImage = typeof first === 'object' ? (first.image_url || first.url) : first;
+                                    }
+
                                     return (
-                                        <tr key={room._id || room.id} className={isSelected ? 'row-active' : ''} onClick={() => handleRoomSelect(room)}>
+                                        <tr key={room.id} className={isSelected ? 'selected-row' : ''}>
                                             <td>
-                                                <div className="room-name">{room.title || room.name}</div>
-                                                <div className="room-meta">{room.desc || "Standard Room"}</div>
-                                            </td>
-                                            <td><div className="capacity-badge"><Users size={14} /> {room.maxPeople || 2} Guests</div></td>
-                                            <td><div className="benefit-item"><Check size={14} className="text-green"/> Free Cancellation</div></td>
-                                            <td><span className="price-text">${priceDisplay}</span></td>
-                                            <td>
-                                                <div className={`custom-checkbox ${isSelected ? 'checked' : ''}`}>
-                                                    {isSelected && <Check size={14} color="white" />}
+                                                <div className="room-cell-main">
+                                                    <div className="room-table-thumbnail" onClick={() => handleViewDetails(room)}>
+                                                        {previewImage ? (
+                                                            <img src={previewImage} alt={room.title} />
+                                                        ) : (
+                                                            <div className="no-room-img"><Bed size={20} color="var(--text-muted)"/></div>
+                                                        )}
+                                                    </div>
+
+                                                    <div>
+                                                        <strong className="clickable-room-title" onClick={() => handleViewDetails(room)}>{room.title}</strong>
+                                                        <div style={{fontSize:'0.8rem', color:'var(--text-muted)', marginTop:'4px'}}>{room.bed_type || 'Double Bed'}</div>
+                                                    </div>
                                                 </div>
+                                            </td>
+                                            <td><div className="capacity-cell"><Users size={16} /> x {room.capacity || 2}</div></td>
+                                            <td>
+                                                <div className="features-cell">
+                                                    <span className="feature"><Maximize size={14}/> {room.size_sqm || 30}m²</span>
+                                                    <span className="feature"><Mountain size={14}/> {room.view_type || 'View'}</span>
+                                                    <button className="view-details-small-btn" onClick={() => handleViewDetails(room)}><Eye size={14}/> View</button>
+                                                </div>
+                                            </td>
+                                            <td style={{textAlign:'center'}}>
+                                                <select 
+                                                    value={isSelected ? roomQty : 1}
+                                                    onChange={(e) => {
+                                                        setSelectedRoomId(room.id); 
+                                                        setRoomQty(parseInt(e.target.value)); 
+                                                    }}
+                                                    style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600' }}
+                                                >
+                                                    {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
+                                                </select>
+                                            </td>
+                                            <td><div className="price-cell"><strong>${price}</strong></div></td>
+                                            <td>
+                                                <button 
+                                                    className={`table-select-btn ${isSelected ? 'active' : ''}`}
+                                                    onClick={() => handleRoomSelect(room.id)}
+                                                >
+                                                    {isSelected ? <Check size={16}/> : 'Select'}
+                                                </button>
                                             </td>
                                         </tr>
                                     )
                                 })}
+                                {rooms.length === 0 && (
+                                    <tr><td colSpan="6" style={{textAlign:'center', padding:'20px'}}>No active rooms available at the moment.</td></tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
                 </div>
-            </div>
 
-            {/* SIDEBAR */}
-            <div className="sidebar-column">
-                <div className="booking-card">
-                    <div className="booking-header">
-                        <span className="price-large">
-                            ${totalPrice > 0 ? totalPrice.toFixed(2) : (hotel.cheapestPrice || 0)}
-                        </span>
-                        
-                        {/* THIS LINE WAS CAUSING THE ERROR */}
-                        <span className="price-unit">
-                             {nightCount > 0 ? ` / total (${nightCount} nights)` : ' / night'}
-                        </span>
-                    </div>
-
-                    <div className="date-picker-mock">
-                        <div className="date-input">
-                            <label>Check-in</label>
-                            <input type="date" value={dates.checkIn} onChange={(e) => setDates({...dates, checkIn: e.target.value})} />
-                        </div>
-                        <div className="date-input">
-                            <label>Check-out</label>
-                            <input type="date" value={dates.checkOut} onChange={(e) => setDates({...dates, checkOut: e.target.value})} />
+                {/* REVIEWS SECTION */}
+                <div className="section-card reviews-section">
+                    <div className="reviews-header-bar">
+                        <h2 className="section-title" style={{marginBottom: 0}}>Guest Reviews</h2>
+                        <div className="rating-summary-box">
+                            <div className="score-box">{hotel.rating_average || 4.8}</div>
+                            <div className="score-text">
+                                <span className="score-word">Exceptional</span>
+                                <span className="review-count-text">{hotel.total_reviews || 0} reviews</span>
+                            </div>
                         </div>
                     </div>
+                    {reviews.length > 0 ? (
+                        <div className="reviews-grid">
+                            {reviews.map((rev) => (
+                                <div key={rev.id} className="review-card">
+                                    <div className="review-user-row">
+                                        <div className="avatar-circle">
+                                            {rev.profile_image ? (
+                                                <img src={rev.profile_image} alt="" style={{width:'100%', height:'100%', borderRadius:'50%', objectFit:'cover'}} />
+                                            ) : (
+                                                (rev.user_name || "G").charAt(0).toUpperCase()
+                                            )}
+                                        </div>
+                                        <div className="user-meta">
+                                            <span className="user-name">{rev.user_name || "Verified Guest"}</span>
+                                            <span className="user-country">{new Date(rev.created_at).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                    <div className="review-content-block">
+                                        <div className="review-date-row" style={{marginBottom:'8px'}}>
+                                            {renderStars(rev.rating)}
+                                        </div>
+                                        <h4 className="review-subject">{rev.title}</h4>
+                                        <p className="review-body">{rev.comment}</p>
 
-                    <div className="selection-summary">
-                        {selectedRoomId ? (
-                            <div className="selected-msg success"><Check size={16} /> Room Selected</div>
-                        ) : (
-                            <div className="selected-msg warning"><Info size={16} /> Please select a room</div>
-                        )}
-                    </div>
-
-                    <button className="btn-primary-large" disabled={!selectedRoomId} onClick={handleReserve}>
-                        {selectedRoomId ? 'Reserve Now' : 'Check Availability'}
-                    </button>
-                    <p className="micro-text">No payment required today</p>
+                                        {/* Display Manager Response */}
+                                        {rev.hotel_response && (
+                                            <div className="hotel-response-public">
+                                                <span className="response-label">Response from Property</span>
+                                                <p>{rev.hotel_response}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="no-reviews">
+                            <Info size={24} style={{marginBottom:'10px'}}/>
+                            <p>No reviews yet. Be the first to share your experience!</p>
+                        </div>
+                    )}
                 </div>
             </div>
-            
+
+            {/* RIGHT: STICKY WIDGET */}
+            <div className="sidebar-column">
+                <div className="booking-widget">
+                    <div className="price-header">
+                        <div className="price-display">
+                            <span className="currency">$</span>
+                            <span className="amount">{totalPrice > 0 ? totalPrice.toLocaleString() : (parseFloat(hotel.price_per_night_from || 0))}</span>
+                            <span className="text" style={{fontSize: '0.9rem', color: 'var(--text-muted)'}}>{nightCount > 0 ? ` total` : ' / night'}</span>
+                        </div>
+                        <div className="demand-badge"><TrendingUp size={14}/> High Demand</div>
+                    </div>
+                    
+                    <div className="picker-grid">
+                        <div className="input-box"><label>CHECK-IN</label><input type="date" value={dates.checkIn} onChange={(e) => setDates({...dates, checkIn: e.target.value})} /></div>
+                        <div className="input-box"><label>CHECK-OUT</label><input type="date" value={dates.checkOut} onChange={(e) => setDates({...dates, checkOut: e.target.value})} /></div>
+                    </div>
+                    
+                    <div className="input-box" style={{marginBottom: '24px'}}>
+                        <label>GUESTS</label>
+                        <select value={guests.adults} onChange={e => setGuests({...guests, adults: parseInt(e.target.value)})}>
+                            <option value="1">1 Adult</option><option value="2">2 Adults</option><option value="3">3 Adults</option><option value="4">4 Adults</option>
+                        </select>
+                    </div>
+                    
+                    <button className="book-btn" onClick={handleReserve}>{selectedRoomId ? 'Reserve Securely' : 'Check Availability'}</button>
+                    <p className="no-charge-text">You won't be charged yet</p>
+                    
+                    {totalPrice > 0 && (
+                        <div className="total-row">
+                            <span>Total</span>
+                            <span>${totalPrice.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
       </div>
-    </div>
-  )
-}
+      
+      {/* HOTEL GALLERY */}
+      <ImageGallery 
+        images={cleanGalleryImages} 
+        isOpen={isGalleryOpen} 
+        onClose={() => setIsGalleryOpen(false)} 
+      />
 
-export default HotelDetails
+      {/* ROOM DETAILS MODAL */}
+      {/* ROOM DETAILS MODAL */}
+      {viewingRoom && (
+          <div className="room-modal-overlay" onClick={() => setViewingRoom(null)}>
+              <div className="room-modal-content" onClick={e => e.stopPropagation()}>
+                  
+                  {/* Floating Top-Left Close Button */}
+                  <button className="room-modal-close" onClick={() => setViewingRoom(null)}>
+                      <X size={20}/>
+                  </button>
+
+                  <div className="room-modal-scroll-area">
+                      
+                      {/* Hero Image & Gallery Button */}
+                      <div className="room-modal-hero" style={{backgroundImage: `url('${currentRoomImages[0] || DEFAULT_IMAGE}')`}}>
+                          <button className="view-gallery-btn" onClick={() => setIsRoomGalleryOpen(true)}>
+                              <ImageIcon size={18} /> View Photos
+                          </button>
+                      </div>
+
+                      <div className="room-modal-body">
+                          {/* Header: Title & Badge */}
+                          <div className="room-modal-header">
+                              <h2>{viewingRoom.title}</h2>
+                              <span className="room-type-badge">{viewingRoom.room_type}</span>
+                          </div>
+
+                          {/* 2x2 Features Grid (Matches Screenshot) */}
+                          <div className="room-features-grid">
+                              <div className="feature-item">
+                                  <Users size={22}/> 
+                                  <span>{viewingRoom.max_adults} Adults, {viewingRoom.max_children} Kids</span>
+                              </div>
+                              <div className="feature-item">
+                                  <Maximize size={22}/> 
+                                  <span>{viewingRoom.size_sqm || '- '} m²</span>
+                              </div>
+                              <div className="feature-item">
+                                  <Bed size={22}/> 
+                                  <span>{viewingRoom.bed_type || 'King'}</span>
+                              </div>
+                              <div className="feature-item">
+                                  <Mountain size={22}/> 
+                                  <span>{viewingRoom.view_type || 'City'}</span>
+                              </div>
+                          </div>
+
+                          {/* Amenities Pills (Green for yes, Red for no) */}
+                          <div className="room-amenities-list">
+                              {viewingRoom.has_breakfast && (
+                                  <span className="modal-pill green">
+                                      <Coffee size={16} /> Breakfast Included
+                                  </span>
+                              )}
+                              
+                              {viewingRoom.is_refundable && (
+                                  <span className="modal-pill green">
+                                      <Check size={16} /> Free Cancellation
+                                  </span>
+                              )}
+                              
+                              {viewingRoom.smoking_allowed ? (
+                                  <span className="modal-pill green">
+                                      <Check size={16} /> Smoking Allowed
+                                  </span>
+                              ) : (
+                                  <span className="modal-pill red">
+                                      <Ban size={16} /> Non-Smoking
+                                  </span>
+                              )}
+                          </div>
+                          
+                          {/* Description (Pushed below the grid and pills to match the clean layout) */}
+                          {viewingRoom.description && (
+                              <div className="room-modal-description" dangerouslySetInnerHTML={{ __html: viewingRoom.description }} />
+                          )}
+                      </div>
+                  </div>
+
+                  {/* Sticky Footer: Pricing & Action Button */}
+                  <div className="room-modal-footer">
+                      <div className="modal-price">
+                          <span className="amount">${viewingRoom.base_price_per_night}</span>
+                          <span className="text">per night</span>
+                      </div>
+                      <button 
+                          className={`modal-select-btn ${selectedRoomId === viewingRoom.id ? 'selected' : ''}`}
+                          onClick={() => {
+                              handleRoomSelect(viewingRoom.id);
+                              setViewingRoom(null); 
+                          }}
+                      >
+                          {selectedRoomId === viewingRoom.id ? 'Currently Selected' : 'Select This Room'}
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* ROOM SPECIFIC GALLERY */}
+      <ImageGallery 
+        images={currentRoomImages.length > 0 ? currentRoomImages : [DEFAULT_IMAGE]} 
+        isOpen={isRoomGalleryOpen} 
+        onClose={() => setIsRoomGalleryOpen(false)} 
+      />
+
+    </div>
+  );
+};
+
+export default HotelDetails;

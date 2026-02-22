@@ -5,10 +5,12 @@ import {
   Sparkles, CalendarPlus 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import PlannerContainer from '../components/common/PlannerContainer'; // 1. IMPORT THE PLANNER
+import { AnimatePresence, motion } from 'framer-motion'; /* <-- FIXED IMPORT HERE */
+import PlannerContainer from '../components/common/PlannerContainer'; 
 import './styles/tripDashboard.css';
 
-// ... (Keep initialTripData & other constants same) ...
+/* ... Keep the rest of your initialTripData and component code EXACTLY the same ... */
+
 const initialTripData = {
     id: "AUR-8821",
     title: "Kandy to Ella: The Misty Train Route",
@@ -53,8 +55,6 @@ const TripDashboard = () => {
   const [trip, setTrip] = useState(initialTripData);
   const [editingItem, setEditingItem] = useState(null);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  
-  // 2. NEW STATE FOR POPUP
   const [showPlannerPopup, setShowPlannerPopup] = useState(false);
 
   const budgetStats = useMemo(() => {
@@ -63,7 +63,6 @@ const TripDashboard = () => {
     return { spent, remaining: trip.totalBudget - spent };
   }, [trip]);
 
-  // ... (Keep handleDelete, handleSaveEdit, openEditor, getIcon, handleAddDay) ...
   const handleDelete = (dayId, itemId) => {
     const updatedDays = trip.days.map(day => {
       if (day.id === dayId) {
@@ -100,27 +99,23 @@ const TripDashboard = () => {
     const newDay = {
       id: `day-${dayCount}`,
       title: `Day ${dayCount}: Free Day`,
-      date: "Date TBD", // logic to calc date can be added here
-      items: [] // Empty list
+      date: "Date TBD", 
+      items: [] 
     };
     setTrip({ ...trip, days: [...trip.days, newDay] });
   };
 
   const getIcon = (type) => {
     switch(type) {
-      case 'food': return <Coffee size={16}/>;
-      case 'stay': return <Home size={16}/>;
-      case 'transport': return <Car size={16}/>;
-      default: return <MapPin size={16}/>;
+      case 'food': return <Coffee size={18}/>;
+      case 'stay': return <Home size={18}/>;
+      case 'transport': return <Car size={18}/>;
+      default: return <MapPin size={18}/>;
     }
   };
 
-  // 3. HANDLE POPUP SUBMIT (Simulate adding generated data)
   const handlePlannerSubmit = (formData) => {
-    console.log("Adding new leg based on:", formData);
-    setShowPlannerPopup(false); // Close popup
-
-    // Simulate appending new generated days based on form inputs
+    setShowPlannerPopup(false); 
     const nextDayCount = trip.days.length + 1;
     const newExtension = {
         id: `day-${nextDayCount}`,
@@ -131,20 +126,19 @@ const TripDashboard = () => {
             { id: `d${nextDayCount}-2`, type: "location", title: "New Adventure", time: "02:00 PM", cost: 2000, details: `Based on ${formData.pace} pace` }
         ]
     };
-
     setTrip({
         ...trip,
         days: [...trip.days, newExtension],
-        totalBudget: trip.totalBudget + Number(formData.budget) // Add new budget to total
+        totalBudget: trip.totalBudget + Number(formData.budget) 
     });
   };
 
   return (
     <div className="dashboard-container">
-      {/* ... Header ... */}
+      {/* HEADER */}
       <header className="dash-header">
         <div className="header-left">
-          <button onClick={() => navigate(-1)} className="back-btn">← Back</button>
+          <button onClick={() => navigate(-1)} className="back-btn">← Overview</button>
           <div>
             <h1>{trip.title}</h1>
             <p className="subtitle">{trip.days.length} Days • {trip.days.reduce((acc, d) => acc + d.items.length, 0)} Activities</p>
@@ -160,15 +154,14 @@ const TripDashboard = () => {
             <span className="label">Remaining</span>
             <span className="value">{budgetStats.remaining.toLocaleString()}</span>
           </div>
-          <button className="btn-primary-sm">Publish Trip</button>
+          <button className="btn-primary">Save & Publish</button>
         </div>
       </header>
 
-      {/* Kanban Board */}
+      {/* KANBAN BOARD */}
       <div className="kanban-board">
         {trip.days.map((day) => (
           <div key={day.id} className="kanban-column">
-             {/* ... Day Column Content (Same as before) ... */}
             <div className="column-header">
               <h3>{day.title}</h3>
               <span className="date-badge">{day.date}</span>
@@ -178,7 +171,7 @@ const TripDashboard = () => {
               {day.items.map((item) => (
                 <div 
                   key={item.id} 
-                  className={`kanban-card ${item.type}`}
+                  className={`kanban-card type-${item.type}`}
                   onClick={() => openEditor(day.id, item)}
                 >
                   <div className="card-icon">{getIcon(item.type)}</div>
@@ -186,10 +179,10 @@ const TripDashboard = () => {
                     <h4>{item.title}</h4>
                     <div className="card-meta">
                       <span><Clock size={12}/> {item.time}</span>
-                      {item.cost > 0 && <span><DollarSign size={12}/> {item.cost}</span>}
+                      {item.cost > 0 && <span className="cost-amount"><DollarSign size={12}/> {item.cost.toLocaleString()}</span>}
                     </div>
                   </div>
-                  <MoreVertical size={14} className="edit-trigger"/>
+                  <MoreVertical size={16} className="edit-trigger"/>
                 </div>
               ))}
               <button className="add-card-btn"><Plus size={16} /> Add Activity</button>
@@ -197,63 +190,53 @@ const TripDashboard = () => {
           </div>
         ))}
 
-        {/* 4. EXTENSION COLUMN with POPUP TRIGGER */}
+        {/* EXTENSION COLUMN */}
         <div className="kanban-actions-column">
           <h3>Extend Your Trip</h3>
           <p>Plan the next leg of your journey</p>
           
           <button className="btn-extend-manual" onClick={handleAddDay}>
-            <CalendarPlus size={20} />
+            <CalendarPlus size={18} />
             <span>Add Day Manually</span>
           </button>
 
-          <div className="divider">OR</div>
+          <div className="divider-text">OR</div>
 
-          {/* OPEN POPUP ON CLICK */}
-          <button 
-            className="btn-extend-ai" 
-            onClick={() => setShowPlannerPopup(true)}
-          >
-            <Sparkles size={20} />
+          <button className="btn-extend-ai" onClick={() => setShowPlannerPopup(true)}>
+            <Sparkles size={18} />
             <span>Generate Next Leg</span>
           </button>
-          
-          <p className="hint-text">
-            Open the planner to define requirements for your trip extension.
-          </p>
         </div>
       </div>
 
-      {/* ... Edit Sidebar ... */}
+      {/* EDIT SIDEBAR */}
       <div className={`edit-sidebar ${isSidebarOpen ? 'open' : ''}`}>
-           {/* ... (Keep form logic same) ... */}
-           {editingItem && (
+        {editingItem && (
           <form onSubmit={handleSaveEdit} className="sidebar-content">
-             {/* ... existing form inputs ... */}
-             <div className="sidebar-header">
+            <div className="sidebar-header">
               <h2>Edit Activity</h2>
-              <button type="button" onClick={() => setSidebarOpen(false)}><X size={20}/></button>
+              <button type="button" onClick={() => setSidebarOpen(false)}><X size={24}/></button>
             </div>
 
             <div className="form-group">
               <label>Title</label>
-              <input type="text" value={editingItem.item.title} onChange={(e) => setEditingItem({...editingItem, item: { ...editingItem.item, title: e.target.value }})} />
+              <input type="text" className="form-input" value={editingItem.item.title} onChange={(e) => setEditingItem({...editingItem, item: { ...editingItem.item, title: e.target.value }})} />
             </div>
 
             <div className="form-row">
               <div className="form-group">
                 <label>Time</label>
-                <input type="text" value={editingItem.item.time} onChange={(e) => setEditingItem({...editingItem, item: { ...editingItem.item, time: e.target.value }})} />
+                <input type="text" className="form-input" value={editingItem.item.time} onChange={(e) => setEditingItem({...editingItem, item: { ...editingItem.item, time: e.target.value }})} />
               </div>
               <div className="form-group">
                 <label>Cost (LKR)</label>
-                <input type="number" value={editingItem.item.cost} onChange={(e) => setEditingItem({...editingItem, item: { ...editingItem.item, cost: parseInt(e.target.value) || 0 }})} />
+                <input type="number" className="form-input" value={editingItem.item.cost} onChange={(e) => setEditingItem({...editingItem, item: { ...editingItem.item, cost: parseInt(e.target.value) || 0 }})} />
               </div>
             </div>
 
             <div className="form-group">
-              <label>Details / Notes</label>
-              <textarea rows="4" value={editingItem.item.details} onChange={(e) => setEditingItem({...editingItem, item: { ...editingItem.item, details: e.target.value }})} />
+              <label>Details & Notes</label>
+              <textarea rows="5" className="form-input" value={editingItem.item.details} onChange={(e) => setEditingItem({...editingItem, item: { ...editingItem.item, details: e.target.value }})} />
             </div>
 
             <div className="sidebar-actions">
@@ -261,7 +244,7 @@ const TripDashboard = () => {
                 <Trash2 size={18}/> Delete
               </button>
               <button type="submit" className="btn-save">
-                <Save size={18}/> Save Changes
+                <Save size={18}/> Save
               </button>
             </div>
           </form>
@@ -269,25 +252,31 @@ const TripDashboard = () => {
       </div>
       {isSidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>}
 
-      {/* 5. NEW: PLANNER POPUP MODAL */}
+      {/* PLANNER POPUP MODAL */}
+      <AnimatePresence>
       {showPlannerPopup && (
-        <div className="popup-overlay">
-          <div className="popup-content">
+        <motion.div 
+          className="popup-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div 
+            className="popup-content"
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+          >
             <div className="popup-header">
               <h2>Extend Your Trip</h2>
-              <button onClick={() => setShowPlannerPopup(false)} className="close-popup-btn">
-                <X size={24} />
-              </button>
+              <button onClick={() => setShowPlannerPopup(false)} className="close-popup-btn"><X size={24} /></button>
             </div>
-            <p className="popup-subtitle">Define parameters for the next part of your journey.</p>
-            
-            {/* CALLING THE PLANNER CONTAINER */}
+            <p className="popup-subtitle">Define parameters for the next part of your journey. AI will do the rest.</p>
             <PlannerContainer onSubmit={handlePlannerSubmit} />
-            
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
-
+      </AnimatePresence>
     </div>
   );
 };

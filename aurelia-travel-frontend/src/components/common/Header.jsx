@@ -1,20 +1,27 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Search, Heart, User, LogOut, Settings, LayoutDashboard } from 'lucide-react' // Added LayoutDashboard icon
-import { useUser } from '../../context/UserContext'
+import { Search, Heart, User, LogOut, Settings, LayoutDashboard, Building2, Menu, X } from 'lucide-react' 
+import { useUser } from '../../context/userContext'
+import { useAuth } from '../../context/AuthContext'
+import { useNotifications } from '../../context/NotificationContext'
+import NotificationBell from '../ui/NotificationBell'
 import axios from 'axios'
-import './styles/header.css'
+import './styles/Header.css'
+import { useWishlist } from '../../context/WishlistContext';
 
 const Header = () => {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, clearUser } = useUser()
   
-  // State for Dropdown
+  const { user, clearUser, isAdmin, isManager } = useUser()
+  const { checkAuth } = useAuth();
+  const { wishlist } = useWishlist();
+  
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false) // ✅ Mobile Menu State
   const dropdownRef = useRef(null)
 
-  // Close dropdown when clicking outside
+  // Close profile dropdown if clicked outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -25,36 +32,40 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Helper function for Greeting
+  // ✅ Auto-close mobile menu when changing pages
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [location.pathname])
+
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning!';
-    if (hour < 18) return 'Good Afternoon!';
-    return 'Good Evening!';
+    if (hour < 12) return 'Good Morning,';
+    if (hour < 18) return 'Good Afternoon,';
+    return 'Good Evening,';
   }
 
-  // Helper to get First Name
   const getFirstName = () => {
     if (!user) return '';
     const name = user.username || user.name || 'Traveler';
     return name.split(' ')[0]; 
   }
 
-  // Logout Function
   const handleLogout = async () => {
     setDropdownOpen(false);
+    setMobileMenuOpen(false);
     try {
       await axios.post('http://localhost:5000/api/auth/logout', {}, {
         withCredentials: true
       });
       localStorage.removeItem('token');
       sessionStorage.removeItem('token');
-      document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       clearUser();
+      await checkAuth();
       navigate('/auth');
     } catch (err) {
       console.error('Logout error:', err);
       clearUser();
+      await checkAuth();
       navigate('/auth');
     }
   };
@@ -62,27 +73,36 @@ const Header = () => {
   return (
     <header className="header">
       <div className="header-container">
-        <Link to="/" className="header-logo">Aurelia Travel</Link>
+        {/* Brand Logo */}
+        <Link to="/" className="header-logo">
+          Aurelia<span>Travel</span>
+        </Link>
+
+        {/* Center Navigation (Hidden on Mobile) */}
         <nav className="header-nav">
           <Link to="/" className={`header-nav-link ${location.pathname === '/' ? 'active' : ''}`}>Home</Link>
-          <Link 
-            to="/travel-plan" 
-            className={`header-nav-link ${location.pathname === '/travel-plan' ? 'active' : ''}`}
-          >
-            Travel Plan
-          </Link>
-          <Link to="/hotels" className="header-nav-link">Hotels</Link>
-          <Link to="/vehicles" className="header-nav-link">Vehicles</Link>
-          <Link to="/about" className="header-nav-link">About</Link>
-          <Link to="/contact" className="header-nav-link">Contact</Link>
+          <Link to="/travel-plan" className={`header-nav-link ${location.pathname === '/travel-plan' ? 'active' : ''}`}>Smart Plan</Link>
+          <Link to="/hotel-showcase" className={`header-nav-link ${location.pathname.includes('/hotel') ? 'active' : ''}`}>Hotels</Link>
+          <Link to="/about" className={`header-nav-link ${location.pathname === '/about' ? 'active' : ''}`}>About</Link>
+          <Link to="/contact" className={`header-nav-link ${location.pathname === '/contact' ? 'active' : ''}`}>Contact</Link>
         </nav>
+
+        {/* Right Actions */}
         <div className="header-actions">
-          <button className="header-action">
-            <Heart className="header-icon" />
-          </button>
+          
+          <Link to="/wishlist" className="header-action-btn wishlist-link">
+              <Heart className="header-icon" />
+              {wishlist.length > 0 && (
+                  <span className="wishlist-badge">{wishlist.length}</span>
+              )}
+          </Link>
+
+          <div className="header-action-btn">
+            <NotificationBell />
+          </div>
           
           {user ? (
-            <>
+            <div className="header-user-section">
               <div className="header-greeting-wrapper">
                 <span className="greeting-time">{getGreeting()}</span>
                 <span className="greeting-name">{getFirstName()}</span>
@@ -94,66 +114,82 @@ const Header = () => {
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                 >
                   {user.profile_image ? (
-                    <img 
-                      src={user.profile_image} 
-                      alt="Profile" 
-                      className="header-profile-img" 
-                    />
+                    <img src={user.profile_image} alt="Profile" className="header-profile-img" />
                   ) : (
                     <div className="header-profile-placeholder">
-                      <User className="header-profile-icon-default" />
+                      <User size={18} className="header-profile-icon-default" />
                     </div>
                   )}
                 </button>
 
-                {dropdownOpen && (
-                  <div className="header-dropdown">
-                    <div className="dropdown-user-details">
-                      <span className="dropdown-username">{user.name || user.username || 'User'}</span>
-                      <span className="dropdown-email">{user.email}</span>
-                    </div>
-                    
-                    <div className="dropdown-divider"></div>
-                    
-                    {/* --- ADMIN DASHBOARD LINK (Only for Admins) --- */}
-                    {(user.role === 'admin' || user.isAdmin) && (
-                      <Link 
-                        to="/adminDashboard" 
-                        className="dropdown-item"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <LayoutDashboard size={16} />
-                        Admin Dashboard
-                      </Link>
-                    )}
-                    {/* --------------------------------------------- */}
-
-                    <Link 
-                      to="/profile" 
-                      className="dropdown-item"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      <Settings size={16} />
-                      Profile
-                    </Link>
-                    
-                    <button 
-                      onClick={handleLogout} 
-                      className="dropdown-item dropdown-logout"
-                    >
-                      <LogOut size={16} />
-                      Logout
-                    </button>
+                {/* Desktop Profile Dropdown */}
+                <div className={`header-dropdown ${dropdownOpen ? 'open' : ''}`}>
+                  <div className="dropdown-user-details">
+                    <span className="dropdown-username">{user.name || user.username || 'User'}</span>
+                    <span className="dropdown-email">{user.email}</span>
+                    <span className={`dropdown-role-badge ${isManager ? 'manager' : isAdmin ? 'admin' : ''}`}>
+                      {isManager ? 'Hotel Partner' : (isAdmin ? 'Admin' : 'Traveler')}
+                    </span>
                   </div>
-                )}
+                  
+                  <div className="dropdown-divider"></div>
+                  
+                  {(isManager || isAdmin) && (
+                    <Link to="/admin" className="dropdown-item highlight-item" onClick={() => setDropdownOpen(false)}>
+                      <Building2 size={16} /> Manager Dashboard
+                    </Link>
+                  )}
+                  
+                  {isAdmin && (
+                    <Link to="/superAdmin" className="dropdown-item admin-item" onClick={() => setDropdownOpen(false)}>
+                      <LayoutDashboard size={16} /> System Admin
+                    </Link>
+                  )}
+
+                  <Link to="/profile" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                    <Settings size={16} /> Profile Settings
+                  </Link>
+                  
+                  <div className="dropdown-divider"></div>
+
+                  <button onClick={handleLogout} className="dropdown-item dropdown-logout">
+                    <LogOut size={16} /> Logout
+                  </button>
+                </div>
               </div>
-            </>
+            </div>
           ) : (
-            <Link to="/auth" className="btn btn-primary">Login</Link>
+            <Link to="/auth" className="btn-auth-login desktop-auth-btn">Sign In</Link>
           )}
           
+          {/* ✅ Mobile Menu Toggle Button */}
+          <button 
+             className="mobile-menu-btn" 
+             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+             aria-label="Toggle Menu"
+          >
+             {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
+          </button>
+
         </div>
       </div>
+
+      {/* ✅ Mobile Navigation Overlay */}
+      <div className={`mobile-nav-overlay ${mobileMenuOpen ? 'open' : ''}`}>
+        <nav className="mobile-nav-links">
+          <Link to="/" className={`mobile-nav-link ${location.pathname === '/' ? 'active' : ''}`}>Home</Link>
+          <Link to="/travel-plan" className={`mobile-nav-link ${location.pathname === '/travel-plan' ? 'active' : ''}`}>Smart Plan</Link>
+          <Link to="/hotel-showcase" className={`mobile-nav-link ${location.pathname.includes('/hotel') ? 'active' : ''}`}>Hotels</Link>
+          <Link to="/about" className={`mobile-nav-link ${location.pathname === '/about' ? 'active' : ''}`}>About</Link>
+          <Link to="/contact" className={`mobile-nav-link ${location.pathname === '/contact' ? 'active' : ''}`}>Contact</Link>
+          
+          {/* If logged out, show Sign In button in the mobile menu */}
+          {!user && (
+            <Link to="/auth" className="btn-auth-login mobile-auth-btn">Sign In</Link>
+          )}
+        </nav>
+      </div>
+
     </header>
   )
 }

@@ -1,16 +1,28 @@
-// routes/hotelRoutes.js
 const express = require("express");
 const router = express.Router();
 const hotelController = require("../controllers/hotelController");
+const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 
-
-router.get("/", hotelController.getAllHotels); // Read All
+// Public Routes
+router.get("/", hotelController.getAllHotels);
 router.get("/newest", hotelController.getNewest);
-router.get('/top-rated', hotelController.getTopRated);
-router.post("/", hotelController.create); // Create
-router.put("/:id", hotelController.update); // Update
-router.delete("/:id", hotelController.delete); // Delete
-router.get("/:id", hotelController.getHotelById); // Read One
+router.get("/top-rated", hotelController.getTopRated);
+
+// Manager Routes
+router.get("/mine", verifyToken, checkRole('admin', 'hotel_manager'), hotelController.getMyHotels);
+
+// Dynamic ID Routes
+router.get("/:id", hotelController.getHotelById);
+// ✅ NEW: Admin Route to get hotels by specific Manager ID
+router.get("/manager/:managerId", verifyToken, checkRole('admin'), hotelController.getHotelsByManagerId);
+
+// Protected CRUD
+router.post("/", verifyToken, checkRole('admin', 'hotel_manager'), hotelController.create);
+router.put("/:id", verifyToken, checkRole('admin', 'hotel_manager'), hotelController.update);
+router.delete("/:id", verifyToken, checkRole('admin', 'hotel_manager'), hotelController.delete);
+
+router.get("/amenities", hotelController.getAmenitiesList);
+//get hotel amenities by hotel id
+router.get("/:id/amenities", hotelController.getAmenitiesByHotelId);
 
 module.exports = router;
-

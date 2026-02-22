@@ -1,488 +1,490 @@
-/* --- AURELIA PROFILE DESIGN SYSTEM --- */
+/* =========================================
+   PREMIUM PROFILE DASHBOARD STYLES
+   ========================================= */
 
-:root {
-  --primary-blue: #3b82f6;
-  --primary-hover: #2563eb;
-  --bg-light: #f8f9fa;
-  --text-dark: #1f2937;
-  --text-gray: #6b7280;
-  --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  --card-hover-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-}
-
-/* Wrapper to hold the background animation */
 .profile-page-wrapper {
-  position: relative;
-  min-height: 100vh;
-  background-color: var(--bg-light);
-  overflow-x: hidden;
-  padding-bottom: 50px;
+  min-height: calc(100vh - 76px);
+  background-color: var(--color-background);
+  padding: 40px 0 80px 0;
 }
 
 .profile-container {
-  position: relative;
-  z-index: 1; /* Sits above the circles */
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 30px;
-  max-width: 1200px;
-  margin: 100px auto 0;
-  padding: 0 20px;
+  align-items: start;
 }
 
-/* --- REUSABLE CARD STYLE --- */
-.card {
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: var(--card-shadow);
-  border: 1px solid #eee;
-  overflow: hidden;
-  transition: all 0.3s ease;
+/* --- SHARED CARD STYLES --- */
+.profile-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: var(--glass-border);
+  padding: 30px;
+  transition: var(--transition-smooth);
 }
 
-.card:hover {
-  box-shadow: var(--card-hover-shadow);
+.profile-card:hover {
+  box-shadow: var(--shadow-md);
 }
 
-/* --- SIDEBAR STYLES --- */
+/* --- LEFT SIDEBAR --- */
 .profile-sidebar {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  position: sticky;
+  top: 100px;
 }
 
-.profile-avatar-section {
-  padding: 40px 20px;
+.user-card {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .avatar-wrapper {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 15px;
+  width: 100px;
+  height: 100px;
+  margin-bottom: 20px;
 }
 
-.profile-avatar-img, 
-.profile-avatar-placeholder-pic {
+.profile-avatar-img {
   width: 100%;
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  border: 4px solid #f8f9fa;
-  background-color: var(--primary-blue);
+  border: 4px solid var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.profile-avatar-placeholder-pic {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), #60a5fa);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3rem;
-  font-weight: bold;
+  border: 4px solid var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
-.avatar-upload-btn {
-  position: absolute;
-  bottom: 0;
-  right: 5px;
-  background-color: var(--primary-blue);
+.profile-user-name {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--color-dark);
+  margin-bottom: 8px;
+}
+
+.profile-user-email {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-background);
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+}
+
+/* Wallet Card */
+.card-header-small {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-dark);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.payment-mini-card {
+  background: linear-gradient(135deg, var(--color-dark), #1e293b);
   color: white;
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
+  padding: 20px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.card-text-group .brand {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+
+.card-text-group .digits {
+  font-family: monospace;
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+}
+
+.icon-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border: 3px solid white;
-  transition: 0.2s;
+  transition: var(--transition-smooth);
 }
 
-.avatar-upload-btn:hover {
-  background-color: var(--primary-hover);
-  transform: scale(1.1);
+.icon-btn.danger:hover {
+  background: #ef4444;
 }
 
-/* --- PAYMENT METHOD SECTION --- */
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 15px;
-  color: #374151;
-}
-
-.payment-mini-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.btn-outline {
+  width: 100%;
   padding: 12px;
-  background-color: #f9fafb;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  border: 1px solid #edf2f7;
+  border: 1px solid #cbd5e1;
+  background: transparent;
+  color: var(--color-dark);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-smooth);
 }
 
-/* --- FORM & DETAILS GRID --- */
-.card-header {
+.btn-outline:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: #eff6ff;
+}
+
+/* Partner Card */
+.partner-card {
+  background: linear-gradient(135deg, var(--color-primary), #4f46e5);
+  color: white;
+  text-align: center;
+  padding: 30px 20px;
+}
+
+.partner-icon-bg {
+  background: rgba(255, 255, 255, 0.2);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 15px;
+}
+
+.partner-content h4 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.partner-content p {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin-bottom: 20px;
+}
+
+.btn-partner {
+  background: white;
+  color: var(--color-primary);
+  border: none;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btn-partner:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* --- MAIN CONTENT --- */
+.profile-main {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.card-header-main {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 25px;
-  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.card-header-main h3 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--color-dark);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon-primary { color: var(--color-primary); }
+.icon-muted { color: var(--text-muted); }
+
+.btn-edit-toggle {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: var(--color-dark);
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition-smooth);
+}
+
+.btn-edit-toggle:hover {
+  background: #e2e8f0;
+}
+
+.btn-edit-toggle.active {
+  background: var(--color-dark);
+  color: white;
+  border-color: var(--color-dark);
 }
 
 .details-grid, .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  padding: 25px;
+  gap: 24px;
 }
 
 .span-2 { grid-column: span 2; }
 
 .detail-item .label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  color: var(--text-gray);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-}
-
-.detail-item .value {
-  font-size: 1rem;
-  color: var(--text-dark);
-  margin-top: 4px;
-}
-
-.form-input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: 0.2s;
-}
-
-.form-input:focus {
-  border-color: var(--primary-blue);
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-}
-
-/* --- 3D CARD FLIP ANIMATION --- */
-.card-scene {
-  width: 100%;
-  height: 180px;
-  perspective: 1000px;
-  margin-bottom: 25px;
-}
-
-.card-object {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  transition: transform 0.6s;
-  transform-style: preserve-3d;
-}
-
-.card-object.is-flipped {
-  transform: rotateY(180deg);
-}
-
-.card-face {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
-  border-radius: 12px;
-  padding: 20px;
-  color: white;
-}
-
-.card-front { background: linear-gradient(135deg, #1e293b, #334155); }
-.card-back { background: #2d3748; transform: rotateY(180deg); }
-
-.card-magnetic-strip {
-  background: #000;
-  height: 35px;
-  width: 100%;
-  margin-top: 10px;
-}
-
-/* --- BACKGROUND BUBBLE ANIMATION --- */
-.circles {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  overflow: hidden;
-  z-index: 0;
-}
-
-.circles li {
-  position: absolute;
   display: block;
-  list-style: none;
-  width: 20px; height: 20px;
-  background: rgba(59, 130, 246, 0.1);
-  animation: animateCircles 25s linear infinite;
-  bottom: -150px;
-}
-
-.circles li:nth-child(1) { left: 25%; width: 80px; height: 80px; animation-delay: 0s; }
-.circles li:nth-child(2) { left: 10%; width: 20px; height: 20px; animation-delay: 2s; animation-duration: 12s; }
-.circles li:nth-child(3) { left: 70%; width: 20px; height: 20px; animation-delay: 4s; }
-.circles li:nth-child(4) { left: 40%; width: 60px; height: 60px; animation-delay: 0s; animation-duration: 18s; }
-.circles li:nth-child(5) { left: 65%; width: 20px; height: 20px; animation-delay: 0s; }
-
-@keyframes animateCircles {
-  0% { transform: translateY(0) rotate(0deg); opacity: 1; border-radius: 0; }
-  100% { transform: translateY(-1000px) rotate(720deg); opacity: 0; border-radius: 50%; }
-}
-
-/* --- MODAL STYLES --- */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.4);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 420px;
-}
-
-/* --- BUTTONS & STATUS --- */
-.btn-primary {
-  background-color: var(--primary-blue);
-  color: white;
-  padding: 12px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.btn-primary:hover { background-color: var(--primary-hover); }
-
-.status-badge {
-  padding: 4px 12px;
-  border-radius: 20px;
   font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.status-badge.completed { background: #d1fae5; color: #065f46; }
-.status-badge.pending { background: #fef3c7; color: #92400e; }
-
-@media (max-width: 850px) {
-  .profile-container { grid-template-columns: 1fr; }
-}
-
-/* --- PROFILE INNER DETAILS --- */
-
-/* 1. Avatar Section Styling */
-.avatar-wrapper {
-  position: relative;
-  display: inline-block;
-  padding: 5px;
-  background: white;
-  border-radius: 50%;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-}
-
-.profile-avatar-img, 
-.profile-avatar-placeholder-pic {
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 4px solid #fff;
-  transition: transform 0.3s ease;
-}
-
-.profile-avatar-section h2 {
-  font-size: 1.5rem;
   font-weight: 700;
-  color: #111827;
-  margin-bottom: 4px;
-  letter-spacing: -0.5px;
-}
-
-.profile-user-email {
-  font-size: 0.95rem;
-  color: #6b7280;
-  font-weight: 400;
-}
-
-/* 2. Payment Method Card Styling */
-.payment-mini-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  margin: 15px 0;
-}
-
-.payment-mini-card .brand {
-  font-weight: 700;
-  color: #1e293b;
-  text-transform: uppercase;
-  font-size: 0.8rem;
-  letter-spacing: 1px;
-}
-
-.payment-mini-card .digits {
-  color: #64748b;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 1rem;
-}
-
-/* 3. User Details Form/Grid */
-.card-header h3 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.detail-item {
-  padding: 10px 0;
-}
-
-.detail-item .label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #94a3b8;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 6px;
-  display: block;
 }
 
 .detail-item .value {
-  font-size: 1.05rem;
-  color: #334155;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-}
-
-/* 4. Edit Mode Inputs */
-.form-input {
-  border: 1px solid #cbd5e1;
-  background-color: #ffffff;
-  padding: 12px 16px;
-  border-radius: 10px;
-  font-size: 0.95rem;
-  width: 100%;
-  transition: all 0.2s ease;
-}
-
-.form-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-}
-
-.divider.span-2 {
-  padding: 20px 0 10px 0;
-  font-weight: 700;
-  color: #1e293b;
-  border-bottom: 2px solid #f1f5f9;
-  margin-bottom: 15px;
-}
-
-/* 5. Orders List Styling */
-.order-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border: 1px solid #f1f5f9;
-  border-radius: 12px;
-  margin-bottom: 12px;
-  background: #ffffff;
-  transition: transform 0.2s ease;
-}
-
-.order-item:hover {
-  transform: translateX(5px);
-  border-color: #e2e8f0;
-}
-
-.order-id {
-  font-weight: 700;
-  color: #1e293b;
-  display: block;
   font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main);
 }
 
-.order-date {
-  font-size: 0.85rem;
-  color: #94a3b8;
-}
-
-.order-total {
-  font-weight: 800;
-  color: #1e293b;
-  font-size: 1.1rem;
-  text-align: right;
-}
-
-.order-right {
+.flex-align {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
 }
 
-/* Status Badge Refinement */
-.status-badge {
-  padding: 6px 12px;
+/* Bookings */
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-dark);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.booking-ticket {
+  display: flex;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  transition: var(--transition-smooth);
+}
+
+.booking-ticket:hover {
+  box-shadow: var(--shadow-sm);
+  border-color: #cbd5e1;
+}
+
+.ticket-date-box {
+  width: 100px;
+  background: #eff6ff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #e2e8f0;
+}
+
+.ticket-date-box .month {
+  color: var(--color-primary);
+  font-weight: 800;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+.ticket-date-box .day {
+  color: var(--color-dark);
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.ticket-center {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.booking-hotel-name {
+  font-size: 1.1rem;
   font-weight: 700;
+  color: var(--color-dark);
+  margin-bottom: 8px;
+}
+
+.booking-meta {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ticket-right {
+  width: 180px;
+  background: #f8fafc;
+  border-left: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 20px;
+}
+
+.ticket-price {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--color-dark);
+  margin: 10px 0;
+}
+
+.ticket-status {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
   font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-radius: 8px;
 }
 
-.status-badge.completed {
-  background-color: #ecfdf5;
-  color: #059669;
-}
+.ticket-status.confirmed { background: #dcfce7; color: #166534; }
+.ticket-status.pending { background: #fef9c3; color: #a16207; }
+.ticket-status.cancelled { background: #fee2e2; color: #b91c1c; }
 
-.status-badge.pending {
-  background-color: #fffbeb;
-  color: #d97706;
-}
-
-/* Icons styling */
-.btn-icon {
-  background: #f1f5f9;
+.btn-review-link {
+  background: transparent;
   border: none;
-  padding: 8px;
-  border-radius: 8px;
-  color: #64748b;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.btn-icon:hover {
-  background: #e2e8f0;
-  color: #1e293b;
+.btn-review-link:hover {
+  text-decoration: underline;
 }
 
-.btn-icon.active {
-  background: #fee2e2;
-  color: #ef4444;
+/* Modals */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.modal-content {
+  background: var(--color-surface);
+  padding: 30px;
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 450px;
+  box-shadow: var(--shadow-float);
+  position: relative;
+}
+
+.modal-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header-row h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--color-dark);
+}
+
+.modal-close-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.full-width { width: 100%; }
+
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+.btn-primary:hover { background: var(--color-primary-hover); }
+
+/* Messages */
+.message { padding: 12px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; font-size: 0.9rem; }
+.success-message { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.error-message { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+
+@media (max-width: 900px) {
+  .profile-container { grid-template-columns: 1fr; }
+  .profile-sidebar { position: static; }
+  .details-grid, .form-grid { grid-template-columns: 1fr; }
+  .span-2 { grid-column: span 1; }
+  .booking-ticket { flex-direction: column; }
+  .ticket-date-box { width: 100%; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 10px; flex-direction: row; gap: 10px; }
+  .ticket-right { width: 100%; border-left: none; border-top: 1px solid #e2e8f0; flex-direction: row; justify-content: space-between; align-items: center; }
+  .ticket-price { margin: 0; }
 }

@@ -1,29 +1,136 @@
-const knex = require('../../config/knex');
+const knex = require('../../config/db');
 
-// Get all bookings
-exports.getAllBookings = async () => await knex('bookings').select('*');
-
-exports.getBookingById = (id) => knex('bookings').where({ id }).first();
-
-exports.createBooking = async (booking) => {
-  const [newBooking] = await knex('bookings')
-    .insert(booking)
-    .returning('*');
-  return newBooking;
+// Helper: Generate unique reference (e.g., "BKG-8X92")
+const generateReference = () => {
+    return 'BKG-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 };
 
-exports.updateBooking = (id, booking) => knex('bookings').where({ id }).update(booking);
+// 1. CREATE BOOKING (The Critical Transaction)
+// ✅ Updated: Locks inventory rows to prevent double-booking
+exports.createBooking = async (bookingData, paymentData) => {
+    return await knex.transaction(async (trx) => {
+        
+        // STEP A: Double-Check Availability (With Validation)
+        const checkAvailability = await trx('room_availability')
+            .where('room_id', bookingData.room_id)
+            .whereBetween('date', [bookingData.check_in, bookingData.check_out])
+            .orderBy('date', 'asc') // Prevents Deadlocks
+            .forUpdate();           // Locks Rows
 
+        // ✅ FIX 1: Prevent "Ghost" Bookings
+        // If the admin hasn't created these dates in the DB yet, we must stop.
+        if (checkAvailability.length === 0) {
+            throw new Error('Room configuration not found for these dates.');
+        }
+
+        // Logic Check: Filter for sold out days
+        const soldOutDays = checkAvailability.filter(day => day.available_quantity < 1);
+        if (soldOutDays.length > 0) {
+            throw new Error('Room is no longer available for these dates.');
+        }
+
+        // STEP B: Decrement Inventory
+        await trx('room_availability')
+            .where('room_id', bookingData.room_id)
+            .whereBetween('date', [bookingData.check_in, bookingData.check_out])
+            .decrement('available_quantity', 1);
+
+        // STEP C: Insert Booking
+        // Generate Reference
+        const reference = typeof generateReference === 'function' 
+            ? generateReference() 
+            : `BK-${Date.now()}`;
+
+        // ✅ FIX 2: Dynamic Status (Prevent "False Paid" records)
+        // Only mark as 'confirmed'/'paid' if we actually have payment data.
+        const isPaid = !!paymentData; 
+
+        const [bookingId] = await trx('bookings').insert({
+            ...bookingData,
+            booking_reference: reference,
+            
+            // If paymentData exists -> 'confirmed'. If not -> 'pending_payment'
+            status: isPaid ? 'confirmed' : 'pending_payment', 
+            
+            // If paymentData exists -> 'paid'. If not -> 'unpaid'
+            payment_status: isPaid ? 'paid' : 'unpaid'
+        });
+
+        // STEP D: Record Payment Transaction (Only if payment exists)
+        if (isPaid) {
+            await trx('payment_transactions').insert({
+                booking_id: bookingId,
+                user_id: bookingData.user_id,
+                transaction_id: paymentData.token_id, 
+                payment_provider: paymentData.provider,
+                amount: bookingData.total_price,
+                status: 'succeeded',
+                transaction_type: 'payment',
+                created_at: new Date()
+            });
+        }
+
+        return { bookingId, reference, status: isPaid ? 'confirmed' : 'pending_payment' };
+    });
+};
+
+// 2. GET MY BOOKINGS (User Dashboard - Detailed)
+exports.getDetailedBookingsByUserId = (userId) => {
+    return knex('bookings')
+        .join('hotels', 'bookings.hotel_id', 'hotels.id')
+        .join('rooms', 'bookings.room_id', 'rooms.id')
+        .select(
+            'bookings.*',
+            'hotels.name as hotel_name',
+            'hotels.main_image as hotel_image', 
+            'hotels.city as hotel_city',
+            'rooms.title as room_title',
+            'rooms.room_type'
+        )
+        .where('bookings.user_id', userId)
+        .orderBy('bookings.check_in', 'desc');
+};
+
+// 3. GET MANAGER BOOKINGS (Dashboard)
+exports.getBookingsByManagerId = (managerId) => {
+    return knex('bookings')
+        .join('hotels', 'bookings.hotel_id', 'hotels.id')
+        .join('rooms', 'bookings.room_id', 'rooms.id')
+        .join('users', 'bookings.user_id', 'users.id') // Guest Info
+        .select(
+            'bookings.*',
+            'hotels.name as hotel_name',
+            'rooms.title as room_title',
+            'users.username as guest_name',
+            'users.email as guest_email',
+            'users.profile_image as guest_image'
+        )
+        .where('hotels.manager_id', managerId)
+        .orderBy('bookings.check_in', 'asc');
+};
+
+// 4. GET SINGLE BOOKING (Detailed)
+exports.getBookingById = (id) => {
+    return knex('bookings')
+        .join('hotels', 'bookings.hotel_id', 'hotels.id')
+        .join('rooms', 'bookings.room_id', 'rooms.id')
+        .select(
+            'bookings.*',
+            'hotels.name as hotel_name',
+            'rooms.title as room_title',
+            'hotels.manager_id' // Needed for permission check
+        )
+        .where('bookings.id', id)
+        .first();
+};
+
+// 5. UPDATE STATUS
+exports.updateStatus = async (id, status) => {
+    await knex('bookings').where({ id }).update({ status });
+    return exports.getBookingById(id);
+};
+
+// 6. ADMIN & HELPERS
+exports.getAllBookings = () => knex('bookings').select('*');
 exports.deleteBooking = (id) => knex('bookings').where({ id }).del();
-
-exports.getBookingsByUserId = (userId) => knex('bookings').where({ user_id: userId });
-
-exports.getRecentBookings = (limit = 5) => 
-  knex('bookings')
-    .select('*')
-    .orderBy('created_at', 'desc')
-    .limit(limit);
-
-exports.findById = async (id) => {
-  return await knex('bookings').select('*').where({ id }).first();
-};
+exports.getBookingsByHotelId = (hotelId) => knex('bookings').where({ hotel_id: hotelId });
