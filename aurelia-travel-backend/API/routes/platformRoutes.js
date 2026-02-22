@@ -10,6 +10,7 @@ const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 // ==========================================
 router.get('/settings/public', platformController.getPublicSettings);
 router.post('/contact', platformController.submitContact);
+router.get('/stats/public', platformController.getPublicStats);
 
 // ==========================================
 // 🔒 PROTECTED SUPER ADMIN ROUTES

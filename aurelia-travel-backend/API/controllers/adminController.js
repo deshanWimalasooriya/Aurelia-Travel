@@ -1,23 +1,27 @@
 const adminModel = require('../models/adminModel');
+const platformModel = require('../models/platformModel');
 
 exports.getAnalyticsData = async (req, res) => {
     try {
         // Parallel Data Fetching for Performance
-        const [revenueTrends, byHotel, byStatus, hotelFinancialsRaw] = await Promise.all([
+        const [revenueTrends, byHotel, byStatus, hotelFinancialsRaw, settings] = await Promise.all([
             adminModel.getMonthlyRevenue(),
             adminModel.getBookingsByHotel(),
             adminModel.getBookingStatusStats(),
-            adminModel.getHotelFinancials()
+            adminModel.getHotelFinancials(),
+            platformModel.getSettings() 
         ]);
 
-        // Process Hotel Financials & Calculate Global Summary
+        const globalRate = settings ? parseFloat(settings.commission_rate) : 0;
+
         let totalRevenue = 0;
         let totalCommission = 0;
         let totalBookings = 0;
 
         const hotelFinancials = hotelFinancialsRaw.map(h => {
             const rev = parseFloat(h.revenue || 0);
-            const rate = parseFloat(h.commission_rate || 5.00); // Default 5%
+            // ✨ Apply the live rate
+            const rate = parseFloat(h.commission_rate || globalRate);
             const comm = rev * (rate / 100);
             
             // Fix: Parse string counts into actual integers
@@ -63,9 +67,17 @@ exports.getAnalyticsData = async (req, res) => {
 };
 
 exports.getDashboardStats = async (req, res) => {
-    try {
-        const stats = await adminModel.getGlobalStats();
-        const netRevenue = stats.total_revenue * 0.05; // Approx 5% estimate for header
+    try {0
+
+        // Fetch stats and settings together
+        const [stats, settings] = await Promise.all([
+            adminModel.getGlobalStats(),
+            platformModel.getSettings()
+        ]);
+
+        const globalRate = settings ? parseFloat(settings.commission_rate) : 0;
+        // ✨ Calculate header estimation using actual rate
+        const netRevenue = stats.total_revenue * (globalRate / 100);
         
         const formattedStats = [
             { label: 'Total Bookings', value: stats.total_bookings, icon: '📅' },

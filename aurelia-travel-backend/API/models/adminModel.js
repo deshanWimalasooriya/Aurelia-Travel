@@ -41,7 +41,14 @@ exports.getBookingStatusStats = () => {
 };
 
 exports.getHotelFinancials = () => {
-    return knex('bookings').join('hotels', 'bookings.hotel_id', 'hotels.id').select('hotels.id', 'hotels.name').count('bookings.id as bookings').sum('bookings.total_price as revenue').whereIn('bookings.status', ['confirmed', 'completed']).groupBy('hotels.id', 'hotels.name').orderBy('revenue', 'desc');
+    return knex('bookings')
+    .join('hotels', 'bookings.hotel_id', 'hotels.id')
+    .select('hotels.id', 'hotels.name', 'hotels.commission_rate')
+    .count('bookings.id as bookings')
+    .sum('bookings.total_price as revenue')
+    .whereIn('bookings.status', ['confirmed', 'completed'])
+    .groupBy('hotels.id', 'hotels.name', 'hotels.commission_rate')
+    .orderBy('revenue', 'desc');
 };
 
 exports.getRecentActivity = () => {

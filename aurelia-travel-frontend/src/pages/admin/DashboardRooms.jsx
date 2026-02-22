@@ -6,7 +6,7 @@ import {
   Search, X, Users, Building, Maximize, 
   BedDouble, Mountain, Bold, Italic, Underline, List, 
   ListOrdered, Coffee, Cigarette, RefreshCw, MinusCircle, Star,
-  Power
+  Power, UploadCloud, CheckCircle2
 } from 'lucide-react';
 import './styles/dashboard-rooms.css';
 
@@ -67,6 +67,10 @@ const DashboardRooms = () => {
   const [editingRoom, setEditingRoom] = useState(null);
   const [selectedHotelFilter, setSelectedHotelFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // NEW: Image Upload States
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [manualUrl, setManualUrl] = useState('');
 
   const [formData, setFormData] = useState({
     title: '', hotelId: '', price: '', description: '', roomType: 'Standard',
@@ -111,12 +115,19 @@ const DashboardRooms = () => {
 
   const handleSwitchToForm = (room = null) => {
       setEditingRoom(room);
+      setSelectedFiles([]);
+      // Free up memory from image previews
+      formData.images.forEach(img => { if(img.file) URL.revokeObjectURL(img.url); });
+
       if (room) {
-          const processedImages = (room.images_meta && room.images_meta.length > 0)
-            ? room.images_meta.map(img => ({ url: img.url, isPrimary: img.isPrimary }))
-            : (room.images && room.images.length > 0
-                ? room.images.map(url => ({ url, isPrimary: url === room.main_image }))
-                : [{ url: room.main_image || '', isPrimary: true }]);
+          let processedImages = [];
+          if (room.images_meta && room.images_meta.length > 0) {
+              processedImages = room.images_meta.map(img => ({ url: img.url, isPrimary: img.isPrimary, file: null }));
+          } else if (room.images && room.images.length > 0) {
+              processedImages = room.images.map(url => ({ url, isPrimary: url === room.main_image, file: null }));
+          } else if (room.main_image) {
+              processedImages = [{ url: room.main_image, isPrimary: true, file: null }];
+          }
             
           if (processedImages.length && !processedImages.some(i => i.isPrimary)) processedImages[0].isPrimary = true;
 
@@ -132,50 +143,113 @@ const DashboardRooms = () => {
           setFormData({
               title: '', hotelId: (selectedHotelFilter !== 'all' ? selectedHotelFilter : ''), 
               price: '', description: '', roomType: 'Standard', maxAdults: 2, maxChildren: 0, sizeSqm: '', 
-              viewType: '', bedType: '', totalQuantity: 1, images: [{ url: '', isPrimary: true }], 
+              viewType: '', bedType: '', totalQuantity: 1, images: [], 
               hasBreakfast: false, isRefundable: true, smokingAllowed: false
           });
       }
       setView('form');
   };
 
-  const handleImageChange = (index, value) => {
-      const newImages = [...formData.images];
-      newImages[index].url = value;
-      setFormData({ ...formData, images: newImages });
+  // --- UNIFIED IMAGE MANAGEMENT LOGIC ---
+  const handleFileSelect = (e) => {
+      const files = Array.from(e.target.files);
+      const newImages = files.map(file => ({
+          url: URL.createObjectURL(file), // Local Preview URL
+          file: file,
+          isPrimary: false
+      }));
+
+      setFormData(prev => {
+          const updated = [...prev.images, ...newImages];
+          if (updated.length > 0 && !updated.some(i => i.isPrimary)) updated[0].isPrimary = true;
+          return { ...prev, images: updated };
+      });
+      e.target.value = null; // Reset input
   };
-  const addImageField = () => setFormData({ ...formData, images: [...formData.images, { url: '', isPrimary: false }] });
+
+  const addManualUrl = () => {
+      if (!manualUrl.trim()) return;
+      setFormData(prev => {
+          const updated = [...prev.images, { url: manualUrl.trim(), isPrimary: false, file: null }];
+          if (updated.length > 0 && !updated.some(i => i.isPrimary)) updated[0].isPrimary = true;
+          return { ...prev, images: updated };
+      });
+      setManualUrl('');
+  };
+
   const removeImageField = (index) => {
-      const newImages = formData.images.filter((_, i) => i !== index);
-      if (newImages.length && !newImages.some(i => i.isPrimary)) newImages[0].isPrimary = true;
-      setFormData({ ...formData, images: newImages.length ? newImages : [{url:'', isPrimary:true}] });
+      setFormData(prev => {
+          const imgToRemove = prev.images[index];
+          if (imgToRemove.file) URL.revokeObjectURL(imgToRemove.url); 
+
+          const updated = prev.images.filter((_, i) => i !== index);
+          if (updated.length > 0 && !updated.some(i => i.isPrimary)) updated[0].isPrimary = true;
+          return { ...prev, images: updated };
+      });
   };
+
   const setPrimaryImage = (index) => {
-      const newImages = formData.images.map((img, i) => ({ ...img, isPrimary: i === index }));
-      setFormData({ ...formData, images: newImages });
+      setFormData(prev => ({
+          ...prev,
+          images: prev.images.map((img, i) => ({ ...img, isPrimary: i === index }))
+      }));
   };
+  // ----------------------------------------
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    const validImages = formData.images.filter(img => img.url.trim() !== '');
-
-    const payload = {
-        hotel_id: formData.hotelId, title: formData.title, room_type: formData.roomType, description: formData.description,
-        base_price_per_night: Number(formData.price), max_adults: Number(formData.maxAdults), max_children: Number(formData.maxChildren),
-        size_sqm: formData.sizeSqm ? Number(formData.sizeSqm) : null, view_type: formData.viewType, bed_type: formData.bedType, 
-        total_quantity: Number(formData.totalQuantity),
-        has_breakfast: formData.hasBreakfast ? 1 : 0, is_refundable: formData.isRefundable ? 1 : 0, smoking_allowed: formData.smokingAllowed ? 1 : 0,
-        images: validImages, 
-    };
-
     try {
+        const localImages = formData.images.filter(img => img.file);
+        const existingImages = formData.images.filter(img => !img.file);
+        let uploadedImagesArray = [];
+
+        // 1. Upload Local Files
+        if (localImages.length > 0) {
+            const uploadData = new FormData();
+            localImages.forEach(img => { uploadData.append('images', img.file); });
+
+            const uploadRes = await api.post('/upload/bulk', uploadData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            uploadedImagesArray = uploadRes.data.images.map((backendImg, index) => ({
+                url: backendImg.url,
+                isPrimary: localImages[index].isPrimary 
+            }));
+        }
+
+        // 2. Assemble Final Images Array
+        const finalImages = [
+            ...existingImages.map(img => ({ url: img.url, isPrimary: img.isPrimary })),
+            ...uploadedImagesArray
+        ];
+
+        if (finalImages.length > 0 && !finalImages.some(img => img.isPrimary)) {
+            finalImages[0].isPrimary = true;
+        }
+
+        // 3. Assemble Room Payload
+        const payload = {
+            hotel_id: formData.hotelId, title: formData.title, room_type: formData.roomType, description: formData.description,
+            base_price_per_night: Number(formData.price), max_adults: Number(formData.maxAdults), max_children: Number(formData.maxChildren),
+            size_sqm: formData.sizeSqm ? Number(formData.sizeSqm) : null, view_type: formData.viewType, bed_type: formData.bedType, 
+            total_quantity: Number(formData.totalQuantity),
+            has_breakfast: formData.hasBreakfast ? 1 : 0, is_refundable: formData.isRefundable ? 1 : 0, smoking_allowed: formData.smokingAllowed ? 1 : 0,
+            images: finalImages, 
+        };
+
         if (editingRoom) await api.put(`/rooms/${editingRoom.id}`, payload);
         else await api.post('/rooms', payload);
-        await fetchRooms(); setView('list');
-    } catch (err) { alert("Error: " + (err.response?.data?.message || err.message)); } 
-    finally { setLoading(false); }
+        
+        await fetchRooms(); 
+        setView('list');
+    } catch (err) { 
+        alert("Error: " + (err.response?.data?.message || err.message)); 
+    } finally { 
+        setLoading(false); 
+    }
   };
 
   const handleDelete = async (id) => {
@@ -338,23 +412,53 @@ const DashboardRooms = () => {
                     <div className="form-section">
                         <h4 className="section-heading"><ImageIcon size={18}/> Image Gallery</h4>
                         <div className="core-info-grid">
-                            <div className="image-inputs-col">
-                                {formData.images.map((img, index) => (
-                                    <div key={index} className="image-input-row" style={{display:'flex', gap:'8px', alignItems:'center', marginBottom:'8px'}}>
-                                        <button type="button" onClick={() => setPrimaryImage(index)} className="icon-btn" style={{color: img.isPrimary ? '#f59e0b' : '#cbd5e1', borderColor: img.isPrimary ? '#f59e0b' : '#e2e8f0', flexShrink:0}}>
-                                            <Star size={16} fill={img.isPrimary ? '#f59e0b' : 'none'}/>
-                                        </button>
-                                        <input className="form-input" placeholder={`Image URL ${index + 1}`} value={img.url} onChange={(e) => handleImageChange(index, e.target.value)}/>
-                                        {formData.images.length > 1 && (
-                                            <button type="button" className="icon-btn delete" onClick={() => removeImageField(index)} title="Remove" style={{flexShrink:0}}><MinusCircle size={16}/></button>
-                                        )}
+                            
+                            {/* UPDATED: Dropzone & Visual Grid */}
+                            <div className="image-preview-wrapper" style={{ gridColumn: '1 / -1' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Room Images <span className="req">*</span></label>
+                                
+                                <div className="upload-dropzone">
+                                    <input type="file" multiple accept="image/*" onChange={handleFileSelect} />
+                                    <div className="dropzone-content">
+                                        <UploadCloud size={28} color="#3b82f6" />
+                                        <span>Click here to select images from your computer</span>
                                     </div>
-                                ))}
-                                <button type="button" className="btn-ghost" style={{width: '100%', justifyContent:'center'}} onClick={addImageField}>+ Add Image URL</button>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                                    <input 
+                                        type="text" 
+                                        className="form-input" 
+                                        placeholder="Or paste an image URL directly..." 
+                                        value={manualUrl} 
+                                        onChange={e => setManualUrl(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addManualUrl(); } }}
+                                    />
+                                    <button type="button" className="btn-ghost" onClick={addManualUrl}>Add</button>
+                                </div>
+
+                                {formData.images.length > 0 && (
+                                    <div className="image-grid-manager">
+                                        {formData.images.map((img, i) => (
+                                            <div key={i} className={`image-preview-card ${img.isPrimary ? 'is-primary' : ''}`}>
+                                                <img src={img.url} alt={`Room Preview ${i}`} />
+                                                {img.isPrimary && <span className="primary-badge">Cover</span>}
+                                                <div className="image-actions">
+                                                    {!img.isPrimary && (
+                                                        <button type="button" className="img-action-btn" onClick={() => setPrimaryImage(i)} title="Set as Cover Photo">
+                                                            <Star size={14} color="#f59e0b" fill="#f59e0b"/>
+                                                        </button>
+                                                    )}
+                                                    <button type="button" className="img-action-btn" onClick={() => removeImageField(i)} title="Remove Image">
+                                                        <Trash2 size={14} color="#ef4444" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            <div className="image-preview-box">
-                                {formData.images.find(i=>i.isPrimary && i.url) ? <img src={formData.images.find(i=>i.isPrimary).url} alt="Preview" onError={(e) => e.target.style.display='none'}/> : <div className="preview-placeholder"><ImageIcon size={32}/><span>Primary Image</span></div>}
-                            </div>
+
                         </div>
                     </div>
 

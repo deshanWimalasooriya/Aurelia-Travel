@@ -243,3 +243,92 @@
 .toolbar-divider { width: 1px; height: 20px; background: #cbd5e1; margin: 0 8px; }
 .editor-content { min-height: 150px; padding: 16px; font-size: 0.95rem; color: var(--text-main); outline: none; line-height: 1.6; }
 
+/* --- BULK IMAGE UPLOAD & PREVIEW GRID --- */
+.upload-dropzone {
+    position: relative;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    background-color: #f8fafc;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.upload-dropzone:hover {
+    background-color: #f1f5f9;
+    border-color: #94a3b8;
+}
+.upload-dropzone input[type="file"] {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+.dropzone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: #64748b;
+}
+.image-grid-manager {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+.image-preview-card {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 1;
+    background: #e2e8f0;
+    border: 3px solid transparent;
+    transition: transform 0.2s ease;
+}
+.image-preview-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.image-preview-card.is-primary {
+    border-color: #f59e0b; /* Orange border for the cover image */
+}
+.image-preview-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.image-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 6px;
+}
+.img-action-btn {
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    border-radius: 6px;
+    padding: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.img-action-btn:hover {
+    background: white;
+    transform: scale(1.05);
+}
+.primary-badge {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: #f59e0b;
+    color: white;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}

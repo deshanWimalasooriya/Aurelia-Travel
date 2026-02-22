@@ -1,23 +1,40 @@
-import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom' 
-import Slider from '../components/ui/Slider'
-import './styles/Home.css'
+import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import Slider from '../components/ui/Slider';
+import api from '../services/api'; // ✨ Import your API service
+import './styles/Home.css';
+
+// ✨ FORMATTER FUNCTION (Handles K and M conversions)
+const formatStatNumber = (num) => {
+    if (!num) return "0";
+    if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M+';
+    if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K+';
+    return num.toString() + '+';
+};
 
 const Home = () => {
-  const [showIntro, setShowIntro] = useState(true)
+  const [showIntro, setShowIntro] = useState(true);
+  
+  // ✨ STATE FOR LIVE STATS
+  const [stats, setStats] = useState({
+      users: 0,
+      hotels: 0,
+      locations: 154, // Example Data
+      transports: 42  // Example Data
+  });
   
   // Scroll Reveal Logic
-  const revealRefs = useRef([])
+  const revealRefs = useRef([]);
   const addToRefs = (el) => {
     if (el && !revealRefs.current.includes(el)) {
-      revealRefs.current.push(el)
+      revealRefs.current.push(el);
     }
-  }
+  };
 
   useEffect(() => {
     // 1. Cinematic Timer
     const timer = setTimeout(() => {
-        setShowIntro(false)
+        setShowIntro(false);
     }, 2500); 
 
     // 2. Scroll Observer Setup
@@ -25,20 +42,39 @@ const Home = () => {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add('visible')
+            entry.target.classList.add('visible');
           }
-        })
+        });
       },
       { threshold: 0.1 } 
-    )
+    );
 
-    revealRefs.current.forEach((el) => observer.observe(el))
+    revealRefs.current.forEach((el) => observer.observe(el));
+
+    // ✨ 3. FETCH LIVE PLATFORM STATS
+    const fetchStats = async () => {
+        try {
+            // Using the public route we discussed earlier
+            const res = await api.get('/platform/stats/public');
+            if (res.data && res.data.success) {
+                setStats(prev => ({
+                    ...prev,
+                    users: res.data.data.users,
+                    hotels: res.data.data.hotels
+                }));
+            }
+        } catch (err) {
+            console.error("Failed to fetch live stats", err);
+        }
+    };
+    
+    fetchStats();
 
     return () => {
-      clearTimeout(timer)
-      observer.disconnect()
-    }
-  }, [showIntro])
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [showIntro]);
 
   return (
     <>
@@ -81,6 +117,30 @@ const Home = () => {
                 <div className="mouse"></div>
              </div>
         </header>
+
+        {/* ✨ SECTION 1.5: FLOATING GLASS STATS */}
+        <section className="stats-glass-section" ref={addToRefs}>
+            <div className="container">
+                <div className="stats-glass-panel">
+                    <div className="stat-glass-item">
+                        <h3 className="stat-number gradient-text">{formatStatNumber(stats.users)}</h3>
+                        <p className="stat-label">Happy Travelers</p>
+                    </div>
+                    <div className="stat-glass-item">
+                        <h3 className="stat-number gradient-text">{formatStatNumber(stats.hotels)}</h3>
+                        <p className="stat-label">Premium Properties</p>
+                    </div>
+                    <div className="stat-glass-item">
+                        <h3 className="stat-number gradient-text">{formatStatNumber(stats.locations)}</h3>
+                        <p className="stat-label">Global Destinations</p>
+                    </div>
+                    <div className="stat-glass-item">
+                        <h3 className="stat-number gradient-text">{formatStatNumber(stats.transports)}</h3>
+                        <p className="stat-label">Transport Options</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         {/* SECTION 2: THE "WHY" */}
         <section className="features-section">
@@ -162,7 +222,7 @@ const Home = () => {
 
       </div>
     </>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;

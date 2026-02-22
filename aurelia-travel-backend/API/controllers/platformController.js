@@ -368,3 +368,24 @@ exports.getPublicSettings = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch public settings' });
     }
 };
+
+// 🔓 PUBLIC: Get basic platform stats for the welcome page
+exports.getPublicStats = async (req, res) => {
+    try {
+        const [userResult, hotelResult] = await Promise.all([
+            platformModel.getUserCount(),
+            platformModel.getHotelCount()
+        ]);
+
+        res.json({
+            success: true,
+            data: {
+                users: parseInt(userResult?.count || 0),
+                hotels: parseInt(hotelResult?.count || 0)
+            }
+        });
+    } catch (err) {
+        console.error("Public Stats Error:", err);
+        res.status(500).json({ error: 'Failed to fetch public stats' });
+    }
+};

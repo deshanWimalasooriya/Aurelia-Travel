@@ -7,5 +7,6 @@ router.use(verifyToken);
 router.get('/', chatController.getHistory);
 router.get('/active', checkRole('admin'), chatController.getActiveChats);
 router.post('/', chatController.sendMessage);
+router.get('/unread-count', chatController.getUnreadCount);
 
 module.exports = router;

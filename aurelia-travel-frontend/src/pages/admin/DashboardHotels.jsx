@@ -7,7 +7,7 @@ import {
   MapPin, Clock, Phone, Search, X,
   Building, Star, CheckCircle2,
   Bold, Italic, List,
-  Power, Mail
+  Power, Mail, UploadCloud
 } from 'lucide-react';
 import './styles/dashboard-hotels.css';
 
@@ -77,7 +77,6 @@ const hasValidCoords = (lat, lng) => {
     return !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng));
 };
 
-
 const DashboardHotels = () => {
   const [view, setView] = useState('list');
   const [hotels, setHotels] = useState([]);
@@ -89,13 +88,14 @@ const DashboardHotels = () => {
   
   const [dbAmenities, setDbAmenities] = useState([]); 
   const [newAmenityText, setNewAmenityText] = useState('');
+  const [manualUrl, setManualUrl] = useState(''); // State for manual URL input
 
   const [formData, setFormData] = useState({
     name: '', description: '', address: '', city: '', province: '', 
     postalCode: '', country: '', latitude: '', longitude: '',
     email: '', phone: '', website: '',
     checkIn: '14:00', checkOut: '11:00', cancellationPolicy: '24', 
-    images: [], 
+    images: [], // Unified array: { url: string, isPrimary: boolean, file: File | null }
     amenities: [] 
   });
 
@@ -140,12 +140,19 @@ const DashboardHotels = () => {
 
   const handleSwitchToForm = (hotel = null) => {
     setEditingHotel(hotel);
+    
+    // Clean up memory from old previews
+    formData.images.forEach(img => { if(img.file) URL.revokeObjectURL(img.url); });
+
     if (hotel) {
-        const processedImages = (hotel.images_meta && hotel.images_meta.length > 0) 
-            ? hotel.images_meta.map(img => ({ url: img.url, isPrimary: img.isPrimary }))
-            : (hotel.images && hotel.images.length > 0 
-                ? hotel.images.map(url => ({ url, isPrimary: url === hotel.main_image })) 
-                : [{ url: hotel.main_image || '', isPrimary: true }]);
+        let processedImages = [];
+        if (hotel.images_meta && hotel.images_meta.length > 0) {
+            processedImages = hotel.images_meta.map(img => ({ url: img.url, isPrimary: img.isPrimary, file: null }));
+        } else if (hotel.images && hotel.images.length > 0) {
+            processedImages = hotel.images.map(url => ({ url, isPrimary: url === hotel.main_image, file: null }));
+        } else if (hotel.main_image) {
+            processedImages = [{ url: hotel.main_image, isPrimary: true, file: null }];
+        }
 
         if (processedImages.length > 0 && !processedImages.some(i => i.isPrimary)) processedImages[0].isPrimary = true;
 
@@ -165,7 +172,7 @@ const DashboardHotels = () => {
             name: '', description: '', address: '', city: '', province: '', postalCode: '', country: '', 
             latitude: '', longitude: '', email: '', phone: '', website: '', 
             checkIn: '14:00', checkOut: '11:00', cancellationPolicy: '24', 
-            images: [{ url: '', isPrimary: true }], amenities: [] 
+            images: [], amenities: [] 
         });
     }
     setView('form');
@@ -175,21 +182,52 @@ const DashboardHotels = () => {
       setFormData(prev => ({ ...prev, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }));
   };
 
-  const handleImageChange = (index, value) => {
-      const newImages = [...formData.images];
-      newImages[index].url = value;
-      setFormData({ ...formData, images: newImages });
+  // --- UNIFIED IMAGE MANAGEMENT LOGIC ---
+  const handleFileSelect = (e) => {
+      const files = Array.from(e.target.files);
+      const newImages = files.map(file => ({
+          url: URL.createObjectURL(file), // Creates a temporary local preview URL
+          file: file,
+          isPrimary: false
+      }));
+
+      setFormData(prev => {
+          const updated = [...prev.images, ...newImages];
+          if (updated.length > 0 && !updated.some(i => i.isPrimary)) updated[0].isPrimary = true;
+          return { ...prev, images: updated };
+      });
+      e.target.value = null; // Reset input so you can select the same file again if needed
   };
-  const addImageField = () => setFormData({ ...formData, images: [...formData.images, { url: '', isPrimary: false }] });
+
+  const addManualUrl = () => {
+      if (!manualUrl.trim()) return;
+      setFormData(prev => {
+          const updated = [...prev.images, { url: manualUrl.trim(), isPrimary: false, file: null }];
+          if (updated.length > 0 && !updated.some(i => i.isPrimary)) updated[0].isPrimary = true;
+          return { ...prev, images: updated };
+      });
+      setManualUrl('');
+  };
+
   const removeImageField = (index) => {
-      const newImages = formData.images.filter((_, i) => i !== index);
-      if (newImages.length && !newImages.some(i => i.isPrimary)) newImages[0].isPrimary = true;
-      setFormData({ ...formData, images: newImages.length ? newImages : [{url:'', isPrimary:true}] });
+      setFormData(prev => {
+          const imgToRemove = prev.images[index];
+          // Free memory if it was a local file preview
+          if (imgToRemove.file) URL.revokeObjectURL(imgToRemove.url); 
+
+          const updated = prev.images.filter((_, i) => i !== index);
+          if (updated.length > 0 && !updated.some(i => i.isPrimary)) updated[0].isPrimary = true;
+          return { ...prev, images: updated };
+      });
   };
+
   const setPrimaryImage = (index) => {
-      const newImages = formData.images.map((img, i) => ({ ...img, isPrimary: i === index }));
-      setFormData({ ...formData, images: newImages });
+      setFormData(prev => ({
+          ...prev,
+          images: prev.images.map((img, i) => ({ ...img, isPrimary: i === index }))
+      }));
   };
+  // ----------------------------------------
 
   const moveToSelected = (id) => {
       if (!formData.amenities.some(a => String(a) === String(id))) {
@@ -217,31 +255,68 @@ const DashboardHotels = () => {
   const selectedList = dbAmenities.filter(am => formData.amenities.some(id => String(id) === String(am.id)));
   const availableList = dbAmenities.filter(am => !formData.amenities.some(id => String(id) === String(am.id)));
 
+  // --- SUBMIT LOGIC ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const validImages = formData.images.filter(img => img.url.trim() !== '');
-    
-    // Safely parse numbers to avoid sending NaNs to backend
-    const payload = {
-      name: formData.name, description: formData.description, address_line_1: formData.address,
-      city: formData.city, state: formData.province, postal_code: formData.postalCode || '00000',
-      country: formData.country, 
-      latitude: formData.latitude ? parseFloat(formData.latitude) : null, 
-      longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-      email: formData.email, phone: formData.phone, website: formData.website,
-      check_in_time: formData.checkIn, check_out_time: formData.checkOut,
-      cancellation_policy_hours: parseInt(formData.cancellationPolicy) || 24,
-      images: validImages.map(img => img.url),
-      amenities: formData.amenities 
-    };
 
     try {
+      const localImages = formData.images.filter(img => img.file);
+      const existingImages = formData.images.filter(img => !img.file);
+      let uploadedImagesArray = [];
+
+      // 1. Upload Local Files to Cloudinary
+      if (localImages.length > 0) {
+        const uploadData = new FormData();
+        localImages.forEach(img => { uploadData.append('images', img.file); });
+
+        const uploadRes = await api.post('/upload/bulk', uploadData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        // Re-attach the user's primary selection to the newly created Cloudinary URLs
+        uploadedImagesArray = uploadRes.data.images.map((backendImg, index) => ({
+            url: backendImg.url,
+            isPrimary: localImages[index].isPrimary 
+        }));
+      }
+
+      // 2. Combine all images for the database
+      const finalImages = [
+          ...existingImages.map(img => ({ url: img.url, isPrimary: img.isPrimary })),
+          ...uploadedImagesArray
+      ];
+
+      // Ensure at least one primary image exists in the final payload
+      if (finalImages.length > 0 && !finalImages.some(img => img.isPrimary)) {
+          finalImages[0].isPrimary = true;
+      }
+
+      // 3. Assemble Payload
+      const payload = {
+        name: formData.name, description: formData.description, address_line_1: formData.address,
+        city: formData.city, state: formData.province, postal_code: formData.postalCode || '00000',
+        country: formData.country, 
+        latitude: formData.latitude ? parseFloat(formData.latitude) : null, 
+        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+        email: formData.email, phone: formData.phone, website: formData.website,
+        check_in_time: formData.checkIn, check_out_time: formData.checkOut,
+        cancellation_policy_hours: parseInt(formData.cancellationPolicy) || 24,
+        images: finalImages, 
+        amenities: formData.amenities 
+      };
+
       if (editingHotel) await api.put(`/hotels/${editingHotel.id}`, payload);
       else await api.post('/hotels', payload);
-      await fetchHotels(); setView('list');
-    } catch (err) { alert("Error: " + (err.response?.data?.error || err.message)); } 
-    finally { setLoading(false); }
+      
+      await fetchHotels(); 
+      setView('list');
+
+    } catch (err) { 
+        alert("Error: " + (err.response?.data?.error || err.message)); 
+    } finally { 
+        setLoading(false); 
+    }
   };
 
   const handleDelete = async (id) => {
@@ -352,22 +427,51 @@ const DashboardHotels = () => {
                                 <div className="form-group"><label>Description</label><SimpleEditor value={formData.description} onChange={val => setFormData({...formData, description:val})}/></div>
                             </div>
                             <div className="image-preview-wrapper">
-                                <label>Images (Star = Primary)</label>
-                                <div className="image-inputs-col">
-                                    {formData.images.map((img, i) => (
-                                        <div key={i} style={{display:'flex', gap:'8px', alignItems:'center', marginBottom:'8px'}}>
-                                            <button type="button" onClick={() => setPrimaryImage(i)} className="icon-btn" style={{color: img.isPrimary ? '#f59e0b' : '#cbd5e1', borderColor: img.isPrimary ? '#f59e0b' : '#e2e8f0', width: '36px', flexShrink: 0}}>
-                                                <Star size={16} fill={img.isPrimary ? '#f59e0b' : 'none'}/>
-                                            </button>
-                                            <input className="form-input" placeholder="Image URL" value={img.url} onChange={e => handleImageChange(i, e.target.value)}/>
-                                            {formData.images.length > 1 && <button type="button" className="icon-btn delete" style={{flexShrink: 0}} onClick={() => removeImageField(i)}><MinusCircle size={16}/></button>}
-                                        </div>
-                                    ))}
-                                    <button type="button" className="btn-ghost" style={{width: '100%', justifyContent: 'center'}} onClick={addImageField}>+ Add Image URL</button>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Property Images <span className="req">*</span></label>
+                                
+                                {/* 1. Dropzone for Local Files */}
+                                <div className="upload-dropzone">
+                                    <input type="file" multiple accept="image/*" onChange={handleFileSelect} />
+                                    <div className="dropzone-content">
+                                        <UploadCloud size={28} color="#3b82f6" />
+                                        <span>Click here to select images from your computer</span>
+                                    </div>
                                 </div>
-                                <div className="image-preview-box mt-2">
-                                    {formData.images.find(i=>i.isPrimary && i.url) ? <img src={formData.images.find(i=>i.isPrimary).url} alt="Primary" onError={(e) => e.target.style.display='none'}/> : <div className="preview-placeholder"><ImageIcon size={32}/><span>Primary Image</span></div>}
+
+                                {/* 2. Fallback for Manual URLs */}
+                                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                                    <input 
+                                        type="text" 
+                                        className="form-input" 
+                                        placeholder="Or paste an image URL directly..." 
+                                        value={manualUrl} 
+                                        onChange={e => setManualUrl(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addManualUrl(); } }}
+                                    />
+                                    <button type="button" className="btn-ghost" onClick={addManualUrl}>Add</button>
                                 </div>
+
+                                {/* 3. The Visual Management Grid */}
+                                {formData.images.length > 0 && (
+                                    <div className="image-grid-manager">
+                                        {formData.images.map((img, i) => (
+                                            <div key={i} className={`image-preview-card ${img.isPrimary ? 'is-primary' : ''}`}>
+                                                <img src={img.url} alt={`Property Preview ${i}`} />
+                                                {img.isPrimary && <span className="primary-badge">Cover</span>}
+                                                <div className="image-actions">
+                                                    {!img.isPrimary && (
+                                                        <button type="button" className="img-action-btn" onClick={() => setPrimaryImage(i)} title="Set as Cover Photo">
+                                                            <Star size={14} color="#f59e0b" fill="#f59e0b"/>
+                                                        </button>
+                                                    )}
+                                                    <button type="button" className="img-action-btn" onClick={() => removeImageField(i)} title="Remove Image">
+                                                        <Trash2 size={14} color="#ef4444" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
