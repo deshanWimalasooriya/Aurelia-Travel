@@ -11,7 +11,7 @@ exports.createBooking = async (req, res) => {
         const userId = req.user.userId;
         const { 
             room_id, check_in, check_out, 
-            adults, children, payment_token, payment_provider 
+            adults, children, payment_token, payment_provider, room_count 
         } = req.body;
 
         // A. Validation
@@ -31,9 +31,11 @@ exports.createBooking = async (req, res) => {
         if (nights < 1) return res.status(400).json({ message: "Invalid dates (Check-out must be after Check-in)" });
 
         // Financial Calculation
-        const roomPrice = parseFloat(room.base_price_per_night) * nights;
-        const tax = roomPrice * 0.10; // 10% Tax
-        const service = roomPrice * 0.05; // 5% Service Fee
+        const qty = room_count ? parseInt(room_count) : 1;
+        const roomPrice = parseFloat(room.base_price_per_night) * nights * qty;
+        
+        const tax = 0; // Removed 10% Tax
+        const service = 0; // Removed 5% Service Fee
         const totalPrice = roomPrice + tax + service;
 
         // C. Construct Data

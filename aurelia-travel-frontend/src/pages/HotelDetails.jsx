@@ -491,7 +491,10 @@ const HotelDetails = () => {
                     <p className="no-charge-text">You won't be charged yet</p>
                     
                     {totalPrice > 0 && (
-                        <div className="total-row"><span>Total (Tax incl.)</span><span>${(totalPrice * 1.1).toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
+                        <div className="total-row">
+                            <span>Total</span>
+                            <span>${totalPrice.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                        </div>
                     )}
                 </div>
             </div>

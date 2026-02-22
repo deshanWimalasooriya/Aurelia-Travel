@@ -100,7 +100,7 @@ const ManagerFinance = () => {
       <div className="mf-header-row">
         <div>
             <h1>Financial Hub</h1>
-            <p>Manage earnings, pay platform fees (5%), and view statements.</p>
+            <p>Manage earnings, pay platform fees ({stats.current_rate || 5}%), and view statements.</p>
         </div>
         <div className="mf-contact-actions">
              <button className="mf-btn-ghost" onClick={() => window.location.href = 'mailto:support@aureliatravel.com'}>
@@ -163,15 +163,16 @@ const ManagerFinance = () => {
         <div className="mf-stat-card">
           <div className="mf-icon-wrapper bg-green"><TrendingUp size={24} /></div>
           <div className="mf-stat-info">
-            <span className="mf-stat-label">Total Booking Revenue</span>
-            <h2 className="mf-stat-value">${parseFloat(stats.total_revenue || 0).toLocaleString()}</h2>
-            <span className="mf-stat-sub">Gross income from completed stays</span>
-          </div>
+    {/* Update the hardcoded 5% to use the state variable */}
+            <span className="mf-stat-label">Commission Due ({stats.current_rate}%)</span>
+            <h2 className="mf-stat-value">${parseFloat(stats.unpaid_commission || 0).toLocaleString()}</h2>
+            <span className="mf-stat-sub">{stats.pending_bookings_count} bookings pending payment</span>
+        </div>
         </div>
         <div className={`mf-stat-card ${stats.unpaid_commission > 0 ? 'active-debt' : ''}`}>
           <div className="mf-icon-wrapper bg-orange"><DollarSign size={24} /></div>
           <div className="mf-stat-info">
-            <span className="mf-stat-label">Commission Due (5%)</span>
+            <span className="mf-stat-label">Commission Due ({stats.current_rate}%)</span>
             <h2 className="mf-stat-value">${parseFloat(stats.unpaid_commission || 0).toLocaleString()}</h2>
             <span className="mf-stat-sub">{stats.pending_bookings_count} bookings pending payment</span>
           </div>

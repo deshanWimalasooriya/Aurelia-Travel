@@ -1,4 +1,5 @@
 const financeModel = require('../models/financeModel');
+const platformModel = require('../models/platformModel');
 
 exports.getDashboard = async (req, res) => {
     try {
@@ -27,24 +28,27 @@ exports.getAnalytics = async (req, res) => {
         const managerId = req.user.userId;
 
         // Parallel Fetch
-        const [revenueTrends, byHotel, byStatus, hotelFinancialsRaw] = await Promise.all([
+        const [revenueTrends, byHotel, byStatus, hotelFinancialsRaw, settings] = await Promise.all([
             financeModel.getManagerRevenueTrends(managerId),
             financeModel.getManagerHotelsBreakdown(managerId),
             financeModel.getManagerBookingStatus(managerId),
-            financeModel.getManagerFinancialTable(managerId)
+            financeModel.getManagerFinancialTable(managerId),
+            platformModel.getSettings() 
         ]);
 
-        // Calculate Summary Safely
+        const globalRate = settings ? parseFloat(settings.commission_rate) : 5.00;
+
         let totalRevenue = 0;
         let totalCommission = 0;
         let totalBookings = 0;
 
         const hotelFinancials = hotelFinancialsRaw.map(h => {
+
             const rev = parseFloat(h.revenue || 0);
-            const rate = parseFloat(h.commission_rate || 5.00);
+            // ✨ Use the live global rate
+            const rate = parseFloat(h.commission_rate || globalRate); 
             const comm = rev * (rate / 100);
             
-            // Fix: Parse to integer to prevent "1" + "2" = "12" string concatenation bug
             const bookingsCount = parseInt(h.bookings || 0, 10);
             
             totalRevenue += rev;
