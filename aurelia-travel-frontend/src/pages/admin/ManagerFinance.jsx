@@ -100,7 +100,7 @@ const ManagerFinance = () => {
       <div className="mf-header-row">
         <div>
             <h1>Financial Hub</h1>
-            <p>Manage earnings, pay platform fees ({stats.current_rate || 5}%), and view statements.</p>
+            <p>Manage earnings, pay platform fees ({stats.current_rate || 0}%), and view statements.</p>
         </div>
         <div className="mf-contact-actions">
              <button className="mf-btn-ghost" onClick={() => window.location.href = 'mailto:support@aureliatravel.com'}>

@@ -12,7 +12,7 @@ exports.getAnalyticsData = async (req, res) => {
             platformModel.getSettings() 
         ]);
 
-        const globalRate = settings ? parseFloat(settings.commission_rate) : 5.00;
+        const globalRate = settings ? parseFloat(settings.commission_rate) : 0;
 
         let totalRevenue = 0;
         let totalCommission = 0;
@@ -75,7 +75,7 @@ exports.getDashboardStats = async (req, res) => {
             platformModel.getSettings()
         ]);
 
-        const globalRate = settings ? parseFloat(settings.commission_rate) : 5.00;
+        const globalRate = settings ? parseFloat(settings.commission_rate) : 0;
         // ✨ Calculate header estimation using actual rate
         const netRevenue = stats.total_revenue * (globalRate / 100);
         

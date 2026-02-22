@@ -36,7 +36,7 @@ exports.getAnalytics = async (req, res) => {
             platformModel.getSettings() 
         ]);
 
-        const globalRate = settings ? parseFloat(settings.commission_rate) : 5.00;
+        const globalRate = settings ? parseFloat(settings.commission_rate) : 0;
 
         let totalRevenue = 0;
         let totalCommission = 0;
