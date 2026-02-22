@@ -5,7 +5,7 @@ import api from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion'; 
 import { 
   Star, CreditCard, MapPin, Calendar, Trash2, Edit2, Save, X, 
-  ShieldCheck, Clock, Plane, Briefcase, MessageSquare, User, Mail
+  ShieldCheck, Clock, Plane, Briefcase, MessageSquare, User, Mail, Loader2
 } from 'lucide-react'; 
 import './styles/profile.css';
 
@@ -17,6 +17,7 @@ export default function Profile() {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [profileError, setProfileError] = useState(null);
   const [profileSuccess, setProfileSuccess] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewTarget, setReviewTarget] = useState(null); 
@@ -92,6 +93,40 @@ export default function Profile() {
         alert("Thank you for your review!");
         setShowReviewModal(false);
     } catch (err) { alert(err.response?.data?.message || "Failed to submit review."); }
+  };
+
+  // --- IMAGE UPLOAD HANDLER ---
+  const handleImageUpload = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      setUploadingImage(true);
+      const formData = new FormData();
+      formData.append('image', file);
+
+      try {
+          // 1. Send the file to Cloudinary via your backend upload route
+          const uploadRes = await api.post('/upload', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+          });
+
+          if (uploadRes.data.success) {
+              const newImageUrl = uploadRes.data.url;
+              const userId = user.id || user._id;
+
+              // 2. Update the user's database record with the new URL
+              await api.put(`/users/${userId}`, { profile_image: newImageUrl }, { 
+                  headers: { 'Content-Type': 'application/json' } 
+              });
+
+              // 3. Refresh global state (This instantly updates the Header and Profile page!)
+              await refreshUser();
+          }
+      } catch (err) {
+          alert("Failed to upload image. " + (err.response?.data?.message || err.message));
+      } finally {
+          setUploadingImage(false);
+      }
   };
 
   // --- PROFILE HANDLERS ---
@@ -201,11 +236,35 @@ export default function Profile() {
           
           {/* User Card */}
           <div className="profile-card user-card">
-              <div className="avatar-wrapper">
-                  {user.profile_image ? (
-                    <img src={user.profile_image} className="profile-avatar-img" alt="User"/> 
+              <div 
+                  className="avatar-wrapper" 
+                  style={{ position: 'relative', cursor: uploadingImage ? 'not-allowed' : 'pointer', overflow: 'hidden' }}
+                  title="Click to change profile picture"
+              >
+                  {uploadingImage ? (
+                      <div className="profile-avatar-placeholder-pic" style={{ opacity: 0.8 }}>
+                          <Loader2 size={32} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
+                      </div>
+                  ) : user.profile_image ? (
+                      <img src={user.profile_image} className="profile-avatar-img" alt="User"/> 
                   ) : (
-                    <div className="profile-avatar-placeholder-pic"><User size={40} /></div>
+                      <div className="profile-avatar-placeholder-pic"><User size={40} /></div>
+                  )}
+
+                  {/* Hidden File Input covering the avatar */}
+                  <input 
+                      type="file" 
+                      accept="image/*"
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                  />
+                  
+                  {/* Small Edit Icon Badge */}
+                  {!uploadingImage && (
+                      <div style={{ position: 'absolute', bottom: '0', right: '0', background: 'var(--color-primary)', color: 'white', borderRadius: '50%', padding: '6px', display: 'flex', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                          <Edit2 size={12} />
+                      </div>
                   )}
               </div>
               <h2 className="profile-user-name">{user.username}</h2>

@@ -63,6 +63,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/wishlist', wishlistRoutes); // <--- ADD THIS
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/chat', require('./API/routes/chatRoutes'));
+app.use('/api/upload', require('./API/routes/uploadRoutes'));
 
 // Protected User Routes (Applied verifyToken here globally for safety)
 app.use('/api/users', verifyToken, userRoutes);
