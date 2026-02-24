@@ -139,10 +139,21 @@ export default function PropertyOnboarding() {
 
     const activeSection = SECTIONS.find(sec => sec.steps.some(s => s.id === currentStep))?.id;
 
+    // --- MAP AUTO-FILL LOGIC (Updated to bypass CORS blocks) ---
     const handleMapClick = async (lat, lng) => {
         setPropData(prev => ({ ...prev, lat, lng }));
         try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+            // Added zoom=18, addressdetails=1, and an identifying email to satisfy Nominatim's strict CORS policy
+            const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&email=admin@aureliatravel.com`;
+            
+            const res = await fetch(url, {
+                headers: {
+                    'Accept-Language': 'en-US,en' // Ensures the address comes back in English
+                }
+            });
+            
+            if (!res.ok) throw new Error("Geocoding request blocked");
+            
             const data = await res.json();
             if (data && data.address) {
                 setPropData(prev => ({
@@ -154,7 +165,9 @@ export default function PropertyOnboarding() {
                     postalCode: data.address.postcode || prev.postalCode
                 }));
             }
-        } catch (err) { console.error("Geocoding failed", err); }
+        } catch (err) { 
+            console.error("Geocoding failed:", err); 
+        }
     };
 
     const toggleArrayItem = (field, item) => {
