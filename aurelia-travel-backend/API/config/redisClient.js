@@ -3,8 +3,12 @@ const redis = require('redis');
 
 // Create a Redis client
 const redisClient = redis.createClient({
-    // If using a local Redis instance, it defaults to localhost:6379
-    // url: 'redis://localhost:6379' 
+    username: 'default',   // ✅ ADD THIS LINE
+    password: 'OTTHFaLuIOjMNgaBw9bkJfOvlhVX0rJj', // Double-check this is exactly what Redis Labs shows!
+    socket: {
+        host: 'redis-11990.c14.us-east-1-3.ec2.cloud.redislabs.com', 
+        port: 11990
+    }
 });
 
 redisClient.on('error', (err) => {
