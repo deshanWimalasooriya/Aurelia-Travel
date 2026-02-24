@@ -1,4 +1,5 @@
 import axios from 'axios';
+import api from './api';
 
 // Replace with your actual backend API base URL
 const API_URL = 'http://localhost:5000/api'; 

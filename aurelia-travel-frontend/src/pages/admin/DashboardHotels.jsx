@@ -10,6 +10,7 @@ import {
   Power, Mail, UploadCloud
 } from 'lucide-react';
 import './styles/dashboard-hotels.css';
+import { uploadImageDirectly } from '../../services/cloudinaryUpload';
 
 // --- LEAFLET IMPORTS & SETUP ---
 import 'leaflet/dist/leaflet.css';
@@ -88,7 +89,7 @@ const DashboardHotels = () => {
   
   const [dbAmenities, setDbAmenities] = useState([]); 
   const [newAmenityText, setNewAmenityText] = useState('');
-  const [manualUrl, setManualUrl] = useState(''); // State for manual URL input
+  const [manualUrl, setManualUrl] = useState(''); 
 
   const [formData, setFormData] = useState({
     name: '', description: '', address: '', city: '', province: '', 
@@ -182,7 +183,6 @@ const DashboardHotels = () => {
       setFormData(prev => ({ ...prev, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }));
   };
 
-  // --- UNIFIED IMAGE MANAGEMENT LOGIC ---
   const handleFileSelect = (e) => {
       const files = Array.from(e.target.files);
       const newImages = files.map(file => ({
@@ -212,7 +212,6 @@ const DashboardHotels = () => {
   const removeImageField = (index) => {
       setFormData(prev => {
           const imgToRemove = prev.images[index];
-          // Free memory if it was a local file preview
           if (imgToRemove.file) URL.revokeObjectURL(imgToRemove.url); 
 
           const updated = prev.images.filter((_, i) => i !== index);
@@ -227,7 +226,6 @@ const DashboardHotels = () => {
           images: prev.images.map((img, i) => ({ ...img, isPrimary: i === index }))
       }));
   };
-  // ----------------------------------------
 
   const moveToSelected = (id) => {
       if (!formData.amenities.some(a => String(a) === String(id))) {
@@ -265,20 +263,15 @@ const DashboardHotels = () => {
       const existingImages = formData.images.filter(img => !img.file);
       let uploadedImagesArray = [];
 
-      // 1. Upload Local Files to Cloudinary
+      // ✅ INDUSTRY STANDARD: Parallel Direct-to-Cloud Bulk Uploads
       if (localImages.length > 0) {
-        const uploadData = new FormData();
-        localImages.forEach(img => { uploadData.append('images', img.file); });
-
-        const uploadRes = await api.post('/upload/bulk', uploadData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-
-        // Re-attach the user's primary selection to the newly created Cloudinary URLs
-        uploadedImagesArray = uploadRes.data.images.map((backendImg, index) => ({
-            url: backendImg.url,
-            isPrimary: localImages[index].isPrimary 
-        }));
+          // Upload all images directly to Cloudinary at the same time, bypassing the backend server
+          const uploadPromises = localImages.map(async (img) => {
+              const cloudUrl = await uploadImageDirectly(img.file);
+              return { url: cloudUrl, isPrimary: img.isPrimary };
+          });
+          
+          uploadedImagesArray = await Promise.all(uploadPromises);
       }
 
       // 2. Combine all images for the database
