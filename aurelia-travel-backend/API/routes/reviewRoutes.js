@@ -9,6 +9,9 @@ router.get('/hotel/:hotelId', reviewController.getHotelReviews);
 // Protected User: Write review
 router.post('/', verifyToken, reviewController.addReview);
 
+// ✅ NEW: Protected User: Read their own reviews
+router.get('/mine', verifyToken, reviewController.getMyReviews);
+
 // ✅ NEW: Manager Routes
 router.get('/manager', verifyToken, checkRole('admin', 'hotel_manager'), reviewController.getManagerReviews);
 router.put('/:id/reply', verifyToken, checkRole('admin', 'hotel_manager'), reviewController.replyToReview);

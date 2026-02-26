@@ -3,3 +3,14 @@ npx pm2 start server.js --name "aurelia-api"
 npx pm2 stop aurelia-api
 
 npx pm2 restart aurelia-api
+
+
+left side steps area is should be animated, and it's structure should changed 
+
+
+
+structure,
+
+it s should divide some 4 sections(property, room, photos, and  and final state),
+
+each section should include sub steps like in property,(type of property, Property category, wheter they add multiple property of single property with multiple rooms,(if it is multiple hotel give a input to add how many properties), after Prpety loaction(Give a full address form at the left side, and background contian with the map, when we select the location on a map, address form will update automatically), tell about us your property(property name, start ratings), What can guests use at your hotel?(give hotel aminity list and select by puyting tick),Services at your property,

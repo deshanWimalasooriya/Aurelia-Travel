@@ -6,7 +6,7 @@ import {
   Search, X, Users, Building, Maximize, 
   BedDouble, Mountain, Bold, Italic, Underline, List, 
   ListOrdered, Coffee, Cigarette, RefreshCw, MinusCircle, Star,
-  Power, UploadCloud, CheckCircle2
+  Power, UploadCloud, CheckCircle2, Bath
 } from 'lucide-react';
 import './styles/dashboard-rooms.css';
 
@@ -68,17 +68,19 @@ const DashboardRooms = () => {
   const [selectedHotelFilter, setSelectedHotelFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   
-  // NEW: Image Upload States
+  // Image Upload States
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [manualUrl, setManualUrl] = useState('');
 
+  // Expanded form data aligning with PropertyOnboarding features
   const [formData, setFormData] = useState({
-    title: '', hotelId: '', price: '', description: '', roomType: 'Standard',
-    maxAdults: 2, maxChildren: 0, sizeSqm: '', 
-    viewType: '', bedType: '', 
-    totalQuantity: 1, 
-    images: [], 
-    hasBreakfast: false, isRefundable: true, smokingAllowed: false
+    title: '', hotelId: '', price: '', description: '', 
+    roomType: 'Standard', viewType: 'City View',
+    maxAdults: 2, maxChildren: 0, sizeSqm: '', bedType: '', totalQuantity: 1, 
+    hasBreakfast: false, isRefundable: true, smokingAllowed: false,
+    roomAmenities: [], customFeatures: '',
+    bathroomType: 'Private En-suite', bathroomAmenities: [],
+    images: []
   });
 
   useEffect(() => {
@@ -134,20 +136,44 @@ const DashboardRooms = () => {
           setFormData({
               title: room.title || '', hotelId: room.hotel_id || '', price: room.base_price_per_night || '',
               description: room.description || '', roomType: room.room_type || 'Standard',
-              maxAdults: room.max_adults || 2, maxChildren: room.max_children || 0,
-              sizeSqm: room.size_sqm || '', viewType: room.view_type || '', bedType: room.bed_type || '', 
-              totalQuantity: room.total_quantity || 1, images: processedImages, 
-              hasBreakfast: !!room.has_breakfast, isRefundable: !!room.is_refundable, smokingAllowed: !!room.smoking_allowed
+              viewType: room.view_type || 'City View', maxAdults: room.max_adults || 2, maxChildren: room.max_children || 0,
+              sizeSqm: room.size_sqm || '', bedType: room.bed_type || '', totalQuantity: room.total_quantity || 1, 
+              hasBreakfast: !!room.has_breakfast, isRefundable: !!room.is_refundable, smokingAllowed: !!room.smoking_allowed,
+              roomAmenities: room.room_amenities || [], customFeatures: room.custom_features || '',
+              bathroomType: room.bathroom_type || 'Private En-suite', bathroomAmenities: room.bathroom_amenities || [],
+              images: processedImages
           });
       } else {
           setFormData({
               title: '', hotelId: (selectedHotelFilter !== 'all' ? selectedHotelFilter : ''), 
-              price: '', description: '', roomType: 'Standard', maxAdults: 2, maxChildren: 0, sizeSqm: '', 
-              viewType: '', bedType: '', totalQuantity: 1, images: [], 
-              hasBreakfast: false, isRefundable: true, smokingAllowed: false
+              price: '', description: '', roomType: 'Standard', viewType: 'City View', maxAdults: 2, maxChildren: 0, 
+              sizeSqm: '', bedType: '', totalQuantity: 1, 
+              hasBreakfast: false, isRefundable: true, smokingAllowed: false,
+              roomAmenities: [], customFeatures: '',
+              bathroomType: 'Private En-suite', bathroomAmenities: [],
+              images: []
           });
       }
       setView('form');
+  };
+
+  // --- AMENITY TOGGLES ---
+  const toggleRoomAmenity = (item) => {
+      setFormData(prev => ({
+          ...prev,
+          roomAmenities: prev.roomAmenities.includes(item) 
+              ? prev.roomAmenities.filter(i => i !== item) 
+              : [...prev.roomAmenities, item]
+      }));
+  };
+
+  const toggleBathroomAmenity = (item) => {
+      setFormData(prev => ({
+          ...prev,
+          bathroomAmenities: prev.bathroomAmenities.includes(item) 
+              ? prev.bathroomAmenities.filter(i => i !== item) 
+              : [...prev.bathroomAmenities, item]
+      }));
   };
 
   // --- UNIFIED IMAGE MANAGEMENT LOGIC ---
@@ -196,6 +222,7 @@ const DashboardRooms = () => {
   };
   // ----------------------------------------
 
+  // --- SUBMIT LOGIC ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -237,6 +264,13 @@ const DashboardRooms = () => {
             size_sqm: formData.sizeSqm ? Number(formData.sizeSqm) : null, view_type: formData.viewType, bed_type: formData.bedType, 
             total_quantity: Number(formData.totalQuantity),
             has_breakfast: formData.hasBreakfast ? 1 : 0, is_refundable: formData.isRefundable ? 1 : 0, smoking_allowed: formData.smokingAllowed ? 1 : 0,
+            
+            // New Extended Features
+            custom_features: formData.customFeatures,
+            bathroom_type: formData.bathroomType,
+            room_amenities: formData.roomAmenities,
+            bathroom_amenities: formData.bathroomAmenities,
+
             images: finalImages, 
         };
 
@@ -392,8 +426,9 @@ const DashboardRooms = () => {
                 
                 <form onSubmit={handleSubmit} className="professional-form">
                     
+                    {/* ALLOCATION & DETAILS */}
                     <div className="form-section">
-                        <h4 className="section-heading"><Building size={18}/> Allocation & Details</h4>
+                        <h4 className="section-heading"><Building size={18}/> Allocation & Core Details</h4>
                         <div className="form-grid-2">
                             <div className="form-group">
                                 <label>Property <span className="req">*</span></label>
@@ -404,16 +439,88 @@ const DashboardRooms = () => {
                             </div>
                             <div className="form-group">
                                 <label>Room Title <span className="req">*</span></label>
-                                <input type="text" className="form-input" value={formData.title} onChange={e=>setFormData({...formData, title:e.target.value})} required/>
+                                <input type="text" className="form-input" placeholder="e.g. Deluxe Ocean Suite" value={formData.title} onChange={e=>setFormData({...formData, title:e.target.value})} required/>
                             </div>
+                            <div className="form-group">
+                                <label>Room Type</label>
+                                <select className="form-input" value={formData.roomType} onChange={e=>setFormData({...formData, roomType:e.target.value})}>
+                                    <option>Standard</option><option>Deluxe</option><option>Suite</option><option>Villa</option><option>Family Room</option><option>Studio</option><option>Penthouse</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Room View</label>
+                                <select className="form-input" value={formData.viewType} onChange={e=>setFormData({...formData, viewType:e.target.value})}>
+                                    <option>City View</option><option>Ocean View</option><option>Garden View</option><option>Mountain View</option><option>Pool View</option><option>No Specific View</option>
+                                </select>
+                            </div>
+
                         </div>
                     </div>
 
+                    {/* SPECS, OCCUPANCY & PRICING */}
+                    <div className="form-section">
+                        <h4 className="section-heading"><Users size={18}/> Specs, Occupancy & Pricing</h4>
+                        <div className="form-grid-3">
+                            <div className="form-group"><label>Adults</label><input type="number" className="form-input" value={formData.maxAdults} onChange={e=>setFormData({...formData, maxAdults:e.target.value})}/></div>
+                            <div className="form-group"><label>Children</label><input type="number" className="form-input" value={formData.maxChildren} onChange={e=>setFormData({...formData, maxChildren:e.target.value})}/></div>
+                            <div className="form-group"><label>Size (m²)</label><input type="number" className="form-input" value={formData.sizeSqm} onChange={e=>setFormData({...formData, sizeSqm:e.target.value})}/></div>
+                            
+                            <div className="form-group"><label>Bed Type</label><input type="text" className="form-input" placeholder="e.g. 1 King, 2 Twins" value={formData.bedType} onChange={e=>setFormData({...formData, bedType:e.target.value})}/></div>
+                            <div className="form-group"><label>Total Stock <span className="req">*</span></label><input type="number" className="form-input" required value={formData.totalQuantity} onChange={e=>setFormData({...formData, totalQuantity:e.target.value})}/></div>
+                            <div className="form-group"><label>Price ($) <span className="req">*</span></label><input type="number" className="form-input" required value={formData.price} onChange={e=>setFormData({...formData, price:e.target.value})}/></div>
+                        </div>
+
+                        <div className="amenity-checkboxes" style={{marginTop: '16px'}}>
+                            <label className="checkbox-item"><input type="checkbox" checked={formData.hasBreakfast} onChange={e=>setFormData({...formData, hasBreakfast:e.target.checked})}/> <span className="cb-label"><Coffee size={14}/> Breakfast Included</span></label>
+                            <label className="checkbox-item"><input type="checkbox" checked={formData.isRefundable} onChange={e=>setFormData({...formData, isRefundable:e.target.checked})}/> <span className="cb-label"><RefreshCw size={14}/> Refundable</span></label>
+                            <label className="checkbox-item"><input type="checkbox" checked={formData.smokingAllowed} onChange={e=>setFormData({...formData, smokingAllowed:e.target.checked})}/> <span className="cb-label"><Cigarette size={14}/> Smoking Allowed</span></label>
+                        </div>
+                    </div>
+
+                    {/* NEW: FEATURES & AMENITIES */}
+                    <div className="form-section">
+                        <h4 className="section-heading" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><BedDouble size={18}/> Inside the Room</h4>
+                        <p className="sub-text" style={{margin: '0 0 12px 0', fontSize: '0.85rem'}}>Select all features available in this specific room.</p>
+                        
+                        <div className="pill-grid" style={{marginBottom: '16px'}}>
+                            {['Air Conditioning', 'Flat-screen TV', 'Balcony', 'Minibar', 'Coffee Maker', 'Work Desk', 'Safe', 'Seating Area', 'Kitchenette'].map(item => (
+                                <label key={item} className={`checkbox-pill ${formData.roomAmenities.includes(item) ? 'active' : ''}`} style={{padding: '8px 14px', fontSize: '0.85rem'}}>
+                                    <input type="checkbox" hidden checked={formData.roomAmenities.includes(item)} onChange={() => toggleRoomAmenity(item)}/>
+                                    {formData.roomAmenities.includes(item) && <CheckCircle2 size={14} />}
+                                    {item}
+                                </label>
+                            ))}
+                        </div>
+                        
+                        <div className="form-group" style={{marginBottom: '24px'}}>
+                            <label>Other Custom Room Features</label>
+                            <input type="text" className="form-input" placeholder="e.g. Private plunge pool, Soundproofing..." value={formData.customFeatures} onChange={e=>setFormData({...formData, customFeatures: e.target.value})} />
+                        </div>
+
+                        <h4 className="section-heading" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}><Bath size={18}/> Bathroom Setup</h4>
+                        
+                        <div className="form-group" style={{maxWidth: '300px', marginBottom: '16px'}}>
+                            <label>Bathroom Type</label>
+                            <select value={formData.bathroomType} onChange={e=>setFormData({...formData, bathroomType: e.target.value})} className="form-input">
+                                <option>Private En-suite</option><option>Shared Bathroom</option>
+                            </select>
+                        </div>
+
+                        <div className="pill-grid" style={{marginBottom: '10px'}}>
+                            {['Free Toiletries', 'Hairdryer', 'Bathtub', 'Walk-in Shower', 'Towels', 'Bathrobe', 'Slippers', 'Bidet'].map(item => (
+                                <label key={item} className={`checkbox-pill ${formData.bathroomAmenities.includes(item) ? 'active' : ''}`} style={{padding: '8px 14px', fontSize: '0.85rem'}}>
+                                    <input type="checkbox" hidden checked={formData.bathroomAmenities.includes(item)} onChange={() => toggleBathroomAmenity(item)}/>
+                                    {formData.bathroomAmenities.includes(item) && <CheckCircle2 size={14} />}
+                                    {item}
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* IMAGE GALLERY */}
                     <div className="form-section">
                         <h4 className="section-heading"><ImageIcon size={18}/> Image Gallery</h4>
                         <div className="core-info-grid">
-                            
-                            {/* UPDATED: Dropzone & Visual Grid */}
                             <div className="image-preview-wrapper" style={{ gridColumn: '1 / -1' }}>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Room Images <span className="req">*</span></label>
                                 
@@ -458,40 +565,13 @@ const DashboardRooms = () => {
                                     </div>
                                 )}
                             </div>
-
                         </div>
                     </div>
 
-                    <div className="form-section">
-                        <h4 className="section-heading"><Users size={18}/> Specs, Occupancy & Pricing</h4>
-                        <div className="form-grid-3">
-                            <div className="form-group"><label>Adults</label><input type="number" className="form-input" value={formData.maxAdults} onChange={e=>setFormData({...formData, maxAdults:e.target.value})}/></div>
-                            <div className="form-group"><label>Children</label><input type="number" className="form-input" value={formData.maxChildren} onChange={e=>setFormData({...formData, maxChildren:e.target.value})}/></div>
-                            <div className="form-group"><label>Size (m²)</label><input type="number" className="form-input" value={formData.sizeSqm} onChange={e=>setFormData({...formData, sizeSqm:e.target.value})}/></div>
-                            
-                            <div className="form-group"><label>Bed Type</label><input type="text" className="form-input" placeholder="e.g. King, Twin" value={formData.bedType} onChange={e=>setFormData({...formData, bedType:e.target.value})}/></div>
-                            <div className="form-group"><label>View Type</label><input type="text" className="form-input" placeholder="e.g. Ocean, City" value={formData.viewType} onChange={e=>setFormData({...formData, viewType:e.target.value})}/></div>
-                            <div className="form-group">
-                                <label>Room Type</label>
-                                <select className="form-input" value={formData.roomType} onChange={e=>setFormData({...formData, roomType:e.target.value})}>
-                                    <option>Standard</option><option>Deluxe</option><option>Suite</option><option>Family</option>
-                                </select>
-                            </div>
-                            
-                            <div className="form-group"><label>Total Stock <span className="req">*</span></label><input type="number" className="form-input" required value={formData.totalQuantity} onChange={e=>setFormData({...formData, totalQuantity:e.target.value})}/></div>
-                            <div className="form-group"><label>Price ($) <span className="req">*</span></label><input type="number" className="form-input" required value={formData.price} onChange={e=>setFormData({...formData, price:e.target.value})}/></div>
-                        </div>
-
-                        <div className="amenity-checkboxes">
-                            <label className="checkbox-item"><input type="checkbox" checked={formData.hasBreakfast} onChange={e=>setFormData({...formData, hasBreakfast:e.target.checked})}/> <span className="cb-label"><Coffee size={14}/> Breakfast Included</span></label>
-                            <label className="checkbox-item"><input type="checkbox" checked={formData.isRefundable} onChange={e=>setFormData({...formData, isRefundable:e.target.checked})}/> <span className="cb-label"><RefreshCw size={14}/> Refundable</span></label>
-                            <label className="checkbox-item"><input type="checkbox" checked={formData.smokingAllowed} onChange={e=>setFormData({...formData, smokingAllowed:e.target.checked})}/> <span className="cb-label"><Cigarette size={14}/> Smoking Allowed</span></label>
-                        </div>
-                    </div>
-
+                    {/* DESCRIPTION */}
                     <div className="form-section no-border">
                         <div className="form-group full-width">
-                            <label>Room Description</label>
+                            <label>Detailed Room Description</label>
                             <SimpleEditor value={formData.description} onChange={(val) => setFormData({...formData, description: val})}/>
                         </div>
                     </div>
