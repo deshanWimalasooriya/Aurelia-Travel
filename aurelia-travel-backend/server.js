@@ -33,8 +33,7 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); // Only need to call this once
 
-// Import Middleware
-const { verifyToken, checkRole } = require('./API/middleware/authMiddleware');
+
 
 // --- 2. IMPORT ROUTES ---
 const authRoutes = require('./API/routes/authRoutes');
@@ -57,38 +56,33 @@ const platformRoutes = require('./API/routes/platformRoutes');
 
 // --- 3. REGISTER ROUTES ---
 
-// Public & Auth
-app.use('/api/auth', authRoutes);
-app.use('/api/hotels', hotelRoutes); // Hotels (Public view)
-app.use('/api/rooms', roomRoutes);
-app.use('/api/amenities', amenityRoutes);
-app.use('/api/finance', financeRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/wishlist', wishlistRoutes); // <--- ADD THIS
-app.use('/api/reviews', reviewRoutes);
-app.use('/api/chat', require('./API/routes/chatRoutes'));
-app.use('/api/upload', require('./API/routes/uploadRoutes'));
-// ✅ Apply the strict shield to the Auth routes
+// ✅ Apply the strict shield to the Auth routes ONLY ONCE
 app.use('/api/auth', authLimiter, authRoutes);
 
-// ✅ Apply the general shield to everything else
-app.use('/api/hotels', generalLimiter, hotelRoutes);
+// ✅ Apply the general shield to high-traffic public routes ONLY ONCE
+app.use('/api/hotels', generalLimiter, hotelRoutes); 
 app.use('/api/rooms', generalLimiter, roomRoutes);
 app.use('/api/amenities', generalLimiter, amenityRoutes);
 
+// Other Public & Authenticated Routes
+app.use('/api/finance', financeRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/wishlist', wishlistRoutes); 
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/chat', require('./API/routes/chatRoutes'));
+app.use('/api/upload', require('./API/routes/uploadRoutes'));
 
 // Protected User Routes (Applied verifyToken here globally for safety)
 app.use('/api/users', verifyToken, userRoutes);
-app.use('/api/bookings', verifyToken, bookingRoutes); // Usually requires login
+app.use('/api/bookings', verifyToken, bookingRoutes); 
 app.use('/api/wallet', verifyToken, walletRoutes);
-app.use('/api/support', verifyToken, crmRoutes); // Matches your frontend calls
+app.use('/api/support', verifyToken, crmRoutes); 
 
 // Manager Routes
-app.use('/api/finance', verifyToken, financeRoutes);
-app.use('/api/admin', verifyToken, adminRoutes); // Legacy Manager routes
+app.use('/api/admin', verifyToken, adminRoutes); 
 
 // ✅ SUPER ADMIN ROUTES
-app.use('/api/platform', platformRoutes); 
+app.use('/api/platform', platformRoutes);
 
 // --- 4. DATABASE CONNECTION (MySQL via Knex) ---
 // Knex connects automatically when queries are run.
