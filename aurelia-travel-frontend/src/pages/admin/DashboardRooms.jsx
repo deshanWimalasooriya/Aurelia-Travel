@@ -220,6 +220,7 @@ const DashboardRooms = () => {
           images: prev.images.map((img, i) => ({ ...img, isPrimary: i === index }))
       }));
   };
+  // ----------------------------------------
 
   // --- SUBMIT LOGIC ---
   const handleSubmit = async (e) => {
@@ -452,6 +453,7 @@ const DashboardRooms = () => {
                                     <option>City View</option><option>Ocean View</option><option>Garden View</option><option>Mountain View</option><option>Pool View</option><option>No Specific View</option>
                                 </select>
                             </div>
+
                         </div>
                     </div>
 

@@ -545,6 +545,7 @@ const HotelDetails = () => {
                       </div>
 
                       <div className="room-modal-body">
+                          {/* Header: Title & Badge */}
                           <div className="room-modal-header">
                               <h2>{viewingRoom.title}</h2>
                               <span className="room-type-badge">{viewingRoom.room_type}</span>

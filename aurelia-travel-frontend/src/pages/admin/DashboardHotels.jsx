@@ -261,6 +261,7 @@ const DashboardHotels = () => {
           ...prev, images: prev.images.map((img, i) => ({ ...img, isPrimary: i === index }))
       }));
   };
+  // ----------------------------------------
 
   const moveToSelected = (id) => {
       if (!formData.amenities.some(a => String(a) === String(id))) {
