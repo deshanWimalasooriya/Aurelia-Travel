@@ -11,6 +11,7 @@ import {
   ShieldCheck, Globe, Ban, CreditCard // New icons for added sections
 } from 'lucide-react';
 import './styles/dashboard-hotels.css';
+import { uploadImageDirectly } from '../../services/cloudinaryUpload';
 
 // --- LEAFLET IMPORTS & SETUP ---
 import 'leaflet/dist/leaflet.css';
@@ -261,7 +262,6 @@ const DashboardHotels = () => {
           ...prev, images: prev.images.map((img, i) => ({ ...img, isPrimary: i === index }))
       }));
   };
-  // ----------------------------------------
 
   const moveToSelected = (id) => {
       if (!formData.amenities.some(a => String(a) === String(id))) {

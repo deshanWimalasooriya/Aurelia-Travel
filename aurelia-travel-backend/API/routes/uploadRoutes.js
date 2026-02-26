@@ -78,4 +78,35 @@ router.post('/bulk', verifyToken, upload.array('images', 10), async (req, res) =
     }
 });
 
+// ✅ NEW INDUSTRY STANDARD: Generate a secure signature for direct-to-cloud uploads
+router.get('/signature', verifyToken, (req, res) => {
+    try {
+        // 1. Create a timestamp
+        const timestamp = Math.round((new Date).getTime() / 1000);
+        
+        // 2. Define the folder where images will go in your Cloudinary account
+        const folder = 'aurelia_travel_properties'; 
+
+        // 3. Generate the cryptographic signature using your Secret Key
+        const signature = cloudinary.utils.api_sign_request({
+            timestamp: timestamp,
+            folder: folder
+        }, process.env.CLOUDINARY_API_SECRET); // Make sure this matches your .env file!
+
+        // 4. Send the VIP Pass back to React
+        res.json({
+            success: true,
+            signature: signature,
+            timestamp: timestamp,
+            folder: folder,
+            cloudName: process.env.CLOUDINARY_CLOUD_NAME, // From your .env
+            apiKey: process.env.CLOUDINARY_API_KEY        // From your .env
+        });
+
+    } catch (error) {
+        console.error("Signature Generation Error:", error);
+        res.status(500).json({ success: false, message: "Could not generate signature" });
+    }
+});
+
 module.exports = router;

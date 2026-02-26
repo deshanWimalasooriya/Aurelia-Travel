@@ -5,54 +5,53 @@ const generateReference = () => {
     return 'BKG-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 };
 
-// 1. CREATE BOOKING (The Critical Transaction)
-// ✅ Updated: Locks inventory rows to prevent double-booking
+// 1. CREATE BOOKING (High Concurrency - Optimistic Locking)
 exports.createBooking = async (bookingData, paymentData) => {
     return await knex.transaction(async (trx) => {
         
-        // STEP A: Double-Check Availability (With Validation)
+        // STEP A: Fetch Availability (Fast, non-blocking read - NO .forUpdate()!)
         const checkAvailability = await trx('room_availability')
             .where('room_id', bookingData.room_id)
             .whereBetween('date', [bookingData.check_in, bookingData.check_out])
-            .orderBy('date', 'asc') // Prevents Deadlocks
-            .forUpdate();           // Locks Rows
+            .orderBy('date', 'asc'); 
 
-        // ✅ FIX 1: Prevent "Ghost" Bookings
-        // If the admin hasn't created these dates in the DB yet, we must stop.
+        // Validation 1: Prevent "Ghost" Bookings
         if (checkAvailability.length === 0) {
             throw new Error('Room configuration not found for these dates.');
         }
 
-        // Logic Check: Filter for sold out days
+        // Validation 2: Check for sold out days
         const soldOutDays = checkAvailability.filter(day => day.available_quantity < 1);
         if (soldOutDays.length > 0) {
             throw new Error('Room is no longer available for these dates.');
         }
 
-        // STEP B: Decrement Inventory
-        await trx('room_availability')
-            .where('room_id', bookingData.room_id)
-            .whereBetween('date', [bookingData.check_in, bookingData.check_out])
-            .decrement('available_quantity', 1);
+        // STEP B: The Industry Standard - Atomic Optimistic Locking
+        // Instead of locking the DB, we attempt an atomic decrement.
+        for (const day of checkAvailability) {
+            const updatedRows = await trx('room_availability')
+                .where('id', day.id)
+                .where('available_quantity', '>=', 1) // ✅ OPTIMISTIC LOCK: Only update if still available!
+                .decrement('available_quantity', 1);
+
+            if (updatedRows === 0) {
+                // If 0 rows were updated, someone else snatched the room in the last 2 milliseconds!
+                // The transaction automatically rolls back and releases any previous days.
+                throw new Error(`Someone just booked this room for ${new Date(day.date).toLocaleDateString()}. Please try different dates.`);
+            }
+        }
 
         // STEP C: Insert Booking
-        // Generate Reference
         const reference = typeof generateReference === 'function' 
             ? generateReference() 
             : `BK-${Date.now()}`;
 
-        // ✅ FIX 2: Dynamic Status (Prevent "False Paid" records)
-        // Only mark as 'confirmed'/'paid' if we actually have payment data.
         const isPaid = !!paymentData; 
 
         const [bookingId] = await trx('bookings').insert({
             ...bookingData,
             booking_reference: reference,
-            
-            // If paymentData exists -> 'confirmed'. If not -> 'pending_payment'
             status: isPaid ? 'confirmed' : 'pending_payment', 
-            
-            // If paymentData exists -> 'paid'. If not -> 'unpaid'
             payment_status: isPaid ? 'paid' : 'unpaid'
         });
 
