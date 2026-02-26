@@ -6,6 +6,10 @@ const connection = require('./config/db'); // This is now your Knex instance
 const http = require('http'); // 1. Import HTTP
 const { init } = require('./API/socket'); // 2. Import Socket Init
 
+// Import Middleware
+const { verifyToken, checkRole } = require('./API/middleware/authMiddleware');
+const { authLimiter, generalLimiter } = require('./API/middleware/rateLimiter'); // ✅ NEW SHIELD
+
 // Load Env Variables
 dotenv.config();
 
@@ -64,6 +68,14 @@ app.use('/api/wishlist', wishlistRoutes); // <--- ADD THIS
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/chat', require('./API/routes/chatRoutes'));
 app.use('/api/upload', require('./API/routes/uploadRoutes'));
+// ✅ Apply the strict shield to the Auth routes
+app.use('/api/auth', authLimiter, authRoutes);
+
+// ✅ Apply the general shield to everything else
+app.use('/api/hotels', generalLimiter, hotelRoutes);
+app.use('/api/rooms', generalLimiter, roomRoutes);
+app.use('/api/amenities', generalLimiter, amenityRoutes);
+
 
 // Protected User Routes (Applied verifyToken here globally for safety)
 app.use('/api/users', verifyToken, userRoutes);
