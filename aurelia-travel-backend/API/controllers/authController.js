@@ -1,45 +1,35 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const userModel = require('../models/userModel'); // Uses the new Phase 1 Model
-// Import the helper
-const { sendNotification, notifyAdmins } = require('./notificationController'); // Import both
+const userModel = require('../models/userModel'); 
+const { sendNotification, notifyAdmins } = require('./notificationController'); 
+const speakeasy = require('speakeasy');
+const qrcode = require('qrcode');
 
-// 1. REGISTER
+// ==========================================
+// 1. STANDARD LOGIN & REGISTRATION
+// ==========================================
+
 exports.register = async (req, res) => {
   try {
-    // 1. Input Validation
     const { username, email, password, role, first_name, last_name } = req.body;
 
     if (!username || !email || !password) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    console.time("ProcessTime"); // Start timer for performance debugging
-
-    // 2. Hash Password
-    // We do this BEFORE the DB call. Yes, it costs CPU, but it prevents the "Scope Error"
-    // and is necessary for the atomic "Try-Catch" pattern below.
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 3. ATOMIC CREATION (Fixes Race Condition)
-    // We removed "findByEmail". We try to create immediately.
-    // If the email exists, the Database will throw a specific error (Code 1062).
-    // This guarantees no two users can register the same email, even if they click at the same millisecond.
     const newUser = await userModel.create({
       username,
       email,
-      password: hashedPassword, // Now this variable is accessible!
+      password: hashedPassword,
       role: role || 'user',
       first_name,
       last_name,
       is_active: true
     });
 
-    console.timeEnd("ProcessTime"); // End timer
-
-    // 4. NON-BLOCKING NOTIFICATIONS
-    // We use Promise.allSettled() but do NOT 'await' the result.
-    // This allows the response to be sent to the user IMMEDIATELY without waiting for emails to send.
+    // Non-blocking notifications
     Promise.allSettled([
         notifyAdmins(
             "New User Registration",
@@ -56,7 +46,6 @@ exports.register = async (req, res) => {
         )
     ]).catch(err => console.error("Background Notification Error:", err));
 
-    // 5. Send Success Response Immediately
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
@@ -64,21 +53,14 @@ exports.register = async (req, res) => {
     });
 
   } catch (err) {
-    // 6. CATCH DUPLICATES (The Safety Net)
-    // If the DB says "Duplicate Entry" (Error 1062), we tell the user the email is taken.
     if (err.code === 'ER_DUP_ENTRY' || err.errno === 1062) {
-      return res.status(409).json({ 
-          success: false, 
-          message: 'Email or Username already exists' 
-      });
+      return res.status(409).json({ success: false, message: 'Email or Username already exists' });
     }
-
     console.error("Register Error:", err);
     res.status(500).json({ success: false, error: "Registration failed." });
   }
 };
 
-// 2. LOGIN
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -95,27 +77,35 @@ exports.login = async (req, res) => {
         return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    // C. Check Active
+    // C. Check Active Status
     if (!user.is_active) {
         return res.status(403).json({ success: false, message: 'Account is deactivated' });
     }
 
-    // D. Generate Token
+    // D. --- 2FA CHECK ---
+    // If 2FA is turned on, STOP the login process and ask the frontend for the code
+    if (user.is_two_factor_enabled) {
+        return res.status(200).json({ 
+            success: true, 
+            requires2FA: true,
+            message: "Two-factor authentication required" 
+        });
+    }
+
+    // E. --- STANDARD LOGIN (If 2FA is OFF) ---
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '24h' }
     );
 
-    // E. Set Cookie (HttpOnly)
     res.cookie('token', token, {
-      httpOnly: true, // Frontend JS cannot read this (Security)
-      secure: false, // Set 'true' in production (HTTPS)
+      httpOnly: true, 
+      secure: false, 
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000 // 1 Day
+      maxAge: 24 * 60 * 60 * 1000 
     });
 
-    // F. Send Response (Frontend uses 'role' to redirect)
     res.json({
       success: true,
       message: 'Login successful',
@@ -134,23 +124,127 @@ exports.login = async (req, res) => {
   }
 };
 
-// 3. LOGOUT
 exports.logout = (req, res) => {
   res.clearCookie('token');
   res.json({ success: true, message: 'Logged out successfully' });
 };
 
-// 4. GET CURRENT USER (Persistent Session)
 exports.getCurrentUser = async (req, res) => {
   try {
-    // req.user comes from verifyToken middleware
     const user = await userModel.findById(req.user.userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const { password, ...safeUser } = user; // Remove password
+    const { password, ...safeUser } = user; 
     res.json({ success: true, data: safeUser });
 
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
+};
+
+// ==========================================
+// 2. TWO-FACTOR AUTHENTICATION (2FA) LOGIC
+// ==========================================
+
+// Step 1: Generate QR Code (For Profile Setup)
+exports.generate2FA = async (req, res) => {
+    try {
+        const userEmail = req.user.email; 
+
+        const secret = speakeasy.generateSecret({ 
+            name: `Aurelia Travel (${userEmail})` 
+        });
+
+        const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
+
+        res.status(200).json({
+            success: true,
+            secret: secret.base32,
+            qrCodeUrl: qrCodeUrl
+        });
+    } catch (error) {
+        console.error("2FA Generation Error:", error);
+        res.status(500).json({ success: false, message: "Failed to generate 2FA" });
+    }
+};
+
+// Step 2: Verify code during Profile Setup & save to DB
+exports.verifyAndEnable2FA = async (req, res) => {
+    try {
+        const { secret, token } = req.body;
+        const userId = req.user.userId; // Fixed: Matches authMiddleware payload
+
+        const verified = speakeasy.totp.verify({
+            secret: secret,
+            encoding: 'base32',
+            token: token,
+            window: 1 
+        });
+
+        if (verified) {
+            // Using your userModel to securely update the database
+            await userModel.update(userId, {
+                two_factor_secret: secret,
+                is_two_factor_enabled: true
+            });
+
+            return res.status(200).json({ success: true, message: "2FA successfully enabled!" });
+        } else {
+            return res.status(400).json({ success: false, message: "Invalid verification code. Please try again." });
+        }
+    } catch (error) {
+        console.error("2FA Setup Error:", error);
+        res.status(500).json({ success: false, message: "Server error during verification." });
+    }
+};
+
+// Step 3: Verify code during Login Process
+exports.verify2FALogin = async (req, res) => {
+    try {
+        const { email, token } = req.body; 
+
+        const user = await userModel.findByEmail(email);
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+        const verified = speakeasy.totp.verify({
+            secret: user.two_factor_secret, 
+            encoding: 'base32',
+            token: token,
+            window: 1 
+        });
+
+        if (verified) {
+            // Success! Generate the actual JWT token now.
+            const jwtToken = jwt.sign(
+                { userId: user.id, email: user.email, role: user.role },
+                process.env.JWT_SECRET || 'secret',
+                { expiresIn: '24h' }
+            );
+
+            res.cookie('token', jwtToken, {
+                httpOnly: true, 
+                secure: false, 
+                sameSite: 'lax',
+                maxAge: 24 * 60 * 60 * 1000 
+            });
+            
+            return res.status(200).json({ 
+                success: true, 
+                message: "Login successful",
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    role: user.role,
+                    image: user.profile_image
+                }
+            });
+        } else {
+            return res.status(401).json({ success: false, message: "Invalid Authenticator code." });
+        }
+
+    } catch (error) {
+        console.error("2FA Login Error:", error);
+        res.status(500).json({ success: false, message: "Server error during 2FA login." });
+    }
 };

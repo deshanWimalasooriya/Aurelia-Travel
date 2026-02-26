@@ -7,7 +7,8 @@ import {
   CreditCard, Wallet, Receipt, User, Shield, Users, 
   Sliders, Mail, Briefcase, Heart, MessageSquare, 
   HelpCircle, ShieldCheck, Scale, FileText, Home, 
-  ChevronRight, Loader2, Camera, Check
+  ChevronRight, Loader2, Camera, Check, Plus, Trash2, 
+  AlertTriangle, Download, LogOut, CheckCircle2
 } from 'lucide-react'; 
 import './styles/profile.css';
 
@@ -15,8 +16,7 @@ export default function Profile() {
   const { user, refreshUser } = useUser();
   const navigate = useNavigate();
   
-  // --- NEW: View Navigation State ---
-  // 'directory' | 'personal_details' | 'payment_methods'
+  // --- View Navigation State ---
   const [currentView, setCurrentView] = useState('directory');
   
   // Loading & Actions state
@@ -25,13 +25,68 @@ export default function Profile() {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [loadingPayment, setLoadingPayment] = useState(false);
 
-  // Form States
+  // 2FA States
+  const [showTwoFactorModal, setShowTwoFactorModal] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState({ url: '', secret: '' });
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  // Form & Toggle States
   const [profileData, setProfileData] = useState({
     username: '', email: '', password: '', address_line_1: '', city: '', country: ''
   });
   const [paymentData, setPaymentData] = useState({
     card_type: '', card_number: '', cvv: '', expiry_date: ''
   });
+  
+  // Mock States for new sections
+  const [emailPrefs, setEmailPrefs] = useState({ promos: true, bookings: true, account: true });
+  const [twoFactor, setTwoFactor] = useState(false);
+  const [companions, setCompanions] = useState([
+      { id: 1, name: 'Jane Doe', relation: 'Spouse', dob: '1990-05-15' }
+  ]);
+
+  const handleToggle2FA = async () => {
+      // If turning it OFF, you would call a disable API here.
+      if (twoFactor) {
+          if(window.confirm("Are you sure you want to disable 2FA? This makes your account less secure.")) {
+              // Call your API to disable, then: setTwoFactor(false);
+          }
+          return;
+      }
+
+      // If turning it ON, fetch the QR code from the backend
+      try {
+          const res = await api.post('/auth/2fa/generate');
+          if (res.data.success) {
+              setQrCodeData({ url: res.data.qrCodeUrl, secret: res.data.secret });
+              setShowTwoFactorModal(true); // Open the popup
+          }
+      } catch (err) {
+          alert("Could not generate 2FA code.");
+      }
+  };
+
+  const confirmEnable2FA = async () => {
+      setIsVerifying(true);
+      try {
+          const res = await api.post('/auth/2fa/verify-enable', {
+              secret: qrCodeData.secret,
+              token: verificationCode
+          });
+          
+          if (res.data.success) {
+              setTwoFactor(true);
+              setShowTwoFactorModal(false);
+              setVerificationCode('');
+              alert("Two-Factor Authentication is now enabled!");
+          }
+      } catch (err) {
+          alert(err.response?.data?.message || "Invalid code. Try again.");
+      } finally {
+          setIsVerifying(false);
+      }
+  };
 
   useEffect(() => {
     if (user) {
@@ -71,7 +126,7 @@ export default function Profile() {
       if (!payload.password) delete payload.password;
       await api.put(`/users/${user.id || user._id}`, payload);
       await refreshUser(); 
-      setCurrentView('directory'); // Go back to main directory after saving
+      setCurrentView('directory');
     } catch (err) { alert("Failed to update profile."); } 
     finally { setLoadingProfile(false); }
   };
@@ -85,23 +140,9 @@ export default function Profile() {
             card_type: paymentData.card_type, card_number: cleanNumber, cvv: paymentData.cvv, expiry_date: paymentData.expiry_date 
         });
         await refreshUser();
-        setCurrentView('directory'); // Go back to main directory after saving
+        setCurrentView('directory');
     } catch (err) { alert("Failed to save card"); } 
     finally { setLoadingPayment(false); }
-  };
-
-  const handleBecomeManager = async () => {
-      if(!window.confirm("Confirm registration as a Hotel Manager?")) return;
-      setIsUpgrading(true);
-      try {
-          const res = await api.put('/users/upgrade-to-manager', {});
-          if(res.data.success) {
-              await refreshUser(); 
-              alert("🎉 Congratulations! You are now a Partner.");
-              navigate('/admin'); 
-          }
-      } catch (err) { alert("Failed to upgrade."); } 
-      finally { setIsUpgrading(false); }
   };
 
   if (!user) return <div className="profile-not-logged-in">Please sign in.</div>;
@@ -111,24 +152,24 @@ export default function Profile() {
     {
       title: "Payment info",
       items: [
-        { icon: <Wallet size={18} strokeWidth={1.5}/>, label: "Rewards & Wallet", action: () => alert("Rewards coming soon!") },
+        { icon: <Wallet size={18} strokeWidth={1.5}/>, label: "Rewards & Wallet", action: () => setCurrentView('rewards_wallet') },
         { icon: <CreditCard size={18} strokeWidth={1.5}/>, label: "Payment methods", action: () => setCurrentView('payment_methods') },
-        { icon: <Receipt size={18} strokeWidth={1.5}/>, label: "Transactions", action: () => alert("Transaction history coming soon!") }
+        { icon: <Receipt size={18} strokeWidth={1.5}/>, label: "Transactions", action: () => setCurrentView('transactions') }
       ]
     },
     {
       title: "Manage account",
       items: [
         { icon: <User size={18} strokeWidth={1.5}/>, label: "Personal details", action: () => setCurrentView('personal_details') },
-        { icon: <Shield size={18} strokeWidth={1.5}/>, label: "Security settings", action: () => alert("Security settings coming soon!") },
-        { icon: <Users size={18} strokeWidth={1.5}/>, label: "Other travelers", action: () => alert("Travel companions coming soon!") }
+        { icon: <Shield size={18} strokeWidth={1.5}/>, label: "Security settings", action: () => setCurrentView('security_settings') },
+        { icon: <Users size={18} strokeWidth={1.5}/>, label: "Other travelers", action: () => setCurrentView('travel_companions') }
       ]
     },
     {
       title: "Preferences",
       items: [
-        { icon: <Sliders size={18} strokeWidth={1.5}/>, label: "Customization preferences", action: () => alert("Preferences coming soon!") },
-        { icon: <Mail size={18} strokeWidth={1.5}/>, label: "Email preferences", action: () => alert("Email settings coming soon!") }
+        { icon: <Sliders size={18} strokeWidth={1.5}/>, label: "Customization preferences", action: () => setCurrentView('customization') },
+        { icon: <Mail size={18} strokeWidth={1.5}/>, label: "Email preferences", action: () => setCurrentView('email_preferences') }
       ]
     },
     {
@@ -143,15 +184,15 @@ export default function Profile() {
       title: "Help and support",
       items: [
         { icon: <HelpCircle size={18} strokeWidth={1.5}/>, label: "Contact Customer Service", link: "/contact" },
-        { icon: <ShieldCheck size={18} strokeWidth={1.5}/>, label: "Safety resource center", action: () => alert("Safety center coming soon!") },
-        { icon: <Scale size={18} strokeWidth={1.5}/>, label: "Dispute resolution", action: () => alert("Dispute center coming soon!") }
+        { icon: <ShieldCheck size={18} strokeWidth={1.5}/>, label: "Safety resource center", action: () => setCurrentView('safety_center') },
+        { icon: <Scale size={18} strokeWidth={1.5}/>, label: "Dispute resolution", action: () => setCurrentView('disputes') }
       ]
     },
     {
       title: "Legal and privacy",
       items: [
-        { icon: <ShieldCheck size={18} strokeWidth={1.5}/>, label: "Privacy and data management", action: () => alert("Privacy settings coming soon!") },
-        { icon: <FileText size={18} strokeWidth={1.5}/>, label: "Content guidelines", action: () => alert("Guidelines coming soon!") }
+        { icon: <ShieldCheck size={18} strokeWidth={1.5}/>, label: "Privacy and data management", action: () => setCurrentView('privacy') },
+        { icon: <FileText size={18} strokeWidth={1.5}/>, label: "Content guidelines", action: () => setCurrentView('guidelines') }
       ]
     }
   ];
@@ -159,19 +200,34 @@ export default function Profile() {
   if (user.role !== 'hotel_manager' && user.role !== 'admin') {
       directory.push({
           title: "Manage your property",
-          items: [
-              // Change from action to a link pointing to the new page
-              { icon: <Home size={18} strokeWidth={1.5}/>, label: "List your property", link: "/list-property" }
-          ]
+          items: [ { icon: <Home size={18} strokeWidth={1.5}/>, label: "List your property", link: "/list-property" } ]
       });
   }
 
-  // Determine the Title of the current active view for the Breadcrumb
   const getViewTitle = () => {
-      if (currentView === 'personal_details') return 'Personal Details';
-      if (currentView === 'payment_methods') return 'Payment Methods';
-      return '';
+      const titles = {
+          'personal_details': 'Personal Details',
+          'payment_methods': 'Payment Methods',
+          'rewards_wallet': 'Rewards & Wallet',
+          'transactions': 'Transaction History',
+          'security_settings': 'Security Settings',
+          'travel_companions': 'Travel Companions',
+          'customization': 'Customization Preferences',
+          'email_preferences': 'Email Preferences',
+          'safety_center': 'Safety Resource Center',
+          'disputes': 'Dispute Resolution',
+          'privacy': 'Privacy & Data',
+          'guidelines': 'Content Guidelines'
+      };
+      return titles[currentView] || '';
   };
+
+  // Helper for generic back buttons
+  const BackButton = () => (
+      <button type="button" className="btn-ghost" onClick={() => setCurrentView('directory')} style={{marginTop: '30px'}}>
+          ← Back to Directory
+      </button>
+  );
 
   return (
     <div className="profile-page-wrapper">
@@ -200,10 +256,7 @@ export default function Profile() {
 
         {/* --- DYNAMIC BREADCRUMB NAVIGATION --- */}
         <div className="breadcrumb-nav">
-            <span 
-                className={`crumb-link ${currentView === 'directory' ? 'active' : ''}`}
-                onClick={() => setCurrentView('directory')}
-            >
+            <span className={`crumb-link ${currentView === 'directory' ? 'active' : ''}`} onClick={() => setCurrentView('directory')}>
                 My Account
             </span>
             {currentView !== 'directory' && (
@@ -215,11 +268,12 @@ export default function Profile() {
         </div>
 
         <AnimatePresence mode="wait">
-            {/* --- VIEW 1: MAIN DIRECTORY GRID --- */}
+            
+            {/* =========================================
+                VIEW 0: MAIN DIRECTORY GRID 
+                ========================================= */}
             {currentView === 'directory' && (
-                <motion.div 
-                    key="directory"
-                    className="profile-hub-grid"
+                <motion.div key="directory" className="profile-hub-grid"
                     initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}
                 >
                     {directory.map((section, index) => (
@@ -229,18 +283,12 @@ export default function Profile() {
                                 {section.items.map((item, i) => (
                                     item.link ? (
                                         <Link to={item.link} key={i} className="hub-item">
-                                            <div className="hub-item-left">
-                                                <span className="hub-icon">{item.icon}</span>
-                                                <span className="hub-label">{item.label}</span>
-                                            </div>
+                                            <div className="hub-item-left"><span className="hub-icon">{item.icon}</span><span className="hub-label">{item.label}</span></div>
                                             <ChevronRight size={18} className="hub-chevron" strokeWidth={1.5} />
                                         </Link>
                                     ) : (
                                         <button key={i} className="hub-item" onClick={item.action}>
-                                            <div className="hub-item-left">
-                                                <span className="hub-icon">{item.icon}</span>
-                                                <span className="hub-label">{item.label}</span>
-                                            </div>
+                                            <div className="hub-item-left"><span className="hub-icon">{item.icon}</span><span className="hub-label">{item.label}</span></div>
                                             <ChevronRight size={18} className="hub-chevron" strokeWidth={1.5} />
                                         </button>
                                     )
@@ -251,18 +299,16 @@ export default function Profile() {
                 </motion.div>
             )}
 
-            {/* --- VIEW 2: PERSONAL DETAILS --- */}
+            {/* =========================================
+                VIEW 1: PERSONAL DETAILS 
+                ========================================= */}
             {currentView === 'personal_details' && (
-                <motion.div 
-                    key="personal_details"
-                    className="profile-sub-page"
-                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}
-                >
+                <motion.div key="personal_details" className="profile-sub-page"
+                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
                     <div className="sub-page-header">
                         <h2>Personal Details</h2>
                         <p>Update your information and how we can reach you.</p>
                     </div>
-
                     <div className="sub-page-card">
                         <form onSubmit={handleSaveProfile} className="hub-page-form">
                             <div className="form-group"><label>Full Name</label><input value={profileData.username} onChange={e => setProfileData({...profileData, username: e.target.value})} className="form-input"/></div>
@@ -282,32 +328,29 @@ export default function Profile() {
                 </motion.div>
             )}
 
-            {/* --- VIEW 3: PAYMENT METHODS --- */}
+            {/* =========================================
+                VIEW 2: PAYMENT METHODS 
+                ========================================= */}
             {currentView === 'payment_methods' && (
-                <motion.div 
-                    key="payment_methods"
-                    className="profile-sub-page"
-                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}
-                >
+                <motion.div key="payment_methods" className="profile-sub-page"
+                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
                     <div className="sub-page-header">
                         <h2>Payment Methods</h2>
                         <p>Securely add or remove payment cards for faster bookings.</p>
                     </div>
-
                     <div className="sub-page-card">
                         {user.card_type && (
                             <div className="saved-card-box mb-4">
-                                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                                <div className="saved-card-content">
                                     <div>
-                                        <strong style={{display:'block', fontSize: '1.1rem'}}>{user.card_type}</strong>
-                                        <span style={{color:'var(--text-muted)'}}>•••• {user.card_number?.slice(-4) || "0000"}</span>
+                                        <strong className="card-brand">{user.card_type}</strong>
+                                        <span className="card-hidden">•••• {user.card_number?.slice(-4) || "0000"}</span>
                                     </div>
-                                    <Check size={24} color="#10b981"/>
+                                    <CheckCircle2 size={24} color="#10b981"/>
                                 </div>
                             </div>
                         )}
-                        
-                        <h4 style={{marginTop: '30px', marginBottom: '16px'}}>Add New Card</h4>
+                        <h4 className="section-subtitle">Add New Card</h4>
                         <form onSubmit={handleSavePayment} className="hub-page-form">
                             <div className="form-group">
                                 <label>Card Type</label>
@@ -323,7 +366,6 @@ export default function Profile() {
                                 <div className="form-group"><label>Expiry Date</label><input value={paymentData.expiry_date} onChange={e => setPaymentData({...paymentData, expiry_date: e.target.value})} placeholder="MM/YY" className="form-input" required maxLength={5}/></div>
                                 <div className="form-group"><label>Security Code (CVV)</label><input type="password" value={paymentData.cvv} onChange={e => setPaymentData({...paymentData, cvv: e.target.value})} placeholder="123" className="form-input" required maxLength={4}/></div>
                             </div>
-                            
                             <div className="form-actions-row">
                                 <button type="button" className="btn-ghost" onClick={() => setCurrentView('directory')}>Cancel</button>
                                 <button type="submit" className="btn-primary" disabled={loadingPayment}>{loadingPayment ? <Loader2 className="animate-spin"/> : 'Save Card Securely'}</button>
@@ -332,8 +374,302 @@ export default function Profile() {
                     </div>
                 </motion.div>
             )}
-        </AnimatePresence>
 
+            {/* =========================================
+                VIEW 3: REWARDS & WALLET
+                ========================================= */}
+            {currentView === 'rewards_wallet' && (
+                <motion.div key="rewards_wallet" className="profile-sub-page"
+                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                    <div className="sub-page-header">
+                        <h2>Rewards & Wallet</h2>
+                        <p>Manage your Aurelia Points and platform credit.</p>
+                    </div>
+                    <div className="wallet-cards-grid">
+                        <div className="premium-wallet-card balance-card">
+                            <p className="wallet-label">Aurelia Credit Balance</p>
+                            <h2 className="wallet-amount">$145.00</h2>
+                            <button className="btn-topup">+ Top Up Balance</button>
+                        </div>
+                        <div className="premium-wallet-card points-card">
+                            <p className="wallet-label">Aurelia Points</p>
+                            <h2 className="wallet-amount points">2,450 <span>pts</span></h2>
+                            <p className="wallet-subtext">≈ $24.50 off your next booking</p>
+                        </div>
+                    </div>
+                    <BackButton />
+                </motion.div>
+            )}
+
+            {/* =========================================
+                VIEW 4: TRANSACTIONS
+                ========================================= */}
+            {currentView === 'transactions' && (
+                <motion.div key="transactions" className="profile-sub-page"
+                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                    <div className="sub-page-header">
+                        <h2>Transaction History</h2>
+                        <p>Review your past payments and refunds.</p>
+                    </div>
+                    <div className="sub-page-card no-pad">
+                        <div className="transaction-list">
+                            <div className="transaction-item">
+                                <div className="tx-info">
+                                    <strong>Ocean View Resort Booking</strong>
+                                    <span>Oct 12, 2025 • Visa ending in 4242</span>
+                                </div>
+                                <div className="tx-amount negative">-$340.00</div>
+                            </div>
+                            <div className="transaction-item">
+                                <div className="tx-info">
+                                    <strong>Wallet Top-up</strong>
+                                    <span>Sep 05, 2025 • MasterCard ending in 8853</span>
+                                </div>
+                                <div className="tx-amount positive">+$100.00</div>
+                            </div>
+                            <div className="transaction-item">
+                                <div className="tx-info">
+                                    <strong>City Center Hotel Refund</strong>
+                                    <span>Aug 22, 2025 • Processed to Wallet</span>
+                                </div>
+                                <div className="tx-amount positive">+$45.00</div>
+                            </div>
+                        </div>
+                    </div>
+                    <BackButton />
+                </motion.div>
+            )}
+
+            {/* =========================================
+                VIEW 5: SECURITY SETTINGS
+                ========================================= */}
+            {currentView === 'security_settings' && (
+                <motion.div key="security_settings" className="profile-sub-page"
+                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                    <div className="sub-page-header">
+                        <h2>Security Settings</h2>
+                        <p>Protect your account with additional security measures.</p>
+                    </div>
+                    <div className="sub-page-card">
+                        <div className="settings-row">
+                            <div className="settings-info">
+                                <strong>Two-Factor Authentication (2FA)</strong>
+                                <p>Require a code sent to your email when logging in from unrecognized devices.</p>
+                            </div>
+                            <label className="toggle-switch">
+                                {/* Replace the old input with this: */}
+                                <input type="checkbox" checked={twoFactor} onChange={handleToggle2FA} />
+                                <span className="slider round"></span>
+                            </label>
+                        </div>
+                        <hr className="settings-divider"/>
+                        <div className="settings-row">
+                            <div className="settings-info">
+                                <strong>Active Sessions</strong>
+                                <p>You are currently logged in on 1 device (Windows PC - Chrome).</p>
+                            </div>
+                            <button className="btn-outline-danger"><LogOut size={16}/> Sign out of all devices</button>
+                        </div>
+                    </div>
+                    <BackButton />
+                </motion.div>
+            )}
+
+            {/* =========================================
+                VIEW 6: TRAVEL COMPANIONS
+                ========================================= */}
+            {currentView === 'travel_companions' && (
+                <motion.div key="travel_companions" className="profile-sub-page"
+                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                    <div className="sub-page-header">
+                        <h2>Travel Companions</h2>
+                        <p>Save details of people you travel with frequently for faster booking.</p>
+                    </div>
+                    <div className="sub-page-card">
+                        {companions.map(comp => (
+                            <div key={comp.id} className="companion-card">
+                                <div>
+                                    <strong>{comp.name}</strong>
+                                    <span>{comp.relation} • Born: {comp.dob}</span>
+                                </div>
+                                <button className="btn-icon-danger"><Trash2 size={18}/></button>
+                            </div>
+                        ))}
+                        <button className="btn-dashed-add mt-4"><Plus size={18}/> Add New Companion</button>
+                    </div>
+                    <BackButton />
+                </motion.div>
+            )}
+
+            {/* =========================================
+                VIEW 7: CUSTOMIZATION
+                ========================================= */}
+            {currentView === 'customization' && (
+                <motion.div key="customization" className="profile-sub-page"
+                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                    <div className="sub-page-header">
+                        <h2>Customization Preferences</h2>
+                        <p>Set your regional display settings.</p>
+                    </div>
+                    <div className="sub-page-card">
+                        <div className="form-group">
+                            <label>Preferred Currency</label>
+                            <select className="form-input" defaultValue="USD">
+                                <option value="USD">USD ($) - US Dollar</option>
+                                <option value="EUR">EUR (€) - Euro</option>
+                                <option value="LKR">LKR (Rs) - Sri Lankan Rupee</option>
+                            </select>
+                        </div>
+                        <div className="form-group mt-4">
+                            <label>Preferred Language</label>
+                            <select className="form-input" defaultValue="EN">
+                                <option value="EN">English (US)</option>
+                                <option value="FR">Français (France)</option>
+                                <option value="ES">Español (Spain)</option>
+                            </select>
+                        </div>
+                        <button className="btn-primary mt-4">Save Preferences</button>
+                    </div>
+                    <BackButton />
+                </motion.div>
+            )}
+
+            {/* =========================================
+                VIEW 8: EMAIL PREFERENCES
+                ========================================= */}
+            {currentView === 'email_preferences' && (
+                <motion.div key="email_preferences" className="profile-sub-page"
+                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                    <div className="sub-page-header">
+                        <h2>Email Preferences</h2>
+                        <p>Control what emails you receive from Aurelia Travel.</p>
+                    </div>
+                    <div className="sub-page-card">
+                        <div className="settings-row">
+                            <div className="settings-info">
+                                <strong>Promotions & Deals</strong>
+                                <p>Get exclusive offers and travel inspiration.</p>
+                            </div>
+                            <label className="toggle-switch">
+                                <input type="checkbox" checked={emailPrefs.promos} onChange={(e) => setEmailPrefs({...emailPrefs, promos: e.target.checked})} />
+                                <span className="slider round"></span>
+                            </label>
+                        </div>
+                        <hr className="settings-divider"/>
+                        <div className="settings-row">
+                            <div className="settings-info">
+                                <strong>Booking Updates</strong>
+                                <p>Essential reminders and updates about your upcoming trips.</p>
+                            </div>
+                            <label className="toggle-switch">
+                                <input type="checkbox" checked={emailPrefs.bookings} onChange={(e) => setEmailPrefs({...emailPrefs, bookings: e.target.checked})} />
+                                <span className="slider round"></span>
+                            </label>
+                        </div>
+                        <hr className="settings-divider"/>
+                        <div className="settings-row">
+                            <div className="settings-info">
+                                <strong>Account Security</strong>
+                                <p>Alerts about logins and password changes. (Cannot be disabled)</p>
+                            </div>
+                            <label className="toggle-switch">
+                                <input type="checkbox" checked={true} disabled />
+                                <span className="slider round disabled"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <BackButton />
+                </motion.div>
+            )}
+
+            {/* =========================================
+                VIEWS 9-12: INFO & LEGAL (Safety, Disputes, Privacy, Guidelines)
+                ========================================= */}
+            {['safety_center', 'disputes', 'privacy', 'guidelines'].includes(currentView) && (
+                <motion.div key="info_views" className="profile-sub-page"
+                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                    <div className="sub-page-header">
+                        <h2>{getViewTitle()}</h2>
+                        <p>Platform information and resources.</p>
+                    </div>
+                    <div className="sub-page-card info-card-layout">
+                        
+                        {currentView === 'safety_center' && (
+                            <>
+                                <AlertTriangle size={48} color="var(--color-primary)" className="mb-4"/>
+                                <h3>Your safety is our priority</h3>
+                                <p>If you encounter an emergency during your stay, please contact local authorities immediately. For booking-related emergencies, our 24/7 trust and safety team is available.</p>
+                                <button className="btn-primary mt-4">Contact Safety Team</button>
+                            </>
+                        )}
+
+                        {currentView === 'disputes' && (
+                            <>
+                                <Scale size={48} color="var(--color-primary)" className="mb-4"/>
+                                <h3>Resolution Center</h3>
+                                <p>Have an issue with a recent booking, refund, or property? Open a ticket in our resolution center to have an Aurelia agent mediate the issue.</p>
+                                <button className="btn-outline mt-4">Open New Ticket</button>
+                            </>
+                        )}
+
+                        {currentView === 'privacy' && (
+                            <>
+                                <ShieldCheck size={48} color="var(--color-primary)" className="mb-4"/>
+                                <h3>Data & Privacy</h3>
+                                <p>We believe your data belongs to you. You can request a full export of your personal data or request account deletion at any time.</p>
+                                <div className="button-group mt-4">
+                                    <button className="btn-outline"><Download size={16}/> Download My Data</button>
+                                    <button className="btn-outline-danger">Delete Account</button>
+                                </div>
+                            </>
+                        )}
+
+                        {currentView === 'guidelines' && (
+                            <>
+                                <FileText size={48} color="var(--color-primary)" className="mb-4"/>
+                                <h3>Community Guidelines</h3>
+                                <p>Aurelia relies on honest, respectful reviews. Any content that includes hate speech, spam, or personally identifiable information will be removed.</p>
+                                <Link to="/about" className="btn-outline mt-4" style={{textDecoration:'none', display:'inline-block'}}>Read Full Policy</Link>
+                            </>
+                        )}
+
+                    </div>
+                    <BackButton />
+                </motion.div>
+            )}
+
+        {/* --- 2FA SETUP MODAL --- */}
+            {showTwoFactorModal && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000}}>
+                    <div className="bg-white rounded-xl p-8 max-w-md w-full shadow-2xl">
+                        <h3 style={{fontSize: '1.4rem', fontWeight: 800, marginBottom: '10px'}}>Protect Your Account</h3>
+                        <p style={{color: '#64748b', marginBottom: '20px'}}>1. Scan this QR code using Google Authenticator or Authy.</p>
+                        
+                        <div style={{display: 'flex', justifyContent: 'center', marginBottom: '20px'}}>
+                            <img src={qrCodeData.url} alt="2FA QR Code" style={{border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px'}}/>
+                        </div>
+
+                        <p style={{color: '#64748b', marginBottom: '10px'}}>2. Enter the 6-digit code from the app to verify.</p>
+                        <input 
+                            type="text" 
+                            placeholder="000000" 
+                            maxLength={6}
+                            value={verificationCode}
+                            onChange={(e) => setVerificationCode(e.target.value)}
+                            style={{width: '100%', padding: '12px', fontSize: '1.2rem', textAlign: 'center', letterSpacing: '4px', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '20px'}}
+                        />
+
+                        <div style={{display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
+                            <button className="btn-ghost" onClick={() => setShowTwoFactorModal(false)}>Cancel</button>
+                            <button className="btn-primary" onClick={confirmEnable2FA} disabled={isVerifying || verificationCode.length < 6}>
+                                {isVerifying ? 'Verifying...' : 'Enable 2FA'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+        </AnimatePresence>
       </div>
     </div>
   );
