@@ -89,3 +89,17 @@ exports.replyToReview = async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 };
+
+// Add this to API/controllers/reviewController.js
+
+// ✅ NEW: Traveler Get Their Own Reviews
+exports.getMyReviews = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const reviews = await reviewModel.findByUserId(userId);
+        
+        res.json({ success: true, data: reviews });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};

@@ -106,13 +106,14 @@ exports.getMyHotels = async (req, res) => {
 // --- CRUD ---
 exports.create = async (req, res) => {
     try {
-        console.log("Received Hotel Payload:", req.body);
-
         const { 
             name, description, address_line_1, city, state, postal_code, country, 
             latitude, longitude, email, phone, website, 
             check_in_time, check_out_time, cancellation_policy_hours, 
-            images, amenities 
+            images, amenities,
+            // --- NEW FIELDS ADDED HERE ---
+            property_type, star_rating, pets_allowed, smoking_allowed, parties_allowed, 
+            min_age, damage_deposit, custom_rules, services, languages, accepted_payments
         } = req.body;
 
         let primaryUrl = null;
@@ -139,14 +140,29 @@ exports.create = async (req, res) => {
             cancellation_policy_hours: cancellation_policy_hours ? parseInt(cancellation_policy_hours) : 24,
             main_image: primaryUrl,
             manager_id: req.user.userId,
-            is_featured: 0
+            is_featured: 0,
+            
+            // --- MAP NEW FIELDS TO DATABASE ---
+            property_type: property_type || 'Hotel',
+            star_rating: star_rating || 3,
+            pets_allowed: pets_allowed ? 1 : 0,
+            smoking_allowed: smoking_allowed ? 1 : 0,
+            parties_allowed: parties_allowed ? 1 : 0,
+            min_age: min_age ? parseInt(min_age) : 18,
+            damage_deposit: damage_deposit ? parseFloat(damage_deposit) : 0.00,
+            custom_rules: custom_rules || null,
+            // Convert arrays to JSON strings for SQL storage
+            services: services ? JSON.stringify(services) : JSON.stringify([]),
+            languages: languages ? JSON.stringify(languages) : JSON.stringify([]),
+            accepted_payments: accepted_payments ? JSON.stringify(accepted_payments) : JSON.stringify([])
         };
 
+        // Notify Admins
         await notifyAdmins(
             "New Property Added",
             `A new hotel "${hotelData.name}" has been listed and requires review.`,
             "warning", 
-            `/superAdmin/hotels` 
+            `/superAdmin/hotels`
         );
 
         const newHotelId = await hotelModel.create(hotelData, images, amenities);
