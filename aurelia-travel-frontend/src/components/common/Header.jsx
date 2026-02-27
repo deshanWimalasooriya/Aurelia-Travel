@@ -91,11 +91,9 @@ const Header = () => {
         {/* Right Actions */}
         <div className="header-actions">
           
-          <Link to="/wishlist" className="header-action-btn wishlist-link">
-              <Heart className="header-icon" />
-              {wishlist.length > 0 && (
-                  <span className="wishlist-badge">{wishlist.length}</span>
-              )}
+          <Link to="/profile" state={{ view: 'saved_lists' }} className="header-icon">
+              <Heart size={24} />
+              {/* your badge logic here if you have one */}
           </Link>
 
           <div className="header-action-btn">
