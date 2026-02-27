@@ -25,6 +25,18 @@ export default function Profile() {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [loadingPayment, setLoadingPayment] = useState(false);
 
+  // Email Verification States
+  const [isResending, setIsResending] = useState(false);
+  const [verifyMessage, setVerifyMessage] = useState({ text: '', type: '' });
+
+  // WhatsApp States
+// const [phoneInput, setPhoneInput] = useState(user?.phone || '');
+// const [whatsappOtp, setWhatsappOtp] = useState('');
+// const [showOtpInput, setShowOtpInput] = useState(false);
+// const [isRequestingOtp, setIsRequestingOtp] = useState(false);
+// const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+// const [whatsappMessage, setWhatsappMessage] = useState({ text: '', type: '' });
+
   // 2FA States
   const [showTwoFactorModal, setShowTwoFactorModal] = useState(false);
   const [qrCodeData, setQrCodeData] = useState({ url: '', secret: '' });
@@ -46,8 +58,26 @@ export default function Profile() {
       { id: 1, name: 'Jane Doe', relation: 'Spouse', dob: '1990-05-15' }
   ]);
 
+  // --- ACTIONS ---
+
+  const handleResendEmail = async () => {
+    setIsResending(true);
+    setVerifyMessage({ text: '', type: '' });
+
+    try {
+        const response = await api.post('/auth/resend-verification');
+        setVerifyMessage({ text: response.data.message, type: 'success' });
+    } catch (error) {
+        setVerifyMessage({ 
+            text: error.response?.data?.message || 'Failed to resend email.', 
+            type: 'error' 
+        });
+    } finally {
+        setIsResending(false);
+    }
+  };
+
   const handleToggle2FA = async () => {
-      // If turning it OFF, you would call a disable API here.
       if (twoFactor) {
           if(window.confirm("Are you sure you want to disable 2FA? This makes your account less secure.")) {
               // Call your API to disable, then: setTwoFactor(false);
@@ -55,12 +85,11 @@ export default function Profile() {
           return;
       }
 
-      // If turning it ON, fetch the QR code from the backend
       try {
           const res = await api.post('/auth/2fa/generate');
           if (res.data.success) {
               setQrCodeData({ url: res.data.qrCodeUrl, secret: res.data.secret });
-              setShowTwoFactorModal(true); // Open the popup
+              setShowTwoFactorModal(true); 
           }
       } catch (err) {
           alert("Could not generate 2FA code.");
@@ -88,6 +117,35 @@ export default function Profile() {
       }
   };
 
+//   const handleRequestWhatsAppOTP = async () => {
+//     setIsRequestingOtp(true);
+//     setWhatsappMessage({ text: '', type: '' });
+//     try {
+//         const response = await api.post('/auth/whatsapp/request-otp', { phone: phoneInput });
+//         setShowOtpInput(true);
+//         setWhatsappMessage({ text: response.data.message, type: 'success' });
+//     } catch (error) {
+//         setWhatsappMessage({ text: error.response?.data?.message || 'Failed to send OTP.', type: 'error' });
+//     } finally {
+//         setIsRequestingOtp(false);
+//     }
+// };
+
+// const handleVerifyWhatsAppOTP = async () => {
+//     setIsVerifyingOtp(true);
+//     setWhatsappMessage({ text: '', type: '' });
+//     try {
+//         const response = await api.post('/auth/whatsapp/verify-otp', { otp: whatsappOtp });
+//         await refreshUser(); // Update the context so the badge turns green
+//         setShowOtpInput(false);
+//         setWhatsappMessage({ text: response.data.message, type: 'success' });
+//     } catch (error) {
+//         setWhatsappMessage({ text: error.response?.data?.message || 'Invalid OTP.', type: 'error' });
+//     } finally {
+//         setIsVerifyingOtp(false);
+//     }
+// };
+
   useEffect(() => {
     if (user) {
         setProfileData({
@@ -101,7 +159,6 @@ export default function Profile() {
     }
   }, [user]);
 
-  // --- ACTIONS ---
   const handleImageUpload = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -222,7 +279,6 @@ export default function Profile() {
       return titles[currentView] || '';
   };
 
-  // Helper for generic back buttons
   const BackButton = () => (
       <button type="button" className="btn-ghost" onClick={() => setCurrentView('directory')} style={{marginTop: '30px'}}>
           ← Back to Directory
@@ -269,9 +325,7 @@ export default function Profile() {
 
         <AnimatePresence mode="wait">
             
-            {/* =========================================
-                VIEW 0: MAIN DIRECTORY GRID 
-                ========================================= */}
+            {/* VIEW 0: MAIN DIRECTORY GRID */}
             {currentView === 'directory' && (
                 <motion.div key="directory" className="profile-hub-grid"
                     initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}
@@ -299,9 +353,7 @@ export default function Profile() {
                 </motion.div>
             )}
 
-            {/* =========================================
-                VIEW 1: PERSONAL DETAILS 
-                ========================================= */}
+            {/* VIEW 1: PERSONAL DETAILS */}
             {currentView === 'personal_details' && (
                 <motion.div key="personal_details" className="profile-sub-page"
                     initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
@@ -328,9 +380,7 @@ export default function Profile() {
                 </motion.div>
             )}
 
-            {/* =========================================
-                VIEW 2: PAYMENT METHODS 
-                ========================================= */}
+            {/* VIEW 2: PAYMENT METHODS */}
             {currentView === 'payment_methods' && (
                 <motion.div key="payment_methods" className="profile-sub-page"
                     initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
@@ -375,9 +425,7 @@ export default function Profile() {
                 </motion.div>
             )}
 
-            {/* =========================================
-                VIEW 3: REWARDS & WALLET
-                ========================================= */}
+            {/* VIEW 3: REWARDS & WALLET */}
             {currentView === 'rewards_wallet' && (
                 <motion.div key="rewards_wallet" className="profile-sub-page"
                     initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
@@ -401,9 +449,7 @@ export default function Profile() {
                 </motion.div>
             )}
 
-            {/* =========================================
-                VIEW 4: TRANSACTIONS
-                ========================================= */}
+            {/* VIEW 4: TRANSACTIONS */}
             {currentView === 'transactions' && (
                 <motion.div key="transactions" className="profile-sub-page"
                     initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
@@ -440,9 +486,7 @@ export default function Profile() {
                 </motion.div>
             )}
 
-            {/* =========================================
-                VIEW 5: SECURITY SETTINGS
-                ========================================= */}
+            {/* VIEW 5: SECURITY SETTINGS */}
             {currentView === 'security_settings' && (
                 <motion.div key="security_settings" className="profile-sub-page"
                     initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
@@ -451,18 +495,55 @@ export default function Profile() {
                         <p>Protect your account with additional security measures.</p>
                     </div>
                     <div className="sub-page-card">
+                        
+                        {/* --- EMAIL VERIFICATION SECTION --- */}
+                        <div className="settings-row" style={{ alignItems: 'flex-start' }}>
+                            <div className="settings-info">
+                                <strong>Email Verification</strong>
+                                <p style={{ marginTop: '4px' }}>
+                                    Status:{' '}
+                                    {user.is_verified ? (
+                                        <span style={{ color: '#10b981', fontWeight: 'bold' }}>Verified</span>
+                                    ) : (
+                                        <span style={{ color: '#ef4444', fontWeight: 'bold' }}>Unverified</span>
+                                    )}
+                                </p>
+                                {/* Display success or error message for resend */}
+                                {verifyMessage.text && (
+                                    <p style={{ marginTop: '8px', fontSize: '0.85rem', color: verifyMessage.type === 'success' ? '#10b981' : '#ef4444' }}>
+                                        {verifyMessage.text}
+                                    </p>
+                                )}
+                            </div>
+                            {!user.is_verified && (
+                                <button 
+                                    className="btn-outline" 
+                                    onClick={handleResendEmail} 
+                                    disabled={isResending}
+                                    style={{ whiteSpace: 'nowrap' }}
+                                >
+                                    {isResending ? 'Sending...' : 'Resend Email'}
+                                </button>
+                            )}
+                        </div>
+                        
+                        <hr className="settings-divider"/>
+
+                        {/* --- 2FA SECTION --- */}
                         <div className="settings-row">
                             <div className="settings-info">
                                 <strong>Two-Factor Authentication (2FA)</strong>
                                 <p>Require a code sent to your email when logging in from unrecognized devices.</p>
                             </div>
                             <label className="toggle-switch">
-                                {/* Replace the old input with this: */}
                                 <input type="checkbox" checked={twoFactor} onChange={handleToggle2FA} />
                                 <span className="slider round"></span>
                             </label>
                         </div>
+                        
                         <hr className="settings-divider"/>
+                        
+                        {/* --- ACTIVE SESSIONS SECTION --- */}
                         <div className="settings-row">
                             <div className="settings-info">
                                 <strong>Active Sessions</strong>
@@ -470,14 +551,68 @@ export default function Profile() {
                             </div>
                             <button className="btn-outline-danger"><LogOut size={16}/> Sign out of all devices</button>
                         </div>
+
+                        {/* --- WHATSAPP VERIFICATION SECTION --- */}
+                        {/*<div className="settings-row" style={{ alignItems: 'flex-start' }}>
+                            <div className="settings-info">
+                                <strong>WhatsApp Verification</strong>
+                                <p style={{ marginTop: '4px' }}>
+                                    Status:{' '}
+                                    {user.is_phone_verified ? (
+                                        <span style={{ color: '#10b981', fontWeight: 'bold' }}>Verified</span>
+                                    ) : (
+                                        <span style={{ color: '#ef4444', fontWeight: 'bold' }}>Unverified</span>
+                                    )}
+                                </p>
+                                {whatsappMessage.text && (
+                                    <p style={{ marginTop: '8px', fontSize: '0.85rem', color: whatsappMessage.type === 'success' ? '#10b981' : '#ef4444' }}>
+                                        {whatsappMessage.text}
+                                    </p>
+                                )}
+                            </div>
+                            
+                            {!user.is_phone_verified && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end' }}>
+                                    {!showOtpInput ? (
+                                        <>
+                                            <input 
+                                                type="text" 
+                                                placeholder="+94770000000" 
+                                                value={phoneInput} 
+                                                onChange={(e) => setPhoneInput(e.target.value)}
+                                                className="form-input"
+                                                style={{ width: '200px' }}
+                                            />
+                                            <button className="btn-outline" onClick={handleRequestWhatsAppOTP} disabled={isRequestingOtp || !phoneInput}>
+                                                {isRequestingOtp ? 'Sending...' : 'Send WhatsApp OTP'}
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Enter 6-digit code" 
+                                                value={whatsappOtp} 
+                                                onChange={(e) => setWhatsappOtp(e.target.value)}
+                                                className="form-input"
+                                                style={{ width: '200px', letterSpacing: '2px', textAlign: 'center' }}
+                                                maxLength={6}
+                                            />
+                                            <button className="btn-primary" onClick={handleVerifyWhatsAppOTP} disabled={isVerifyingOtp || whatsappOtp.length < 6}>
+                                                {isVerifyingOtp ? 'Verifying...' : 'Verify Code'}
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </div> */}
+
                     </div>
                     <BackButton />
                 </motion.div>
             )}
 
-            {/* =========================================
-                VIEW 6: TRAVEL COMPANIONS
-                ========================================= */}
+            {/* VIEW 6: TRAVEL COMPANIONS */}
             {currentView === 'travel_companions' && (
                 <motion.div key="travel_companions" className="profile-sub-page"
                     initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
@@ -501,9 +636,7 @@ export default function Profile() {
                 </motion.div>
             )}
 
-            {/* =========================================
-                VIEW 7: CUSTOMIZATION
-                ========================================= */}
+            {/* VIEW 7: CUSTOMIZATION */}
             {currentView === 'customization' && (
                 <motion.div key="customization" className="profile-sub-page"
                     initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
@@ -534,9 +667,7 @@ export default function Profile() {
                 </motion.div>
             )}
 
-            {/* =========================================
-                VIEW 8: EMAIL PREFERENCES
-                ========================================= */}
+            {/* VIEW 8: EMAIL PREFERENCES */}
             {currentView === 'email_preferences' && (
                 <motion.div key="email_preferences" className="profile-sub-page"
                     initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
@@ -582,9 +713,7 @@ export default function Profile() {
                 </motion.div>
             )}
 
-            {/* =========================================
-                VIEWS 9-12: INFO & LEGAL (Safety, Disputes, Privacy, Guidelines)
-                ========================================= */}
+            {/* VIEWS 9-12: INFO & LEGAL (Safety, Disputes, Privacy, Guidelines) */}
             {['safety_center', 'disputes', 'privacy', 'guidelines'].includes(currentView) && (
                 <motion.div key="info_views" className="profile-sub-page"
                     initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
@@ -638,7 +767,7 @@ export default function Profile() {
                 </motion.div>
             )}
 
-        {/* --- 2FA SETUP MODAL --- */}
+            {/* --- 2FA SETUP MODAL --- */}
             {showTwoFactorModal && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000}}>
                     <div className="bg-white rounded-xl p-8 max-w-md w-full shadow-2xl">
