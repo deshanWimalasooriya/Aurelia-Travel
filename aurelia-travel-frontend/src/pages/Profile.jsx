@@ -253,13 +253,11 @@ export default function Profile() {
   const handleImageUpload = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
       setUploadingImage(true);
 
       // Package the file exactly how Multer expects it ('image')
       const formData = new FormData();
       formData.append('image', file);
-
       try {
           // Explicitly set the headers for multipart form data
           const uploadRes = await api.post('/upload', formData, {

@@ -9,6 +9,7 @@ import {
   Power, UploadCloud, CheckCircle2, Bath
 } from 'lucide-react';
 import './styles/dashboard-rooms.css';
+import { uploadImageDirectly } from '../../services/cloudinaryUpload';
 
 // --- Rich Text Editor ---
 const SimpleEditor = ({ value, onChange }) => {
@@ -232,19 +233,14 @@ const DashboardRooms = () => {
         const existingImages = formData.images.filter(img => !img.file);
         let uploadedImagesArray = [];
 
-        // 1. Upload Local Files
+        // ✅ INDUSTRY STANDARD: Parallel Direct-to-Cloud Bulk Uploads
         if (localImages.length > 0) {
-            const uploadData = new FormData();
-            localImages.forEach(img => { uploadData.append('images', img.file); });
-
-            const uploadRes = await api.post('/upload/bulk', uploadData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+            const uploadPromises = localImages.map(async (img) => {
+                const cloudUrl = await uploadImageDirectly(img.file);
+                return { url: cloudUrl, isPrimary: img.isPrimary };
             });
-
-            uploadedImagesArray = uploadRes.data.images.map((backendImg, index) => ({
-                url: backendImg.url,
-                isPrimary: localImages[index].isPrimary 
-            }));
+            
+            uploadedImagesArray = await Promise.all(uploadPromises);
         }
 
         // 2. Assemble Final Images Array
