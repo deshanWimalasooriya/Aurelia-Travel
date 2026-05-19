@@ -1,60 +1,30 @@
-/* src/pages/styles/my-bookings.css */
+/* --- ULTRA-COMPACT PROFESSIONAL BOOKING CARDS --- */
 
-.my-bookings-page {
-    padding: 60px 0 100px;
-    background-color: var(--color-background);
-    min-height: calc(100vh - 76px);
-}
-
-.compact-container {
-    max-width: 900px;
-    margin: 0 auto;
-}
-
-.page-header {
-    margin-bottom: 40px;
-}
-
-.page-title {
-    font-size: 2.2rem;
-    font-weight: 800;
-    color: var(--color-dark);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 0 0 8px 0;
-}
-
-.icon-primary { color: var(--color-primary); }
-.page-subtitle { color: var(--text-secondary); font-size: 1.1rem; margin: 0; }
-
-.bookings-feed {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-}
-
-/* TICKET CARD STYLES */
 .booking-ticket-card {
     display: flex;
-    background: var(--color-surface);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-subtle, #e2e8f0);
-    box-shadow: var(--shadow-sm);
+    flex-direction: row;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px; /* Sharper, more corporate corners */
     overflow: hidden;
-    transition: var(--transition-smooth);
+    margin-bottom: 12px; /* Very tight spacing */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    align-items: stretch;
 }
 
 .booking-ticket-card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
     border-color: #cbd5e1;
 }
 
+/* 1. Square Thumbnail Image */
 .btc-image {
-    width: 280px;
+    width: 120px; /* Drastically reduced */
+    min-width: 120px;
     position: relative;
-    flex-shrink: 0;
+    background: #f8fafc;
+    border-right: 1px solid #f1f5f9;
 }
 
 .btc-image img {
@@ -63,195 +33,212 @@
     object-fit: cover;
 }
 
+/* Tiny floating status indicator */
 .btc-status-badge {
     position: absolute;
-    top: 16px;
-    left: 16px;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 800;
+    top: 6px;
+    left: 6px;
+    font-size: 0.6rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    backdrop-filter: blur(4px);
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(2px);
+    color: #0f172a;
+    border: 1px solid rgba(0,0,0,0.05);
 }
 
-.status-confirmed { background: rgba(22, 163, 74, 0.9); color: white; }
-.status-completed { background: rgba(37, 99, 235, 0.9); color: white; }
-.status-pending { background: rgba(245, 158, 11, 0.9); color: white; }
-.status-cancelled { background: rgba(239, 68, 68, 0.9); color: white; }
-
+/* 2. Hyper-condensed Padding */
 .btc-content {
+    padding: 12px 16px;
     flex: 1;
-    padding: 24px 30px;
     display: flex;
     flex-direction: column;
+    justify-content: center;
+    gap: 6px; /* Super tight gap */
 }
 
+/* 3. Header formatting */
 .btc-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 12px;
+    margin-bottom: 2px;
 }
 
 .btc-hotel-name {
-    font-size: 1.4rem;
-    font-weight: 800;
-    color: var(--color-dark);
-    margin: 0 0 6px 0;
+    font-size: 0.95rem; /* Professional, smaller size */
+    font-weight: 600;
+    margin: 0 0 2px 0;
+    color: #0f172a;
+    line-height: 1.2;
 }
 
 .btc-location {
+    font-size: 0.75rem;
+    color: #64748b;
     display: flex;
     align-items: center;
-    gap: 6px;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    font-weight: 500;
+    gap: 4px;
 }
 
 .btc-price-block {
     text-align: right;
+    line-height: 1;
+}
+
+.price-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
 }
 
 .price-label {
     display: block;
-    font-size: 0.75rem;
-    color: var(--text-muted);
+    font-size: 0.65rem;
+    color: #94a3b8;
     text-transform: uppercase;
-    font-weight: 700;
+    margin-top: 4px;
 }
 
-.price-value {
-    font-size: 1.6rem;
-    font-weight: 900;
-    color: var(--color-dark);
-}
-
+/* 4. Strip away bulky badges, make room info inline */
 .btc-room-info {
+    font-size: 0.8rem;
+    color: #475569;
     display: flex;
+    align-items: center;
     gap: 12px;
-    margin-bottom: 24px;
 }
 
 .room-badge, .guest-badge {
     display: flex;
     align-items: center;
     gap: 6px;
-    background: #f1f5f9;
-    color: var(--text-secondary);
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
+    background: transparent; /* Removed grey background */
+    padding: 0; 
+    border: none;
 }
 
-/* DATES ROW */
+.room-badge svg, .guest-badge svg {
+    opacity: 0.6;
+    width: 14px;
+    height: 14px;
+}
+
+/* 5. Minimalist Inline Dates (Hiding the grey boxes & lines) */
 .btc-dates-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    background: #f8fafc;
-    padding: 16px 20px;
-    border-radius: 12px;
-    border: 1px solid var(--border-subtle, #e2e8f0);
-    margin-bottom: 24px;
+    justify-content: flex-start;
+    background: transparent; /* Removed grey background */
+    padding: 0;
+    margin: 4px 0;
+    gap: 12px;
 }
 
-.date-box { display: flex; flex-direction: column; }
-.date-box.right { text-align: right; }
-.date-label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; }
-.date-value { font-size: 1rem; color: var(--color-dark); font-weight: 700; }
+/* Hide the bulky words "Check-In" and "Check-Out" */
+.date-label { display: none; } 
 
+.date-box {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.date-value {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #1e293b;
+}
+
+/* Turn the old divider into a minimal arrow/pill */
 .date-divider {
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex: 1;
-    padding: 0 20px;
+    margin: 0;
+    gap: 0;
 }
 
-.date-divider .line {
-    flex: 1;
-    height: 1px;
-    background: dashed 1px #cbd5e1;
-}
+.date-divider .line { display: none; } /* Hide the long lines */
 
 .nights-pill {
-    background: #eff6ff;
-    color: var(--color-primary);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 700;
+    font-size: 0.7rem;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px; /* Sharper pill */
     display: flex;
     align-items: center;
     gap: 4px;
 }
 
-/* FOOTER */
+/* 6. Footer & Micro-Buttons */
 .btc-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: auto;
-    padding-top: 20px;
-    border-top: 1px dashed var(--border-subtle, #e2e8f0);
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid #f1f5f9; /* Extremely subtle line */
 }
 
 .payment-info {
+    font-size: 0.75rem;
+    color: #94a3b8;
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
 }
 
 .payment-info strong {
-    color: #16a34a;
-    text-transform: capitalize;
+    color: #475569;
+    font-weight: 500;
 }
 
 .btc-actions {
     display: flex;
-    gap: 12px;
+    gap: 8px;
+}
+
+/* Very sleek, minimal buttons */
+.btc-actions button {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .btn-ghost-small {
     background: transparent;
     border: 1px solid #cbd5e1;
-    color: var(--text-secondary);
-    padding: 8px 16px;
-    border-radius: var(--radius-sm);
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: var(--transition-smooth);
+    color: #475569;
 }
-.btn-ghost-small:hover { background: #f1f5f9; color: var(--color-dark); }
+
+.btn-ghost-small:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
 
 .btn-primary-small {
-    background: var(--color-primary);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: var(--radius-sm);
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: var(--transition-smooth);
+    background: #0f172a; /* Dark premium corporate color */
+    color: #ffffff;
+    border: 1px solid #0f172a;
 }
-.btn-primary-small:hover { background: var(--color-primary-hover); transform: translateY(-1px); }
 
-/* Responsive */
-@media (max-width: 800px) {
+.btn-primary-small:hover {
+    background: #1e293b;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
     .booking-ticket-card { flex-direction: column; }
-    .btc-image { width: 100%; height: 200px; }
-    .btc-dates-row { flex-direction: column; gap: 15px; text-align: center; }
-    .date-box.right { text-align: center; }
-    .date-divider { display: none; }
+    .btc-image { width: 100%; height: 100px; border-right: none; border-bottom: 1px solid #f1f5f9; }
+    .btc-dates-row { flex-wrap: wrap; gap: 8px; }
 }

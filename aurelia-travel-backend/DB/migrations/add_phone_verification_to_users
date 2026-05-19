@@ -1,0 +1,15 @@
+exports.up = function(knex) {
+  return knex.schema.alterTable('users', (table) => {
+    table.boolean('is_phone_verified').defaultTo(false);
+    table.string('phone_otp', 10).nullable();
+    table.timestamp('phone_otp_expiry').nullable();
+  });
+};
+
+exports.down = function(knex) {
+  return knex.schema.alterTable('users', (table) => {
+    table.dropColumn('is_phone_verified');
+    table.dropColumn('phone_otp');
+    table.dropColumn('phone_otp_expiry');
+  });
+};
