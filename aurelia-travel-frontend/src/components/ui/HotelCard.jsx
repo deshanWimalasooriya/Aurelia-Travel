@@ -11,10 +11,10 @@ const HotelCard = ({ hotel }) => {
   const { isInWishlist, toggleWishlist } = useWishlist(); 
   const isSaved = isInWishlist(hotel.id);
 
-
   return (
     <div className="hotel-card">
-      <div className="hotel-image-container">
+      {/* Ensure .hotel-image-container has 'position: relative' in your CSS */}
+      <div className="hotel-image-container" style={{ position: 'relative' }}>
         <img 
           src={hotel.main_image || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'} 
           alt={hotel.name}
@@ -27,36 +27,36 @@ const HotelCard = ({ hotel }) => {
             </div>
         )}
         
-        {/* Wishlist Button - Premium Float */}
+        {/* --- CORRECTED WISHLIST BUTTON --- */}
         <button 
-            className={`wishlist-btn-floating ${isSaved ? 'saved' : ''}`} 
+            className="wishlist-btn-premium" 
             onClick={(e) => {
-                e.preventDefault(); 
+                e.preventDefault(); // Prevents the Link wrapping the card from triggering
                 toggleWishlist(hotel);
             }}
             title={isSaved ? "Remove from wishlist" : "Add to wishlist"}
+            style={{
+                position: 'absolute', 
+                top: 12, 
+                right: 12,
+                background: 'rgba(255, 255, 255, 0.95)', /* Highly visible background */
+                border: 'none', 
+                borderRadius: '50%',
+                width: 34, 
+                height: 34, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                cursor: 'pointer', 
+                boxShadow: '0 4px 10px rgba(0,0,0,0.3)', /* Strong shadow for contrast against light skies */
+                backdropFilter: 'blur(4px)',
+                zIndex: 10,
+                transition: 'transform 0.2s ease, background 0.2s ease'
+            }}
         >
-            <Heart size={18} fill={isSaved ? "#ef4444" : "none"} color={isSaved ? "#ef4444" : "#64748b"} />
+            <Heart size={18} fill={isSaved ? "#ef4444" : "none"} color={isSaved ? "#ef4444" : "#475569"} />
         </button>
       </div>
-
-      {/* --- NEW WISHLIST BUTTON --- */}
-        <button 
-            className="wishlist-btn" 
-            onClick={(e) => {
-                e.preventDefault(); // Prevent navigating to details
-                toggleWishlist(hotel);
-            }}
-            style={{
-                position: 'absolute', top: 12, right: 12,
-                background: 'white', border: 'none', borderRadius: '50%',
-                width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-            }}
-        >
-            <Heart size={18} fill={isSaved ? "#ef4444" : "none"} color={isSaved ? "#ef4444" : "#64748b"} />
-        </button>
-        {/* --------------------------- */}
       
       <div className="hotel-info">
         <div className="hotel-title-row">

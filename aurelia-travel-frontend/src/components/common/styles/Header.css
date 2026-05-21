@@ -114,23 +114,40 @@
 .wishlist-link {
   position: relative;
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: var(--transition-smooth);
 }
+
+.wishlist-link:hover {
+  background-color: var(--color-background);
+}
+
+.wishlist-link:hover svg {
+  color: #ef4444 !important; /* Turns heart red on hover */
+}
+
 .wishlist-badge {
   position: absolute; 
-  top: 4px; 
-  right: 4px;
+  top: 0px; 
+  right: -2px;
   background: #ef4444; 
   color: white;
   font-size: 10px; 
-  font-weight: 800;
-  height: 16px; 
-  min-width: 16px;
+  font-weight: 700;
+  height: 18px; 
+  min-width: 18px;
   padding: 0 4px;
-  border-radius: 10px; 
+  border-radius: 9px; 
   display: flex; 
   align-items: center; 
   justify-content: center;
   border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 }
 
 /* User Section */

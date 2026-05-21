@@ -12,7 +12,7 @@ import {
   HelpCircle, ShieldCheck, Scale, FileText, Home, 
   ChevronRight, Loader2, Camera, Check, Plus, Trash2, 
   AlertTriangle, Download, LogOut, CheckCircle2,
-  Calendar, MapPin, Clock, Star, X, BedDouble, Ticket, Building2, CornerDownRight // <-- New icons added
+  Calendar, MapPin, Clock, Star, X, BedDouble, Ticket, Building2, CornerDownRight, Eye, EyeOff // <-- New icons added
 } from 'lucide-react'; 
 import './styles/profile.css';
 import './styles/my-bookings.css'; // <-- Retained original CSS
@@ -38,6 +38,8 @@ export default function Profile() {
   
   // --- View Navigation State ---
   const [currentView, setCurrentView] = useState('directory');
+
+  const [showPassword, setShowPassword] = useState(false);
   
   // Loading & Actions state
   const [loadingProfile, setLoadingProfile] = useState(false);
@@ -88,20 +90,44 @@ export default function Profile() {
   
   useEffect(() => {
     if (user) {
+        // --- BULLETPROOF DATE PARSING ---
+        let formattedDob = '';
+        
+        if (user.dob) {
+            try {
+                // Scenario 1: The database sends a string that already starts with YYYY-MM-DD (like an ISO string or SQL timestamp)
+                if (typeof user.dob === 'string' && user.dob.match(/^\d{4}-\d{2}-\d{2}/)) {
+                    formattedDob = user.dob.substring(0, 10);
+                } 
+                // Scenario 2: The database sends an unusual format, so we force JavaScript to convert it
+                else {
+                    const d = new Date(user.dob);
+                    if (!isNaN(d.getTime())) {
+                        const year = d.getFullYear();
+                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        formattedDob = `${year}-${month}-${day}`;
+                    }
+                }
+            } catch (e) {
+                console.error("Could not parse date:", e);
+            }
+        }
+
+        // Set the state with the safely formatted date
         setProfileData({
             username: user.username || user.first_name || '', 
             email: user.email || '',
             password: '', 
-            phone: user.phone || '', // Map phone from backend
-            // Format date for the <input type="date"> field (YYYY-MM-DD)
-            dob: user.dob ? new Date(user.dob).toISOString().split('T')[0] : '',        // Added Date of Birth
+            phone: user.phone || '', 
+            dob: formattedDob, // <-- Now strictly YYYY-MM-DD
             address_line_1: user.address_line_1 || '', 
             city: user.city || '', 
             country: user.country || ''
         });
+        
         setTwoFactor(user.is_verified === 1 || user.is_verified === true);
         
-        // --- NEW: Sync Preferences ---
         setCustomizationData({
             currency: user.currency || 'USD',
             language: user.language || 'EN'
@@ -111,7 +137,7 @@ export default function Profile() {
             setEmailPrefs({
                 promos: user.email_preferences.promos ?? true,
                 bookings: user.email_preferences.bookings ?? true,
-                account: true // Always true for security
+                account: true 
             });
         }
     }
@@ -608,13 +634,35 @@ export default function Profile() {
 
                                             <div className="form-row">
                                                 <div className="form-group">
-                                                    <label>Date of Birth</label>
-                                                    <input type="date" value={profileData.dob} onChange={e => setProfileData({...profileData, dob: e.target.value})} className="form-input"/>
-                                                </div>
+                                                <label>Date of Birth</label>
+                                                <input 
+                                                    type="date" 
+                                                    value={profileData.dob || ''} 
+                                                    onChange={e => setProfileData({...profileData, dob: e.target.value})} 
+                                                    className="form-input"
+                                                />
+                                            </div>
                                                 <div className="form-group">
-                                                    <label>New Password (Optional)</label>
-                                                    <input type="password" placeholder="••••••••" value={profileData.password} onChange={e => setProfileData({...profileData, password: e.target.value})} className="form-input" minLength={6}/>
+                                                <label>New Password (Optional)</label>
+                                                <div className="password-input-wrapper">
+                                                    <input 
+                                                        type={showPassword ? "text" : "password"} 
+                                                        placeholder="••••••••" 
+                                                        value={profileData.password} 
+                                                        onChange={e => setProfileData({...profileData, password: e.target.value})} 
+                                                        className="form-input" 
+                                                        minLength={6}
+                                                    />
+                                                    <button 
+                                                        type="button" 
+                                                        className="password-toggle-btn"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                        title={showPassword ? "Hide password" : "Show password"}
+                                                    >
+                                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                    </button>
                                                 </div>
+                                            </div>
                                             </div>
 
                                             <div className="form-group">

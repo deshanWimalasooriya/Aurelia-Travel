@@ -85,6 +85,35 @@
 .crumb-separator { color: #cbd5e1; }
 .crumb-current { color: #0f172a; }
 
+/* Password Visibility Toggle */
+.password-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input-wrapper .form-input {
+    padding-right: 40px; /* Prevents text from hiding behind the icon */
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 12px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: color 0.2s ease;
+}
+
+.password-toggle-btn:hover {
+    color: #3b82f6;
+}
+
 /* =========================================
    2. MAIN DIRECTORY GRID (Home View)
    ========================================= */
