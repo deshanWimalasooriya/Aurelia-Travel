@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, Wallet, Car, CloudRain, AlertTriangle, Clock } from 'lucide-react';
+import { MapPin, Calendar, Wallet, Car, CloudRain, AlertTriangle, Clock, Map, Sparkles } from 'lucide-react';
 import './styles/plannerContainer.css';
 
 const PlannerContainer = ({ onSubmit }) => {
@@ -8,24 +8,38 @@ const PlannerContainer = ({ onSubmit }) => {
 
   const [formData, setFormData] = useState({
     startLocation: '',
+    endLocation: '',
     startDate: '',
     hasVehicle: 'no',
     duration: 3,
     budget: '',
-    pace: 'chill',
+    description: '', // Replaces the old 'pace' option
   });
 
   const handleGenerate = (e) => {
     e.preventDefault();
     
+    // Create a copy of the data to apply defaults before submitting
+    const finalData = { ...formData };
+
+    // Default End Location = Start Location if left empty
+    if (!finalData.endLocation.trim()) {
+      finalData.endLocation = finalData.startLocation;
+    }
+
+    // Default Description = Surprise trip if left empty
+    if (!finalData.description.trim()) {
+      finalData.description = "Surprise me with a random, amazing trip!";
+    }
+    
     // LOGIC SPLIT:
     if (onSubmit) {
       // 1. If used as a Popup in Dashboard, send data back to parent
-      onSubmit(formData); 
+      onSubmit(finalData); 
     } else {
       // 2. If used in Home Page, Navigate to Itinerary
-      console.log("Navigating to Itinerary...");
-      navigate('/travel-itinerary', { state: { formData } }); 
+      console.log("Navigating to Itinerary with data:", finalData);
+      navigate('/travel-itinerary', { state: { formData: finalData } }); 
     }
   };
 
@@ -33,16 +47,28 @@ const PlannerContainer = ({ onSubmit }) => {
     <div className="planner-container">
       <form className="planner-card" onSubmit={handleGenerate}>
         
-        {/* Starting Location */}
-        <div className="input-group">
-          <label><MapPin size={16} /> Starting From</label>
-          <input 
-            type="text" 
-            placeholder="e.g. Colombo, Sri Lanka" 
-            value={formData.startLocation}
-            onChange={(e) => setFormData({...formData, startLocation: e.target.value})}
-            required
-          />
+        {/* Locations Row */}
+        <div className="input-row">
+          <div className="input-group">
+            <label><MapPin size={16} /> Starting From</label>
+            <input 
+              type="text" 
+              placeholder="e.g. Colombo" 
+              value={formData.startLocation}
+              onChange={(e) => setFormData({...formData, startLocation: e.target.value})}
+              required
+            />
+          </div>
+
+          <div className="input-group">
+            <label><Map size={16} /> Ending At</label>
+            <input 
+              type="text" 
+              placeholder="Leave blank for round-trip" 
+              value={formData.endLocation}
+              onChange={(e) => setFormData({...formData, endLocation: e.target.value})}
+            />
+          </div>
         </div>
 
         {/* Date & Vehicle */}
@@ -95,21 +121,18 @@ const PlannerContainer = ({ onSubmit }) => {
           </div>
         </div>
 
-        {/* Pace Selection */}
-        <div className="pace-selector">
-          <label>Desired Trip Pace</label>
-          <div className="pace-options">
-            {['Adrenaline', 'Chill', 'Cultural'].map(p => (
-              <button 
-                key={p} 
-                type="button"
-                className={formData.pace === p.toLowerCase() ? 'active' : ''}
-                onClick={() => setFormData({...formData, pace: p.toLowerCase()})}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
+        {/* Trip Description / AI Prompt */}
+        <div className="input-group description-group">
+          <label><Sparkles size={16} /> Describe Your Perfect Trip</label>
+          <textarea 
+            placeholder="e.g. A relaxing beach getaway with seafood, or a cultural mountain tour..."
+            value={formData.description}
+            onChange={(e) => setFormData({...formData, description: e.target.value})}
+            rows="3"
+            /* Add these to block the misaligned overlay */
+            data-gramm="false"
+            data-gramm_editor="false"
+          />
         </div>
 
         <button type="submit" className="generate-btn">
