@@ -76,15 +76,12 @@ export default function Auth(){
 
     try {
         if (forgotStep === 1) {
-            // Step 1: Request the reset code to email
             await axios.post('http://localhost:5000/api/auth/forgot-password', { email: form.email });
             setForgotStep(2);
         } else if (forgotStep === 2) {
-            // Step 2: Verify the 6-digit code
             await axios.post('http://localhost:5000/api/auth/verify-reset-code', { email: form.email, code: resetCode });
             setForgotStep(3);
         } else if (forgotStep === 3) {
-            // Step 3: Set the new password
             if (form.password !== form.confirmPassword) {
                 setError("Passwords do not match");
                 setLoading(false);
@@ -101,11 +98,11 @@ export default function Auth(){
                 newPassword: form.password
             });
             alert('Password reset successful! Please log in with your new password.');
-            toggleMode('login'); // Send them back to normal login
+            toggleMode('login'); 
         }
     } catch (err) {
         setError(err.response?.data?.message || 'An error occurred. Please try again.');
-        if (forgotStep === 2) setCodeFailed(true); // Show "Resend Code" prompt if verification fails
+        if (forgotStep === 2) setCodeFailed(true); 
     } finally {
         setLoading(false);
     }
@@ -119,7 +116,6 @@ export default function Auth(){
     setLoading(true)
     setError(null)
 
-    // Pre-flight checks for Registration
     if (mode === 'register') {
         if (form.password !== form.confirmPassword) {
             setError("Passwords do not match")
@@ -135,8 +131,6 @@ export default function Auth(){
 
     try {
       if (mode === 'login') {
-        
-        // --- 2FA Login Check ---
         if (!requires2FA) {
             const response = await axios.post('http://localhost:5000/api/auth/login', {
               email: form.email,
@@ -145,14 +139,12 @@ export default function Auth(){
               withCredentials: true
             });
 
-            // If backend says 2FA is required, pause login and show code input
             if (response.data.requires2FA) {
                 setRequires2FA(true);
                 setLoading(false);
                 return; 
             }
         } else {
-            // Submit the 2FA code
             await axios.post('http://localhost:5000/api/auth/verify-2fa-login', {
                 email: form.email,
                 token: twoFactorCode
@@ -161,7 +153,6 @@ export default function Auth(){
             });
         }
 
-        // Login Successful (either skipped 2FA or passed it)
         if (rememberMe) {
             localStorage.setItem('aurelia_saved_email', form.email)
         } else {
@@ -173,7 +164,6 @@ export default function Auth(){
         navigate('/profile')
         
       } else {
-        // --- Registration Flow ---
         await axios.post('http://localhost:5000/api/auth/register', {
           username: form.username,
           email: form.email,
@@ -236,21 +226,8 @@ export default function Auth(){
                         {mode === 'forgot' && "Securely reset your password and get back to planning your next journey."}
                     </p>
                 </div>
-
-                <div className="glass-testimonial">
-                    <p className="quote-text">
-                        {mode === 'login' || mode === 'forgot'
-                        ? "\"Efficiency is my currency. Aurelia saves me hours of planning without compromising on luxury.\"" 
-                        : "\"I stopped planning and started traveling. The AI recommendations are indistinguishable from a human expert.\""}
-                    </p>
-                    <div className="quote-author">
-                        <div className="author-avatar">AV</div>
-                        <div>
-                            <span className="author-name">Alexander V.</span>
-                            <span className="author-role">Founding Partner</span>
-                        </div>
-                    </div>
-                </div>
+                
+                {/* TESTIMONIAL REMOVED HERE */}
             </div>
         </div>
 

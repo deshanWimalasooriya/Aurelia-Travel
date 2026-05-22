@@ -37,6 +37,8 @@ import DashboardAnalytics from './pages/admin/DashboardAnalytics'
 import DashboardCustomers from './pages/admin/DashboardCustomers'
 import ManagerFinance from './pages/admin/ManagerFinance'
 import ManagerReviews from './pages/admin/ManagerReviews'
+import SafetyCenter from './pages/SafetyCenter';
+import DisputeResolution from './pages/DisputeResolution';
 
 import SuperAdminLayout from './pages/aurelia_admin/SuperAdminLayout'; // Super Admin
 // Super Admin Pages
@@ -113,6 +115,8 @@ const AppRoutes = () => {
             <Route path="/travel-itinerary" element={user ? <TravelPlanPage /> : <Navigate to="/auth" />} />
             <Route path="/trip-dashboard" element={user ? <TripDashboard /> : <Navigate to="/auth" />} />
             <Route path="/list-property" element={<ProtectedRoute><PropertyOnboarding /></ProtectedRoute>} />
+            <Route path="/profile/safety" element={<SafetyCenter />} />
+            <Route path="/profile/disputes" element={<DisputeResolution />} />
 
             {/* Old Legacy Admin Route */}
             <Route path="/adminDashboard" element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />

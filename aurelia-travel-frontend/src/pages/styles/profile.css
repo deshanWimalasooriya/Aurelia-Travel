@@ -404,3 +404,23 @@ input:checked + .slider:before { transform: translateX(20px); }
     .profile-hub-grid { grid-template-columns: 1fr; }
     .sub-page-card { padding: 20px; }
 }
+
+/* Add this to your styles */
+.hub-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none; /* Prevents clicks entirely */
+    background-color: transparent !important;
+}
+
+/* Optional: Add a subtle 'Soon' badge */
+.hub-item.disabled::after {
+    content: "SOON";
+    font-size: 0.65rem;
+    font-weight: 800;
+    background: #e2e8f0;
+    color: #64748b;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: auto;
+}
