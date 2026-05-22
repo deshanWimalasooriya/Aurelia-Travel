@@ -1,45 +1,97 @@
 /* =========================================
-   PREMIUM TRAVEL PAGE STYLES
+   SMART PLAN PAGE (FULLSCREEN MAP)
    ========================================= */
 
-.travel-page {
-  min-height: calc(100vh - 76px);
-  background-color: var(--color-background);
-  padding: 60px 0 100px 0;
-  font-family: var(--font-main);
+.travel-plan-page {
+  position: relative;
+  min-height: calc(100vh - 76px); /* Adjust based on your header height */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
-.travel-hero {
-  text-align: center;
-  margin-bottom: 50px;
+/* 1. The Map Background */
+.map-background-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
 }
 
-.travel-hero h1 {
+.fullscreen-map {
+  width: 100%;
+  height: 100%;
+  cursor: crosshair !important; /* Indicates you can click to pick */
+}
+
+/* Soft white/blue tint to make the form readable over the map */
+.map-overlay-tint {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(248, 250, 252, 0.9) 0%, rgba(248, 250, 252, 0.4) 100%);
+  z-index: 2;
+  pointer-events: none; /* Lets clicks pass through to the map */
+}
+
+/* Inside TravelPlan.css */
+.floating-content-layer {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  
+  /* --- UPDATED: Reduced left/right padding to hug the edge --- */
+  padding: 40px 20px; 
+  
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Keeps it left-aligned */
+  text-align: left;        /* Keeps text left-aligned */
+  pointer-events: none;
+}
+
+.travel-plan-header {
+  text-align: left; /* Changed from center to left */
+  margin-bottom: 30px;
+  pointer-events: auto;
+}
+
+.travel-plan-header h1 {
   font-size: 3rem;
   font-weight: 800;
-  color: var(--color-dark);
-  letter-spacing: -1px;
-  margin-bottom: 12px;
+  color: #0f172a;
+  margin-bottom: 10px;
+  text-shadow: 0 2px 10px rgba(255,255,255,0.8);
 }
 
-.travel-hero h1 span {
-  color: var(--color-primary);
+.travel-plan-header h1 span {
+  color: var(--color-primary, #2563eb);
 }
 
-.travel-hero p {
-  color: var(--text-secondary);
-  font-size: 1.15rem;
-  margin: 0 auto;
-  max-width: 600px;
-  line-height: 1.6;
+.travel-plan-header p {
+  font-size: 1.1rem;
+  color: #334155;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: inline-block;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
-/* Responsive Text for Hero */
-@media (max-width: 900px) {
-  .travel-hero h1 {
-    font-size: 2.2rem;
-  }
-  .travel-hero p {
-    font-size: 1rem;
-  }
+/* 3. Upgrade the Planner Card to Frosted Glass */
+.planner-card {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15) !important;
+}
+
+.safety-sidebar {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(16px) !important;
 }

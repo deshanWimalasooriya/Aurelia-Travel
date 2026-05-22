@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, Wallet, Car, CloudRain, AlertTriangle, Clock, Map, Sparkles } from 'lucide-react';
+import { MapPin, Calendar, Wallet, Car, CloudRain, AlertTriangle, Clock, Map, Sparkles, LocateFixed, X, Crosshair } from 'lucide-react';
 import './styles/plannerContainer.css';
 
-const PlannerContainer = ({ onSubmit }) => {
+// Change this line:
+const PlannerContainer = ({ onSubmit, mapStart = null, mapEnd = null }) => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -13,32 +14,62 @@ const PlannerContainer = ({ onSubmit }) => {
     hasVehicle: 'no',
     duration: 3,
     budget: '',
-    description: '', // Replaces the old 'pace' option
+    description: '', 
   });
 
+  // 2. Add this useEffect to listen to the background map!
+  React.useEffect(() => {
+    if (mapStart) setFormData(prev => ({ ...prev, startLocation: mapStart }));
+    if (mapEnd) setFormData(prev => ({ ...prev, endLocation: mapEnd }));
+  }, [mapStart, mapEnd]);
+
+  // --- MAP MODAL STATE ---
+  const [mapModal, setMapModal] = useState({ isOpen: false, targetField: null });
+
+  // --- MAP HANDLERS ---
+  const openMap = (field) => setMapModal({ isOpen: true, targetField: field });
+  const closeMap = () => setMapModal({ isOpen: false, targetField: null });
+
+  const handleUseCurrentLocation = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // Grabs exact GPS coordinates from the device
+          const coords = `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`;
+          setFormData({ ...formData, [mapModal.targetField]: coords });
+          closeMap();
+        },
+        (error) => {
+          alert("Unable to retrieve your location. Please check your browser permissions.");
+        }
+      );
+    } else {
+      alert("Geolocation is not supported by your browser.");
+    }
+  };
+
+  const handleConfirmMapPin = () => {
+    // In a full Google Maps integration, you would reverse-geocode the map's center coordinates here.
+    // For now, we simulate grabbing a location from the map center.
+    setFormData({ ...formData, [mapModal.targetField]: "Selected Map Location" });
+    closeMap();
+  };
+
+  // --- SUBMIT HANDLER ---
   const handleGenerate = (e) => {
     e.preventDefault();
-    
-    // Create a copy of the data to apply defaults before submitting
     const finalData = { ...formData };
 
-    // Default End Location = Start Location if left empty
     if (!finalData.endLocation.trim()) {
       finalData.endLocation = finalData.startLocation;
     }
-
-    // Default Description = Surprise trip if left empty
     if (!finalData.description.trim()) {
       finalData.description = "Surprise me with a random, amazing trip!";
     }
     
-    // LOGIC SPLIT:
     if (onSubmit) {
-      // 1. If used as a Popup in Dashboard, send data back to parent
       onSubmit(finalData); 
     } else {
-      // 2. If used in Home Page, Navigate to Itinerary
-      console.log("Navigating to Itinerary with data:", finalData);
       navigate('/travel-itinerary', { state: { formData: finalData } }); 
     }
   };
@@ -51,23 +82,27 @@ const PlannerContainer = ({ onSubmit }) => {
         <div className="input-row">
           <div className="input-group">
             <label><MapPin size={16} /> Starting From</label>
-            <input 
-              type="text" 
-              placeholder="e.g. Colombo" 
-              value={formData.startLocation}
-              onChange={(e) => setFormData({...formData, startLocation: e.target.value})}
-              required
-            />
+            <div className="location-input-wrapper">
+              <input 
+                type="text" 
+                placeholder="e.g. Colombo" 
+                value={formData.startLocation}
+                onChange={(e) => setFormData({...formData, startLocation: e.target.value})}
+                required
+              />
+            </div>
           </div>
 
           <div className="input-group">
             <label><Map size={16} /> Ending At</label>
-            <input 
-              type="text" 
-              placeholder="Leave blank for round-trip" 
-              value={formData.endLocation}
-              onChange={(e) => setFormData({...formData, endLocation: e.target.value})}
-            />
+            <div className="location-input-wrapper">
+              <input 
+                type="text" 
+                placeholder="Leave blank for round-trip" 
+                value={formData.endLocation}
+                onChange={(e) => setFormData({...formData, endLocation: e.target.value})}
+              />
+            </div>
           </div>
         </div>
 
@@ -125,11 +160,10 @@ const PlannerContainer = ({ onSubmit }) => {
         <div className="input-group description-group">
           <label><Sparkles size={16} /> Describe Your Perfect Trip</label>
           <textarea 
-            placeholder="e.g. A relaxing beach getaway with seafood, or a cultural mountain tour..."
+            placeholder="e.g. A relaxing beach getaway with seafood... (Leave blank for a surprise trip!)"
             value={formData.description}
             onChange={(e) => setFormData({...formData, description: e.target.value})}
             rows="3"
-            /* Add these to block the misaligned overlay */
             data-gramm="false"
             data-gramm_editor="false"
           />
@@ -140,15 +174,37 @@ const PlannerContainer = ({ onSubmit }) => {
         </button>
       </form>
 
-      {/* Sidebar - HIDDEN in Popup Mode to save space */}
-      {!onSubmit && (
-        <aside className="safety-sidebar">
-          <h3><CloudRain size={20} className="icon-primary"/> Smart Insights</h3>
-          <div className="insight-item">
-            <AlertTriangle className="warning-icon" size={20} />
-            <p><strong>Real-time Check:</strong> Weather patterns and road closures will be factored into your routing.</p>
+      {/* --- MAP SELECTION MODAL --- */}
+      {mapModal.isOpen && (
+        <div className="map-modal-overlay" onClick={closeMap}>
+          <div className="map-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="map-modal-header">
+              <h3>Select Location</h3>
+              <button className="close-modal-btn" onClick={closeMap}><X size={20} /></button>
+            </div>
+            
+            <div className="map-modal-body">
+              <button className="btn-use-location" onClick={handleUseCurrentLocation}>
+                <LocateFixed size={18} /> Use My Current Location
+              </button>
+              
+              <div className="divider"><span>OR PIN ON MAP</span></div>
+
+              {/* Simulated Map View */}
+              <div className="map-frame">
+                <div className="map-pin-center">
+                  <MapPin size={32} color="#ef4444" fill="#fecaca" />
+                  <div className="pin-shadow"></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="map-modal-footer">
+              <button className="btn-ghost" onClick={closeMap}>Cancel</button>
+              <button className="btn-primary" onClick={handleConfirmMapPin}>Confirm Location</button>
+            </div>
           </div>
-        </aside>
+        </div>
       )}
     </div>
   );
