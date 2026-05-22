@@ -95,9 +95,6 @@ connection.raw('SELECT 1')
         console.error('❌ Error connecting to MySQL:', err);
     });
 
-// ✅ ADD THIS LINE RIGHT HERE to initialize Redis when the server starts
-require('./API/config/redisClient');
-
 // --- 5. START SERVER ---
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {

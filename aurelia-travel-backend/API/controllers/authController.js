@@ -389,3 +389,82 @@ exports.verify2FALogin = async (req, res) => {
         res.status(500).json({ success: false, message: "Server error during 2FA login." });
     }
 };
+
+// --- FORGOT PASSWORD FLOW ---
+
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await userModel.findByEmail(email);
+        
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'No account found with that email address.' });
+        }
+
+        // Generate a 6-digit code
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Expiry time (10 mins from now)
+        const expiryDate = new Date();
+        expiryDate.setMinutes(expiryDate.getMinutes() + 10);
+
+        // Save to Database
+        await userModel.update(user.id, { 
+            reset_otp: otpCode, 
+            reset_otp_expiry: expiryDate 
+        });
+
+        // Send Email
+        await emailService.sendPasswordResetEmail(user.email, otpCode);
+
+        res.json({ success: true, message: 'Reset code sent to your email.' });
+    } catch (err) {
+        console.error("Forgot Password Error:", err);
+        res.status(500).json({ success: false, message: 'Failed to process request.' });
+    }
+};
+
+exports.verifyResetCode = async (req, res) => {
+    try {
+        const { email, code } = req.body;
+        const user = await userModel.findByEmail(email);
+
+        if (!user || user.reset_otp !== code) {
+            return res.status(400).json({ success: false, message: 'Invalid verification code.' });
+        }
+
+        if (new Date() > new Date(user.reset_otp_expiry)) {
+            return res.status(400).json({ success: false, message: 'Code has expired. Please request a new one.' });
+        }
+
+        res.json({ success: true, message: 'Code verified successfully.' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Verification failed.' });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    try {
+        const { email, code, newPassword } = req.body;
+        const user = await userModel.findByEmail(email);
+
+        // Final security check
+        if (!user || user.reset_otp !== code) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired request.' });
+        }
+
+        // Hash the new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update user and wipe the OTP fields
+        await userModel.update(user.id, { 
+            password: hashedPassword, 
+            reset_otp: null, 
+            reset_otp_expiry: null 
+        });
+
+        res.json({ success: true, message: 'Password reset successful!' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to reset password.' });
+    }
+};

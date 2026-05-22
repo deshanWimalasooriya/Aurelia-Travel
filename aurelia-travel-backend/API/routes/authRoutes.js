@@ -27,6 +27,10 @@ router.get('/verify-email/:token', authController.verifyEmail);
 // Add this inside API/routes/authRoutes.js (under your protected routes)
 router.post('/resend-verification', verifyToken, authController.resendVerificationEmail);
 
+// API/routes/authRoutes.js
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/verify-reset-code', authController.verifyResetCode);
+router.post('/reset-password', authController.resetPassword);
 
 // router.post('/whatsapp/request-otp', verifyToken, authController.requestWhatsAppOTP);
 // router.post('/whatsapp/verify-otp', verifyToken, authController.verifyWhatsAppOTP);

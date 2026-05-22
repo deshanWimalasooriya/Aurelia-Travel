@@ -1,15 +1,9 @@
-// ✅ FIX: Added Destructuring curly braces for Version 8 compatibility
 const { rateLimit } = require('express-rate-limit');
-const { RedisStore } = require('rate-limit-redis');
-const redisClient = require('../config/redisClient'); 
 
 // 1. Strict Auth Limiter (For Login & Register)
 const authLimiter = rateLimit({
-    store: new RedisStore({
-        sendCommand: (...args) => redisClient.sendCommand(args),
-    }),
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000, // Limit each IP to 10 requests per window
+    max: 1000, // Limit each IP to 1000 requests per window for testing
     standardHeaders: true, 
     legacyHeaders: false,
     message: { 
@@ -20,11 +14,8 @@ const authLimiter = rateLimit({
 
 // 2. General API Limiter (For all other routes)
 const generalLimiter = rateLimit({
-    store: new RedisStore({
-        sendCommand: (...args) => redisClient.sendCommand(args),
-    }),
     windowMs: 1 * 60 * 1000, // 1 minute
-    max: 100, // Limit each IP to 100 requests per minute
+    max: 1000, // Limit each IP to 1000 requests per minute for testing
     standardHeaders: true,
     legacyHeaders: false,
     message: { 

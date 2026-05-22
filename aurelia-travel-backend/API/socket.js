@@ -1,16 +1,4 @@
 const { Server } = require("socket.io");
-const { createAdapter } = require("@socket.io/redis-adapter");
-const { createClient } = require("redis");
-
-// ✅ Added your working Redis Labs configuration here!
-const redisConfig = {
-    username: 'default',
-    password: 'OTTHFaLuIOjMNgaBw9bkJfOvlhVX0rJj',
-    socket: {
-        host: 'redis-11990.c14.us-east-1-3.ec2.cloud.redislabs.com',
-        port: 11990
-    }
-};
 
 let io;
 
@@ -24,23 +12,9 @@ module.exports = {
             }
         });
 
-        try {
-            // ✅ Pass the configuration to the clients!
-            const pubClient = createClient(redisConfig);
-            const subClient = pubClient.duplicate();
-
-            await Promise.all([pubClient.connect(), subClient.connect()]);
-            
-            io.adapter(createAdapter(pubClient, subClient));
-            console.log("✅ Socket.io Redis Adapter Connected (With Auth)!");
-
-        } catch (error) {
-            console.error("❌ Redis Adapter Error:", error.message);
-            console.log("⚠️ Falling back to local memory adapter.");
-        }
+        console.log("✅ Socket.io Connected (In-Memory Local Adapter)");
 
         io.on("connection", (socket) => {
-            // ... your existing socket connection logic ...
             socket.on("register_user", (userId) => {
                 if (userId) {
                     const roomName = userId.toString();

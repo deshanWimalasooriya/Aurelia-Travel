@@ -6,7 +6,7 @@ import { Mail, Lock, User, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle, Sh
 import './styles/LoginRegister.css'
 import axios from 'axios'
 
-// Standard minimal SVGs for Brands
+// --- STANDARD MINIMAL SVGS FOR BRANDS ---
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
     <path fill="#4285F4" d="M23.745 12.27c0-.827-.074-1.623-.214-2.393H12v4.524h6.586a5.61 5.61 0 0 1-2.434 3.684v3.06h3.945c2.308-2.124 3.648-5.253 3.648-8.875Z"/>
@@ -27,16 +27,23 @@ export default function Auth(){
   const { refreshUser } = useUser()
   const { checkAuth } = useAuth()
   
+  // --- UI STATES ---
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [mode, setMode] = useState('login') 
+  const [mode, setMode] = useState('login') // 'login', 'register', or 'forgot'
   const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   
-  // --- NEW: 2FA States ---
+  // --- 2FA STATES ---
   const [requires2FA, setRequires2FA] = useState(false)
   const [twoFactorCode, setTwoFactorCode] = useState('')
+
+  // --- FORGOT PASSWORD STATES ---
+  const [forgotStep, setForgotStep] = useState(1) // 1: Email, 2: Code, 3: New Pass
+  const [resetCode, setResetCode] = useState('')
+  const [codeFailed, setCodeFailed] = useState(false) // Triggers the resend option
   
+  // --- FORM DATA STATE ---
   const [form, setForm] = useState({ 
     username: '', 
     email: '', 
@@ -44,6 +51,7 @@ export default function Auth(){
     confirmPassword: '' 
   })
 
+  // Load saved email on mount
   useEffect(() => {
     const savedEmail = localStorage.getItem('aurelia_saved_email')
     if (savedEmail) {
@@ -57,11 +65,61 @@ export default function Auth(){
     alert(`${provider} login integration pending backend setup.`)
   }
 
+  // ==========================================
+  // HANDLER: FORGOT PASSWORD FLOW
+  // ==========================================
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setCodeFailed(false);
+
+    try {
+        if (forgotStep === 1) {
+            // Step 1: Request the reset code to email
+            await axios.post('http://localhost:5000/api/auth/forgot-password', { email: form.email });
+            setForgotStep(2);
+        } else if (forgotStep === 2) {
+            // Step 2: Verify the 6-digit code
+            await axios.post('http://localhost:5000/api/auth/verify-reset-code', { email: form.email, code: resetCode });
+            setForgotStep(3);
+        } else if (forgotStep === 3) {
+            // Step 3: Set the new password
+            if (form.password !== form.confirmPassword) {
+                setError("Passwords do not match");
+                setLoading(false);
+                return;
+            }
+            if (form.password.length < 6) {
+                setError("Password must be at least 6 characters");
+                setLoading(false);
+                return;
+            }
+            await axios.post('http://localhost:5000/api/auth/reset-password', {
+                email: form.email, 
+                code: resetCode, 
+                newPassword: form.password
+            });
+            alert('Password reset successful! Please log in with your new password.');
+            toggleMode('login'); // Send them back to normal login
+        }
+    } catch (err) {
+        setError(err.response?.data?.message || 'An error occurred. Please try again.');
+        if (forgotStep === 2) setCodeFailed(true); // Show "Resend Code" prompt if verification fails
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  // ==========================================
+  // HANDLER: STANDARD LOGIN & REGISTER FLOW
+  // ==========================================
   const submit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
 
+    // Pre-flight checks for Registration
     if (mode === 'register') {
         if (form.password !== form.confirmPassword) {
             setError("Passwords do not match")
@@ -77,9 +135,9 @@ export default function Auth(){
 
     try {
       if (mode === 'login') {
-        // --- NEW: 2FA Login Flow ---
+        
+        // --- 2FA Login Check ---
         if (!requires2FA) {
-            // Step 1: Standard Login check
             const response = await axios.post('http://localhost:5000/api/auth/login', {
               email: form.email,
               password: form.password
@@ -87,14 +145,14 @@ export default function Auth(){
               withCredentials: true
             });
 
-            // If backend says 2FA is required, pause the login and show the code input
+            // If backend says 2FA is required, pause login and show code input
             if (response.data.requires2FA) {
                 setRequires2FA(true);
                 setLoading(false);
-                return; // Stop here and wait for the user to type the code
+                return; 
             }
         } else {
-            // Step 2: Submit the 2FA code
+            // Submit the 2FA code
             await axios.post('http://localhost:5000/api/auth/verify-2fa-login', {
                 email: form.email,
                 token: twoFactorCode
@@ -103,7 +161,7 @@ export default function Auth(){
             });
         }
 
-        // If we get here, either 2FA wasn't needed, or it was successfully verified
+        // Login Successful (either skipped 2FA or passed it)
         if (rememberMe) {
             localStorage.setItem('aurelia_saved_email', form.email)
         } else {
@@ -115,7 +173,7 @@ export default function Auth(){
         navigate('/profile')
         
       } else {
-        // Registration Flow
+        // --- Registration Flow ---
         await axios.post('http://localhost:5000/api/auth/register', {
           username: form.username,
           email: form.email,
@@ -125,7 +183,7 @@ export default function Auth(){
         })
 
         alert('Registration successful! Please login.')
-        toggleMode() 
+        toggleMode('login') 
       }
     } catch (err) {
       setError(err.response?.data?.message || 'An error occurred. Please try again.')
@@ -134,19 +192,32 @@ export default function Auth(){
     }
   }
 
-  const toggleMode = () => {
+  // ==========================================
+  // HANDLER: TOGGLE MODES (Resets all states)
+  // ==========================================
+  const toggleMode = (specificMode) => {
     setError(null)
-    setRequires2FA(false) // Reset 2FA state if switching modes
+    setRequires2FA(false) 
     setTwoFactorCode('')
+    setForgotStep(1)
+    setResetCode('')
+    setCodeFailed(false)
     setForm(prev => ({ ...prev, username: '', password: '', confirmPassword: '' }))
-    setMode(mode === 'login' ? 'register' : 'login')
+    
+    if (typeof specificMode === 'string') {
+        setMode(specificMode)
+    } else {
+        setMode(mode === 'login' ? 'register' : 'login')
+    }
   }
 
   return (
     <div className="auth-page-wrapper">
       <div className={`auth-card-container ${mode === 'register' ? 'mode-register' : 'mode-login'}`}>
         
-        {/* --- LEFT SIDE: IMAGE & BRANDING --- */}
+        {/* ==========================================
+            LEFT SIDE: IMAGE & BRANDING 
+        ========================================== */}
         <div className="auth-visual-side">
             <div className="visual-overlay">
                 <div className="brand-header">
@@ -155,20 +226,20 @@ export default function Auth(){
                 
                 <div className="visual-text-content">
                     <h1 className="visual-heading">
-                        {mode === 'login' 
-                            ? "Orchestrating your next escape." 
-                            : "Redefining the art of travel."}
+                        {mode === 'login' && "Orchestrating your next escape."}
+                        {mode === 'register' && "Redefining the art of travel."}
+                        {mode === 'forgot' && "Regain your access."}
                     </h1>
                     <p className="visual-subtext">
-                        {mode === 'login' 
-                            ? "Welcome back. Access your curated itineraries and recover your most valuable asset: your time." 
-                            : "Join an elite community of travelers using AI to curate exceptional, logistics-free experiences."}
+                        {mode === 'login' && "Welcome back. Access your curated itineraries and recover your most valuable asset: your time."}
+                        {mode === 'register' && "Join an elite community of travelers using AI to curate exceptional, logistics-free experiences."}
+                        {mode === 'forgot' && "Securely reset your password and get back to planning your next journey."}
                     </p>
                 </div>
 
                 <div className="glass-testimonial">
                     <p className="quote-text">
-                        {mode === 'login' 
+                        {mode === 'login' || mode === 'forgot'
                         ? "\"Efficiency is my currency. Aurelia saves me hours of planning without compromising on luxury.\"" 
                         : "\"I stopped planning and started traveling. The AI recommendations are indistinguishable from a human expert.\""}
                     </p>
@@ -183,21 +254,31 @@ export default function Auth(){
             </div>
         </div>
 
-        {/* --- RIGHT SIDE: FORM --- */}
+        {/* ==========================================
+            RIGHT SIDE: DYNAMIC FORM 
+        ========================================== */}
         <div className="auth-form-side">
             <div className="form-container">
                 
+                {/* Form Header */}
                 <div className="form-header">
-                    <h2>{requires2FA ? 'Two-Step Verification' : (mode === 'login' ? 'Welcome back' : 'Create account')}</h2>
+                    <h2>
+                        {mode === 'forgot' ? 'Reset Password' : 
+                        (requires2FA ? 'Two-Step Verification' : 
+                        (mode === 'login' ? 'Welcome back' : 'Create account'))}
+                    </h2>
                     <p className="sub-header">
-                        {requires2FA 
-                            ? "Enter the 6-digit code from your authenticator app." 
-                            : (mode === 'login' ? "Please enter your details to sign in." : "Start your journey with us today.")}
+                        {mode === 'forgot' ? (
+                            forgotStep === 1 ? "Enter your email to receive a recovery code." :
+                            forgotStep === 2 ? "Enter the 6-digit code sent to your email." :
+                            "Create a strong, secure new password."
+                        ) : requires2FA ? "Enter the 6-digit code from your authenticator app." : 
+                        (mode === 'login' ? "Please enter your details to sign in." : "Start your journey with us today.")}
                     </p>
                 </div>
 
-                {/* Hide social login if we are in the middle of 2FA */}
-                {!requires2FA && (
+                {/* Social Login (Hidden during 2FA or Forgot Password) */}
+                {!requires2FA && mode !== 'forgot' && (
                     <>
                         <div className="social-login-group">
                             <button type="button" className="social-btn" onClick={() => handleSocialLogin('google')}>
@@ -209,33 +290,66 @@ export default function Auth(){
                                 <span>Facebook</span>
                             </button>
                         </div>
-
-                        <div className="divider">
-                            <span>or continue with email</span>
-                        </div>
+                        <div className="divider"><span>or continue with email</span></div>
                     </>
                 )}
 
-                <form onSubmit={submit} className="modern-form">
+                {/* --- FORM BEGINS --- */}
+                <form onSubmit={mode === 'forgot' ? handleForgotSubmit : submit} className="modern-form">
                     
-                    {/* STANDARD LOGIN / REGISTER FIELDS */}
-                    {!requires2FA ? (
+                    {/* SECTION 1: FORGOT PASSWORD FLOW */}
+                    {mode === 'forgot' && (
+                        <>
+                            {forgotStep === 1 && (
+                                <div className="input-group">
+                                    <label htmlFor="email">Email Address</label>
+                                    <div className="input-wrapper">
+                                        <Mail size={18} className="input-icon"/>
+                                        <input id="email" value={form.email} onChange={e=>setForm(f=>({...f, email:e.target.value}))} type="email" className="modern-input with-icon" placeholder="you@example.com" required />
+                                    </div>
+                                </div>
+                            )}
+
+                            {forgotStep === 2 && (
+                                <div className="input-group slide-in-element">
+                                    <label htmlFor="resetCode">6-Digit Reset Code</label>
+                                    <div className="input-wrapper">
+                                        <ShieldCheck size={18} className="input-icon" color="#2563eb" />
+                                        <input id="resetCode" value={resetCode} onChange={e=>setResetCode(e.target.value)} type="text" maxLength={6} className="modern-input with-icon" placeholder="000000" style={{ letterSpacing: '4px', fontSize: '1.2rem', fontWeight: 'bold' }} required />
+                                    </div>
+                                </div>
+                            )}
+
+                            {forgotStep === 3 && (
+                                <>
+                                    <div className="input-group slide-in-element">
+                                        <label htmlFor="password">New Password</label>
+                                        <div className="input-wrapper">
+                                            <Lock size={18} className="input-icon"/>
+                                            <input id="password" value={form.password} onChange={e=>setForm(f=>({...f, password:e.target.value}))} type={showPassword ? "text" : "password"} className="modern-input with-icon" placeholder="••••••••" required />
+                                        </div>
+                                    </div>
+                                    <div className="input-group slide-in-element">
+                                        <label htmlFor="confirmPassword">Confirm New Password</label>
+                                        <div className="input-wrapper">
+                                            <CheckCircle size={18} className="input-icon"/>
+                                            <input id="confirmPassword" value={form.confirmPassword} onChange={e=>setForm(f=>({...f, confirmPassword:e.target.value}))} type={showPassword ? "text" : "password"} className="modern-input with-icon" placeholder="••••••••" required />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </>
+                    )}
+
+                    {/* SECTION 2: STANDARD LOGIN & REGISTER FLOW */}
+                    {!requires2FA && mode !== 'forgot' && (
                         <>
                             {mode === 'register' && (
                                 <div className="input-group slide-in-element">
                                     <label htmlFor="username">Full Name</label>
                                     <div className="input-wrapper">
                                         <User size={18} className="input-icon"/>
-                                        <input 
-                                            id="username"
-                                            name="username"
-                                            autoComplete="name"
-                                            value={form.username} 
-                                            onChange={e=>setForm(f=>({...f, username:e.target.value}))} 
-                                            className="modern-input with-icon"
-                                            placeholder="e.g. John Doe"
-                                            required
-                                        />
+                                        <input id="username" name="username" autoComplete="name" value={form.username} onChange={e=>setForm(f=>({...f, username:e.target.value}))} className="modern-input with-icon" placeholder="e.g. John Doe" required />
                                     </div>
                                 </div>
                             )}
@@ -244,17 +358,7 @@ export default function Auth(){
                                 <label htmlFor="email">Email Address</label>
                                 <div className="input-wrapper">
                                     <Mail size={18} className="input-icon"/>
-                                    <input 
-                                        id="email"
-                                        name="email"
-                                        autoComplete="email" 
-                                        value={form.email} 
-                                        onChange={e=>setForm(f=>({...f, email:e.target.value}))} 
-                                        type="email" 
-                                        className="modern-input with-icon"
-                                        placeholder="you@example.com"
-                                        required
-                                    />
+                                    <input id="email" name="email" autoComplete="email" value={form.email} onChange={e=>setForm(f=>({...f, email:e.target.value}))} type="email" className="modern-input with-icon" placeholder="you@example.com" required />
                                 </div>
                             </div>
 
@@ -262,22 +366,8 @@ export default function Auth(){
                                 <label htmlFor="password">Password</label>
                                 <div className="input-wrapper">
                                     <Lock size={18} className="input-icon"/>
-                                    <input 
-                                        id="password"
-                                        name="password"
-                                        autoComplete={mode === 'login' ? "current-password" : "new-password"}
-                                        value={form.password} 
-                                        onChange={e=>setForm(f=>({...f, password:e.target.value}))} 
-                                        type={showPassword ? "text" : "password"} 
-                                        className="modern-input with-icon"
-                                        placeholder="••••••••"
-                                        required
-                                    />
-                                    <button 
-                                        type="button" 
-                                        className="password-toggle"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                    >
+                                    <input id="password" name="password" autoComplete={mode === 'login' ? "current-password" : "new-password"} value={form.password} onChange={e=>setForm(f=>({...f, password:e.target.value}))} type={showPassword ? "text" : "password"} className="modern-input with-icon" placeholder="••••••••" required />
+                                    <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
                                         {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
                                     </button>
                                 </div>
@@ -288,17 +378,7 @@ export default function Auth(){
                                     <label htmlFor="confirmPassword">Confirm Password</label>
                                     <div className="input-wrapper">
                                         <CheckCircle size={18} className="input-icon"/>
-                                        <input 
-                                            id="confirmPassword"
-                                            name="confirmPassword"
-                                            autoComplete="new-password"
-                                            value={form.confirmPassword} 
-                                            onChange={e=>setForm(f=>({...f, confirmPassword:e.target.value}))} 
-                                            type={showPassword ? "text" : "password"} 
-                                            className="modern-input with-icon"
-                                            placeholder="••••••••"
-                                            required
-                                        />
+                                        <input id="confirmPassword" name="confirmPassword" autoComplete="new-password" value={form.confirmPassword} onChange={e=>setForm(f=>({...f, confirmPassword:e.target.value}))} type={showPassword ? "text" : "password"} className="modern-input with-icon" placeholder="••••••••" required />
                                     </div>
                                 </div>
                             )}
@@ -306,40 +386,28 @@ export default function Auth(){
                             {mode === 'login' && (
                                 <div className="form-options">
                                     <label className="checkbox-label">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={rememberMe}
-                                            onChange={(e) => setRememberMe(e.target.checked)}
-                                        />
+                                        <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
                                         <span className="checkbox-custom"></span>
                                         Remember me
                                     </label>
-                                    <button type="button" className="link-btn-small">Forgot password?</button>
+                                    <button type="button" onClick={() => toggleMode('forgot')} className="link-btn-small">Forgot password?</button>
                                 </div>
                             )}
                         </>
-                    ) : (
-                        // --- 2FA INPUT FIELD ---
+                    )}
+
+                    {/* SECTION 3: 2FA FLOW */}
+                    {requires2FA && mode !== 'forgot' && (
                         <div className="input-group slide-in-element">
                             <label htmlFor="twoFactorCode">Authenticator Code</label>
                             <div className="input-wrapper">
                                 <ShieldCheck size={18} className="input-icon" color="#2563eb" />
-                                <input 
-                                    id="twoFactorCode"
-                                    name="twoFactorCode"
-                                    value={twoFactorCode} 
-                                    onChange={e=>setTwoFactorCode(e.target.value)} 
-                                    type="text" 
-                                    maxLength={6}
-                                    className="modern-input with-icon"
-                                    placeholder="000000"
-                                    style={{ letterSpacing: '4px', fontSize: '1.2rem', fontWeight: 'bold' }}
-                                    required
-                                />
+                                <input id="twoFactorCode" name="twoFactorCode" value={twoFactorCode} onChange={e=>setTwoFactorCode(e.target.value)} type="text" maxLength={6} className="modern-input with-icon" placeholder="000000" style={{ letterSpacing: '4px', fontSize: '1.2rem', fontWeight: 'bold' }} required />
                             </div>
                         </div>
                     )}
 
+                    {/* Global Error Display */}
                     {error && (
                         <div className="error-banner">
                             <AlertCircle size={18} />
@@ -347,13 +415,34 @@ export default function Auth(){
                         </div>
                     )}
 
-                    <button type="submit" className="submit-btn-animated" disabled={loading || (requires2FA && twoFactorCode.length < 6)}>
-                        <span>{loading ? 'Processing...' : (requires2FA ? 'Verify Code' : (mode === 'login' ? 'Sign In' : 'Create Account'))}</span>
+                    {/* DYNAMIC SUBMIT BUTTON */}
+                    <button 
+                        type="submit" 
+                        className="submit-btn-animated" 
+                        disabled={loading || (requires2FA && twoFactorCode.length < 6) || (mode === 'forgot' && forgotStep === 2 && resetCode.length < 6)}
+                    >
+                        <span>
+                            {loading ? 'Processing...' : 
+                             mode === 'forgot' ? (forgotStep === 1 ? 'Get Code' : forgotStep === 2 ? 'Verify Code' : 'Reset Password') :
+                             requires2FA ? 'Verify Code' : 
+                             (mode === 'login' ? 'Sign In' : 'Create Account')}
+                        </span>
                         {!loading && <ArrowRight size={18} />}
                     </button>
                     
-                    {/* If in 2FA mode, give them a way to cancel and go back to normal login */}
-                    {requires2FA ? (
+                    {/* --- BOTTOM ACTIONS & TOGGLES --- */}
+                    {mode === 'forgot' ? (
+                        <div style={{textAlign: 'center', marginTop: '15px'}}>
+                             {forgotStep === 2 && codeFailed && (
+                                 <button type="button" onClick={() => { setForgotStep(1); setError(null); }} className="link-btn-text" style={{display: 'block', margin: '0 auto 10px'}}>
+                                     Incorrect code. Click here to resend.
+                                 </button>
+                             )}
+                             <button type="button" onClick={() => toggleMode('login')} className="link-btn-text">
+                                 Back to login
+                             </button>
+                        </div>
+                    ) : requires2FA ? (
                          <div style={{textAlign: 'center', marginTop: '15px'}}>
                              <button type="button" onClick={() => setRequires2FA(false)} className="link-btn-text">
                                  Cancel and return to login
@@ -362,7 +451,7 @@ export default function Auth(){
                     ) : (
                         <p className="bottom-text">
                             {mode === 'login' ? "Don't have an account? " : "Already have an account? "}
-                            <button type="button" onClick={toggleMode} className="link-btn-text">
+                            <button type="button" onClick={() => toggleMode()} className="link-btn-text">
                                 {mode === 'login' ? "Sign up" : "Log in"}
                             </button>
                         </p>
