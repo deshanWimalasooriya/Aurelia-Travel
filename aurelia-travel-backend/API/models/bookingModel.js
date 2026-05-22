@@ -7,56 +7,61 @@ const generateReference = () => {
 
 // 1. CREATE BOOKING (The Critical Transaction)
 // ✅ Updated: Locks inventory rows to prevent double-booking
+// E:\Travelling\aurelia-travel-backend\API\models\bookingModel.js
+
 exports.createBooking = async (bookingData, paymentData) => {
     return await knex.transaction(async (trx) => {
         
-        // STEP A: Double-Check Availability (With Validation)
+        // 1. Safely Format Dates to YYYY-MM-DD for MySQL
+        const checkInDate = new Date(bookingData.check_in);
+        const formattedCheckIn = checkInDate.toISOString().split('T')[0];
+        
+        // 2. Calculate the exact last night of the stay
+        // We subtract 1 day from check-out because guests don't consume inventory on the day they leave
+        const lastNight = new Date(bookingData.check_out);
+        lastNight.setDate(lastNight.getDate() - 1);
+        const formattedLastNight = lastNight.toISOString().split('T')[0];
+
+        // 3. Check Availability using strictly formatted dates
         const checkAvailability = await trx('room_availability')
             .where('room_id', bookingData.room_id)
-            .whereBetween('date', [bookingData.check_in, bookingData.check_out])
-            .orderBy('date', 'asc') // Prevents Deadlocks
-            .forUpdate();           // Locks Rows
+            .whereBetween('date', [formattedCheckIn, formattedLastNight])
+            .orderBy('date', 'asc')
+            .forUpdate();
 
-        // ✅ FIX 1: Prevent "Ghost" Bookings
-        // If the admin hasn't created these dates in the DB yet, we must stop.
+        // 4. Validate Room Configuration Exists
         if (checkAvailability.length === 0) {
             throw new Error('Room configuration not found for these dates.');
         }
 
-        // Logic Check: Filter for sold out days
+        // 5. Validate Rooms are not Sold Out
         const soldOutDays = checkAvailability.filter(day => day.available_quantity < 1);
         if (soldOutDays.length > 0) {
             throw new Error('Room is no longer available for these dates.');
         }
 
-        // STEP B: Decrement Inventory
+        // 6. Decrement Inventory safely
         await trx('room_availability')
             .where('room_id', bookingData.room_id)
-            .whereBetween('date', [bookingData.check_in, bookingData.check_out])
+            .whereBetween('date', [formattedCheckIn, formattedLastNight])
             .decrement('available_quantity', 1);
 
-        // STEP C: Insert Booking
-        // Generate Reference
+        // 7. Generate Booking Reference
         const reference = typeof generateReference === 'function' 
             ? generateReference() 
             : `BK-${Date.now()}`;
-
-        // ✅ FIX 2: Dynamic Status (Prevent "False Paid" records)
-        // Only mark as 'confirmed'/'paid' if we actually have payment data.
+            
         const isPaid = !!paymentData; 
 
+        // 8. Insert Booking Record (Using original bookingData for accurate check-out records)
         const [bookingId] = await trx('bookings').insert({
             ...bookingData,
             booking_reference: reference,
-            
-            // If paymentData exists -> 'confirmed'. If not -> 'pending_payment'
             status: isPaid ? 'confirmed' : 'pending_payment', 
-            
-            // If paymentData exists -> 'paid'. If not -> 'unpaid'
             payment_status: isPaid ? 'paid' : 'unpaid'
         });
 
-        // STEP D: Record Payment Transaction (Only if payment exists)
+        // 9. Record Payment (If applicable)
         if (isPaid) {
             await trx('payment_transactions').insert({
                 booking_id: bookingId,

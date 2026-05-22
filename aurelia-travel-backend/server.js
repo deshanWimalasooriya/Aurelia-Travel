@@ -5,6 +5,7 @@ const cors = require('cors');
 const connection = require('./config/db'); // This is now your Knex instance
 const http = require('http'); // 1. Import HTTP
 const { init } = require('./API/socket'); // 2. Import Socket Init
+const generateAvailability = require('./API/cron/availabilityCron');
 
 // Load Env Variables
 dotenv.config();
@@ -95,3 +96,5 @@ server.listen(PORT, () => {
     console.log(`🚀 Server is running on port ${PORT}`);
     console.log(`🔗 Platform Routes available at: http://localhost:${PORT}/api/platform`);
 });
+
+generateAvailability();
