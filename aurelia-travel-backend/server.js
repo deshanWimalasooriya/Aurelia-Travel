@@ -89,7 +89,8 @@ connection.raw('SELECT 1')
     .catch((err) => {
         console.error('❌ Error connecting to MySQL:', err);
     });
-
+    
+generateAvailability();
 // --- 5. START SERVER ---
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
@@ -97,4 +98,3 @@ server.listen(PORT, () => {
     console.log(`🔗 Platform Routes available at: http://localhost:${PORT}/api/platform`);
 });
 
-generateAvailability();
