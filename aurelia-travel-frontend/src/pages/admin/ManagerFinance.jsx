@@ -164,7 +164,7 @@ const ManagerFinance = () => {
           <div className="mf-icon-wrapper bg-green"><TrendingUp size={24} /></div>
           <div className="mf-stat-info">
     {/* Update the hardcoded 5% to use the state variable */}
-            <span className="mf-stat-label">Commission Due ({stats.current_rate}%)</span>
+            <span className="mf-stat-label">Commission Due</span>
             <h2 className="mf-stat-value">${parseFloat(stats.unpaid_commission || 0).toLocaleString()}</h2>
             <span className="mf-stat-sub">{stats.pending_bookings_count} bookings pending payment</span>
         </div>
@@ -172,9 +172,8 @@ const ManagerFinance = () => {
         <div className={`mf-stat-card ${stats.unpaid_commission > 0 ? 'active-debt' : ''}`}>
           <div className="mf-icon-wrapper bg-orange"><DollarSign size={24} /></div>
           <div className="mf-stat-info">
-            <span className="mf-stat-label">Commission Due ({stats.current_rate}%)</span>
+            <span className="mf-stat-label">Commission Due</span>
             <h2 className="mf-stat-value">${parseFloat(stats.unpaid_commission || 0).toLocaleString()}</h2>
-            <span className="mf-stat-sub">{stats.pending_bookings_count} bookings pending payment</span>
           </div>
           {stats.unpaid_commission > 0 ? (
             <button className="mf-pay-btn" onClick={initiatePayment}>Pay Now <CreditCard size={16} /></button>

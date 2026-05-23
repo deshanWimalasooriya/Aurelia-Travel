@@ -26,28 +26,20 @@ exports.payCommission = async (req, res) => {
 exports.getAnalytics = async (req, res) => {
     try {
         const managerId = req.user.userId;
-
-        // Parallel Fetch
-        const [revenueTrends, byHotel, byStatus, hotelFinancialsRaw, settings] = await Promise.all([
+        const [revenueTrends, byHotel, byStatus, hotelFinancialsRaw] = await Promise.all([
             financeModel.getManagerRevenueTrends(managerId),
             financeModel.getManagerHotelsBreakdown(managerId),
             financeModel.getManagerBookingStatus(managerId),
-            financeModel.getManagerFinancialTable(managerId),
-            platformModel.getSettings() 
+            financeModel.getManagerFinancialTable(managerId)
         ]);
-
-        const globalRate = settings ? parseFloat(settings.commission_rate) : 0;
 
         let totalRevenue = 0;
         let totalCommission = 0;
         let totalBookings = 0;
 
         const hotelFinancials = hotelFinancialsRaw.map(h => {
-
             const rev = parseFloat(h.revenue || 0);
-            // ✨ Use the live global rate
-            const rate = globalRate;
-            const comm = rev * (rate / 100);
+            const comm = parseFloat(h.commission || 0); // <-- Use exact DB value
             
             const bookingsCount = parseInt(h.bookings || 0, 10);
             
@@ -67,7 +59,6 @@ exports.getAnalytics = async (req, res) => {
         res.json({
             success: true,
             data: {
-                // Fix: Force Recharts values to be numbers, otherwise the graph breaks
                 revenue: revenueTrends.map(r => ({ name: r.name, value: parseFloat(r.value || 0) })),
                 byHotel: byHotel.map(h => ({ name: h.name, value: parseInt(h.value || 0, 10) })),
                 byStatus: byStatus.map(s => ({ name: s.name, value: parseInt(s.value || 0, 10) })),
@@ -80,7 +71,6 @@ exports.getAnalytics = async (req, res) => {
                 hotelFinancials
             }
         });
-
     } catch (err) {
         console.error("Manager Analytics Error:", err);
         res.status(500).json({ success: false, error: err.message });

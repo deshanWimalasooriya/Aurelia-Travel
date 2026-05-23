@@ -1,6 +1,7 @@
 const bookingModel = require('../models/bookingModel');
 const roomModel = require('../models/roomModel');
 const hotelModel = require('../models/hotelModel');
+const platformModel = require('../models/platformModel');
 
 // Import the helper
 const { sendNotification } = require('./notificationController');
@@ -38,6 +39,10 @@ exports.createBooking = async (req, res) => {
         const service = 0; // Removed 5% Service Fee
         const totalPrice = roomPrice + tax + service;
 
+        const settings = await platformModel.getSettings();
+        const globalRate = settings && settings.commission_rate ? parseFloat(settings.commission_rate) : 5;
+        const lockedCommission = totalPrice * (globalRate / 100);
+
         // C. Construct Data
         const bookingData = {
             user_id: userId,
@@ -52,6 +57,7 @@ exports.createBooking = async (req, res) => {
             tax_amount: tax,
             service_charge: service,
             total_price: totalPrice,
+            commission: lockedCommission,
             status: 'confirmed'
         };
 

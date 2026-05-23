@@ -2,67 +2,100 @@ const knex = require('../../config/db');
 
 // 1. Get Stats for Manager Dashboard
 // 1. UPDATE: getHotelStats
+// 1. UPDATE: getHotelStats
 exports.getHotelStats = async (managerId) => {
-    const hotels = await knex('hotels').where({ manager_id: managerId }).select('id', 'commission_rate');
-    if (hotels.length === 0) return { total_revenue: 0, unpaid_commission: 0, pending_bookings_count: 0, has_overdue: false, current_rate: 0 };
+    const hotels = await knex('hotels').where({ manager_id: managerId }).select('id');
 
-    const hotelIds = hotels.map(h => h.id);
-    const revenueResult = await knex('bookings').whereIn('hotel_id', hotelIds).whereIn('status', ['confirmed', 'completed']).sum('total_price as total').first();
-    
-    // ✨ ADDED: 'hotels.commission_rate' to the select query
-    const unpaidBookings = await knex('bookings').join('hotels', 'bookings.hotel_id', 'hotels.id').whereIn('bookings.hotel_id', hotelIds).where('bookings.commission_status', 'pending').whereIn('bookings.status', ['confirmed', 'completed']).select('bookings.total_price', 'hotels.commission_rate');
-
-    // ✨ STRICT DB FETCH (No 5% default)
     const settings = await knex('platform_settings').first();
-    const globalRate = settings && settings.commission_rate ? parseFloat(settings.commission_rate) : 0;
+    const currentRate = settings && settings.commission_rate ? parseFloat(settings.commission_rate) : 0;
 
+    if (hotels.length === 0) return { total_revenue: 0, unpaid_commission: 0, pending_bookings_count: 0, has_overdue: false, current_rate: currentRate };
+    
+    const hotelIds = hotels.map(h => h.id);
+    
+    const revenueResult = await knex('bookings')
+        .whereIn('hotel_id', hotelIds)
+        .whereIn('status', ['confirmed', 'completed'])
+        .sum('total_price as total').first();
+        
+    // STRICT DB FETCH: Read the 'commission' column directly
+    const unpaidBookings = await knex('bookings')
+        .whereIn('hotel_id', hotelIds)
+        .where('commission_status', 'pending')
+        .whereIn('status', ['confirmed', 'completed'])
+        .select('commission'); 
+        
     let totalPendingCommission = 0;
     unpaidBookings.forEach(b => { 
-        const actualRate = globalRate;
-        totalPendingCommission += parseFloat(b.total_price || 0) * (actualRate / 100); 
+        totalPendingCommission += parseFloat(b.commission || 0); 
     });
-    
+        
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const overdueCheck = await knex('bookings').whereIn('hotel_id', hotelIds).where('commission_status', 'pending').whereIn('status', ['confirmed', 'completed']).andWhere('check_out', '<', thirtyDaysAgo).first();
+    const overdueCheck = await knex('bookings')
+        .whereIn('hotel_id', hotelIds)
+        .where('commission_status', 'pending')
+        .whereIn('status', ['confirmed', 'completed'])
+        .andWhere('check_out', '<', thirtyDaysAgo).first();
 
-    // ✨ ADDED: return current_rate so React can display it
     return { 
         total_revenue: parseFloat(revenueResult.total || 0), 
         unpaid_commission: totalPendingCommission, 
         pending_bookings_count: unpaidBookings.length, 
         has_overdue: !!overdueCheck,
-        current_rate: globalRate 
+        current_rate: currentRate
     };
 };
 
-// 2. UPDATE: payCommission (inside the same file)
+// 2. UPDATE: payCommission
 exports.payCommission = async (managerId, paymentDetails) => {
     return await knex.transaction(async (trx) => {
-        const hotels = await trx('hotels').where({ manager_id: managerId }).select('id', 'commission_rate');
+        const hotels = await trx('hotels').where({ manager_id: managerId }).select('id');
         if (hotels.length === 0) throw new Error("No hotels found");
         const hotelIds = hotels.map(h => h.id);
+        
+        const eligibleBookings = await trx('bookings')
+            .whereIn('hotel_id', hotelIds)
+            .where('commission_status', 'pending')
+            .whereIn('status', ['confirmed', 'completed'])
+            .select('id', 'commission', 'hotel_id');
 
-        const eligibleBookings = await trx('bookings').join('hotels', 'bookings.hotel_id', 'hotels.id').whereIn('bookings.hotel_id', hotelIds).where('bookings.commission_status', 'pending').whereIn('bookings.status', ['confirmed', 'completed']).select('bookings.id', 'bookings.total_price', 'hotels.commission_rate', 'bookings.hotel_id');
         if (eligibleBookings.length === 0) throw new Error("No pending commissions.");
-
-        // ✨ STRICT DB FETCH (No 5% default)
-        const settings = await trx('platform_settings').first();
-        const globalRate = settings && settings.commission_rate ? parseFloat(settings.commission_rate) : 0;
 
         let totalCommission = 0;
         eligibleBookings.forEach(b => { 
-            const actualRate = globalRate;
-            totalCommission += parseFloat(b.total_price) * (actualRate / 100); 
+            totalCommission += parseFloat(b.commission || 0); 
         });
-        
+                
         const [paymentId] = await trx('commission_payments').insert({
-            hotel_id: hotelIds[0], manager_id: managerId, amount_paid: totalCommission, bookings_count: eligibleBookings.length, transaction_id: paymentDetails.transaction_id || `MANUAL-${Date.now()}`
+            hotel_id: hotelIds[0], 
+            manager_id: managerId, 
+            amount_paid: totalCommission, 
+            bookings_count: eligibleBookings.length, 
+            transaction_id: paymentDetails.transaction_id || `MANUAL-${Date.now()}`
         });
 
-        await trx('bookings').whereIn('id', eligibleBookings.map(b => b.id)).update({ commission_status: 'paid', commission_payment_id: paymentId });
+        await trx('bookings').whereIn('id', eligibleBookings.map(b => b.id)).update({ 
+            commission_status: 'paid', 
+            commission_payment_id: paymentId 
+        });
+
         return { paymentId, amount: totalCommission, count: eligibleBookings.length };
     });
+};
+
+// 3. UPDATE: getManagerFinancialTable
+exports.getManagerFinancialTable = async (managerId) => {
+    return knex('bookings')
+    .join('hotels', 'bookings.hotel_id', 'hotels.id')
+    .where('hotels.manager_id', managerId)
+    .whereIn('bookings.status', ['confirmed', 'completed'])
+    .select('hotels.id', 'hotels.name')
+    .count('bookings.id as bookings')
+    .sum('bookings.total_price as revenue')
+    .sum('bookings.commission as commission') // <-- DB SUM DIRECTLY
+    .groupBy('hotels.id', 'hotels.name')
+    .orderBy('revenue', 'desc');
 };
 
 exports.getPaymentHistory = async (managerId) => {
@@ -95,17 +128,6 @@ exports.getManagerBookingStatus = async (managerId) => {
     return knex('bookings').join('hotels', 'bookings.hotel_id', 'hotels.id').where('hotels.manager_id', managerId).select('bookings.status as name').count('bookings.id as value').groupBy('bookings.status');
 };
 
-exports.getManagerFinancialTable = async (managerId) => {
-    return knex('bookings')
-    .join('hotels', 'bookings.hotel_id', 'hotels.id')
-    .where('hotels.manager_id', managerId)
-    .whereIn('bookings.status', ['confirmed', 'completed'])
-    .select('hotels.id', 'hotels.name', 'hotels.commission_rate')
-    .count('bookings.id as bookings')
-    .sum('bookings.total_price as revenue')
-    .groupBy('hotels.id', 'hotels.name', 'hotels.commission_rate')
-    .orderBy('revenue', 'desc');
-};
 
 const calculateTrend = (current, previous) => {
     if (previous === 0) return current > 0 ? 100 : 0;
