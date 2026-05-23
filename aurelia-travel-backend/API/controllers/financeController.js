@@ -46,7 +46,7 @@ exports.getAnalytics = async (req, res) => {
 
             const rev = parseFloat(h.revenue || 0);
             // ✨ Use the live global rate
-            const rate = parseFloat(h.commission_rate || globalRate); 
+            const rate = globalRate;
             const comm = rev * (rate / 100);
             
             const bookingsCount = parseInt(h.bookings || 0, 10);

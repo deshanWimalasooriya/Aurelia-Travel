@@ -21,7 +21,7 @@ exports.getAnalyticsData = async (req, res) => {
         const hotelFinancials = hotelFinancialsRaw.map(h => {
             const rev = parseFloat(h.revenue || 0);
             // ✨ Apply the live rate
-            const rate = parseFloat(h.commission_rate || globalRate);
+            const rate = globalRate;
             const comm = rev * (rate / 100);
             
             // Fix: Parse string counts into actual integers

@@ -18,7 +18,7 @@ exports.getHotelStats = async (managerId) => {
 
     let totalPendingCommission = 0;
     unpaidBookings.forEach(b => { 
-        const actualRate = b.commission_rate ? parseFloat(b.commission_rate) : globalRate;
+        const actualRate = globalRate;
         totalPendingCommission += parseFloat(b.total_price || 0) * (actualRate / 100); 
     });
     
@@ -52,7 +52,7 @@ exports.payCommission = async (managerId, paymentDetails) => {
 
         let totalCommission = 0;
         eligibleBookings.forEach(b => { 
-            const actualRate = b.commission_rate ? parseFloat(b.commission_rate) : globalRate;
+            const actualRate = globalRate;
             totalCommission += parseFloat(b.total_price) * (actualRate / 100); 
         });
         
