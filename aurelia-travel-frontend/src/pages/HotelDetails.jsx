@@ -5,7 +5,7 @@ import {
   MapPin, Star, Check, Wifi, Car, Coffee, Info, ArrowRight, 
   ShieldCheck, Utensils, Calendar, Users, TrendingUp, 
   Maximize, Mountain, User, Clock, AlertCircle, Ban, Dog, Globe,
-  Bed, Eye, X, Image as ImageIcon, Heart, BedDouble, Bath
+  Bed, Eye, X, Image as ImageIcon, Heart, BedDouble, Bath, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useUser } from '../context/userContext';
 import { useWishlist } from '../context/WishlistContext'; 
@@ -35,6 +35,7 @@ const HotelDetails = () => {
   // Room Popup & Gallery State
   const [viewingRoom, setViewingRoom] = useState(null);
   const [isRoomGalleryOpen, setIsRoomGalleryOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Selection State
   const [selectedRoomId, setSelectedRoomId] = useState(null);
@@ -120,6 +121,17 @@ const HotelDetails = () => {
 
   const handleViewDetails = (room) => {
       setViewingRoom(room);
+      setCurrentImageIndex(0); 
+  };
+
+  const nextImage = (e) => {
+      e.stopPropagation();
+      setCurrentImageIndex((prev) => (prev + 1) % currentRoomImages.length);
+  };
+
+  const prevImage = (e) => {
+      e.stopPropagation();
+      setCurrentImageIndex((prev) => (prev === 0 ? currentRoomImages.length - 1 : prev - 1));
   };
 
   const getRoomImages = (room) => {
@@ -487,9 +499,18 @@ const HotelDetails = () => {
                 <div className="booking-widget">
                     <div className="price-header">
                         <div className="price-display">
-                            <span className="currency">$</span>
-                            <span className="amount">{totalPrice > 0 ? totalPrice.toLocaleString() : (parseFloat(hotel.price_per_night_from || rooms[0]?.base_price_per_night || 0))}</span>
-                            <span className="price-note">{nightCount > 0 ? ` total` : ' / night'}</span>
+                            {/* NEW: Conditional Price Display */}
+                            {selectedRoomId ? (
+                                <>
+                                    <span className="currency">$</span>
+                                    <span className="amount">{totalPrice.toLocaleString()}</span>
+                                    <span className="price-note">{nightCount > 0 ? ` total` : ' / night'}</span>
+                                </>
+                            ) : (
+                                <span className="amount" style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>
+                                    Select a room below
+                                </span>
+                            )}
                         </div>
                         <div className="demand-badge"><TrendingUp size={14}/> High Demand</div>
                     </div>
@@ -538,8 +559,35 @@ const HotelDetails = () => {
 
                   <div className="room-modal-scroll-area">
                       
-                      <div className="room-modal-hero" style={{backgroundImage: `url('${currentRoomImages[0] || DEFAULT_IMAGE}')`}}>
-                          <button className="view-gallery-btn" onClick={() => setIsRoomGalleryOpen(true)}>
+                      {/* NEW SLIDER HERO */}
+                      <div className="room-modal-hero">
+                          <img 
+                              src={currentRoomImages[currentImageIndex] || DEFAULT_IMAGE} 
+                              alt="Room Preview" 
+                              className="room-slider-image" 
+                          />
+                          
+                          {currentRoomImages.length > 1 && (
+                              <>
+                                  <button className="slider-arrow left" onClick={prevImage}>
+                                      <ChevronLeft size={32}/>
+                                  </button>
+                                  <button className="slider-arrow right" onClick={nextImage}>
+                                      <ChevronRight size={32}/>
+                                  </button>
+                                  <div className="slider-dots">
+                                      {currentRoomImages.map((_, idx) => (
+                                          <div 
+                                              key={idx} 
+                                              className={`slider-dot ${idx === currentImageIndex ? 'active' : ''}`}
+                                              onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(idx); }}
+                                          />
+                                      ))}
+                                  </div>
+                              </>
+                          )}
+
+                          <button className="view-gallery-btn" onClick={(e) => { e.stopPropagation(); setIsRoomGalleryOpen(true); }}>
                               <ImageIcon size={18} /> View Photos
                           </button>
                       </div>
@@ -551,14 +599,18 @@ const HotelDetails = () => {
                               <span className="room-type-badge">{viewingRoom.room_type}</span>
                           </div>
 
-                          <div className="room-features-grid">
-                              <div className="feature-item"><Users size={22}/> <span>{viewingRoom.max_adults} Adults, {viewingRoom.max_children} Kids</span></div>
-                              <div className="feature-item"><Maximize size={22}/> <span>{viewingRoom.size_sqm || '- '} m²</span></div>
-                              <div className="feature-item"><Bed size={22}/> <span>{viewingRoom.bed_type || 'King'}</span></div>
-                              <div className="feature-item"><Mountain size={22}/> <span>{viewingRoom.view_type || 'City View'}</span></div>
+                          {/* CATEGORY 1: Specifications */}
+                          <div className="modal-section-group" style={{marginTop: 0}}>
+                              <h4 className="modal-sub-title">Room Specifications</h4>
+                              <div className="room-features-grid">
+                                  <div className="feature-item"><Users size={22}/> <span>{viewingRoom.max_adults} Adults, {viewingRoom.max_children} Kids</span></div>
+                                  <div className="feature-item"><Maximize size={22}/> <span>{viewingRoom.size_sqm || '- '} m²</span></div>
+                                  <div className="feature-item"><Bed size={22}/> <span>{viewingRoom.bed_type || 'Double'}</span></div>
+                                  <div className="feature-item"><Mountain size={22}/> <span>{viewingRoom.view_type || 'None'}</span></div>
+                              </div>
                           </div>
 
-                          {/* Room Amenities Array */}
+                          {/* CATEGORY 2: Room Amenities */}
                           {safeParse(viewingRoom.room_amenities).length > 0 && (
                               <div className="modal-section-group">
                                   <h4 className="modal-sub-title"><BedDouble size={18}/> Inside the Room</h4>
@@ -570,7 +622,7 @@ const HotelDetails = () => {
                               </div>
                           )}
 
-                          {/* Bathroom Amenities Array */}
+                          {/* CATEGORY 3: Bathroom Amenities */}
                           <div className="modal-section-group">
                               <h4 className="modal-sub-title"><Bath size={18}/> Bathroom ({viewingRoom.bathroom_type || 'Private En-suite'})</h4>
                               <div className="room-amenities-list">
@@ -584,16 +636,19 @@ const HotelDetails = () => {
                               </div>
                           </div>
 
-                          {/* Custom Features */}
-                          {viewingRoom.custom_features && (
-                              <div className="custom-feature-alert">
-                                  <strong>Special Feature:</strong> {viewingRoom.custom_features}
+                          {/* CATEGORY 4: Additional Info / Description */}
+                          {(viewingRoom.custom_features || viewingRoom.description) && (
+                              <div className="modal-section-group">
+                                  <h4 className="modal-sub-title"><Info size={18}/> Additional Information</h4>
+                                  {viewingRoom.custom_features && (
+                                      <div className="custom-feature-alert" style={{marginTop: '10px'}}>
+                                          <strong>Special Feature:</strong> {viewingRoom.custom_features}
+                                      </div>
+                                  )}
+                                  {viewingRoom.description && (
+                                      <div className="room-modal-description fallback-desc" dangerouslySetInnerHTML={{ __html: viewingRoom.description }} style={{ borderTop: 'none', paddingTop: viewingRoom.custom_features ? '16px' : '10px', marginTop: 0 }} />
+                                  )}
                               </div>
-                          )}
-                          
-                          {/* Fallback description */}
-                          {viewingRoom.description && !viewingRoom.room_amenities && (
-                              <div className="room-modal-description fallback-desc" dangerouslySetInnerHTML={{ __html: viewingRoom.description }} />
                           )}
                       </div>
                   </div>
