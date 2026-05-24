@@ -6,6 +6,7 @@ const connection = require('./config/db'); // This is now your Knex instance
 const http = require('http'); // 1. Import HTTP
 const { init } = require('./API/socket'); // 2. Import Socket Init
 const generateAvailability = require('./API/cron/availabilityCron');
+const travelPlanRoutes = require("./API/routes/travelPlanRoutes");
 
 // Load Env Variables
 dotenv.config();
@@ -29,6 +30,7 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); // Only need to call this once
+app.use("/api/travel", travelPlanRoutes);
 
 // Import Middleware
 const { verifyToken, checkRole } = require('./API/middleware/authMiddleware');

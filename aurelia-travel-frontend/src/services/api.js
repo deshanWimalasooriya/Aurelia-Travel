@@ -72,5 +72,16 @@ export const hotelAPI = {
   searchHotels: (params) => api.get('/hotels/search', { params }),
 };
 
+// ADD THIS to src/services/api.js (alongside the other exported API collections).
+// It uses the same `api` axios instance, so it inherits baseURL + credentials.
+
+export const travelAPI = {
+  // Start a planning job -> returns { jobId, status }
+  startPlan: (formData) => api.post('/travel/plan', formData),
+
+  // Poll a job -> returns { status, stage, progress, detail, result, error }
+  getPlanStatus: (jobId) => api.get(`/travel/plan/${jobId}`),
+};
+
 // Default export for direct usage (like in your Profile.jsx)
 export default api;

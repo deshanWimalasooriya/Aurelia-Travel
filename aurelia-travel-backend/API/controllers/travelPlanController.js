@@ -1,36 +1,59 @@
 // API/controllers/travelPlanController.js
 //
 // Proxies the "Smart Plan" requests from the frontend to the Python agent
-// service. Keeps the agent URL server-side (frontend never talks to the agent
-// directly). Maps the frontend's form fields into the agent's TripRequest shape.
+// service. Keeps the agent URL server-side. Maps the frontend's form fields
+// into the agent's TripRequest shape.
 //
 // Add AGENT_URL to your .env, e.g.  AGENT_URL=http://localhost:8000
 
 const AGENT_URL = process.env.AGENT_URL || "http://localhost:8000";
 
-// Node 18+ has global fetch. If on older Node, install node-fetch and import it.
+// Node 18+ has global fetch. On older Node, install node-fetch and import it.
 
-// Translate the frontend form (LKR, datetime-local, pace) into the agent schema.
 function toTripRequest(body) {
-  // budget arrives in LKR for the whole trip; agent expects a free-text budget.
   const budget = body.budget ? `LKR ${body.budget} total for the trip` : "flexible";
-  // pace -> vibe
-  const vibeMap = { adrenaline: "adventurous and active", chill: "relaxed", cultural: "historical and cultural" };
+
+  const vibeMap = {
+    adventure: "adventurous and active",
+    relaxed: "relaxed and easygoing",
+    cultural: "historical and cultural",
+    family: "family-friendly",
+    romantic: "romantic",
+    nature: "nature and scenery focused",
+  };
   const vibe = vibeMap[body.pace] || body.pace || "relaxed";
-  // datetime-local "2026-07-01T08:00" -> "2026-07-01"
+
   const startDate = (body.startDate || "").split("T")[0];
+
+  const adults = Number(body.adults) || 2;
+  const children = Number(body.children) || 0;
+  const rooms = Number(body.rooms) || 1;
+  const travelers =
+    `${adults} adult${adults !== 1 ? "s" : ""}` +
+    (children > 0 ? `, ${children} child${children !== 1 ? "ren" : ""}` : "") +
+    `, ${rooms} room${rooms !== 1 ? "s" : ""}`;
+
+  const amenities = (body.amenityNames && body.amenityNames.length)
+    ? body.amenityNames
+    : (body.amenities || []);
+
+  const descParts = [];
+  if (body.tripDescription) descParts.push(body.tripDescription);
+  if (amenities.length) descParts.push(`Preferred hotel amenities: ${amenities.join(", ")}.`);
+  const tripDescription = descParts.join(" ") || `A ${vibe} trip from ${body.startLocation}.`;
 
   return {
     start_place: body.startLocation,
-    end_place: body.endLocation || body.startLocation, // round trip if no end given
+    end_place: body.endLocation || body.startLocation,
     start_date: startDate,
     duration: Number(body.duration) || 3,
-    travelers: body.travelers || "2 adults",
+    travelers,
     vibe,
     budget,
     transport: body.hasVehicle === "yes" ? "driving own car" : "arranged vehicle",
-    trip_description: body.notes || `A ${vibe} trip from ${body.startLocation}.`,
+    trip_description: tripDescription,
     weather_preference: body.weatherPreference || "",
+    amenities,
   };
 }
 

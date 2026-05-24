@@ -1,196 +1,267 @@
-import React, { useState, useMemo } from 'react';
-import { 
-  MapPin, Navigation, Coffee, Home, Flag, 
-  Clock, DollarSign, Calendar, Train, Car, 
-  Wallet, RefreshCw, Bus, Bike, Edit3
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import {
+  MapPin, Navigation, Home, Flag, Calendar, CloudRain,
+  Wallet, Loader, CheckCircle, AlertTriangle, Hotel, Compass
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import { travelAPI } from '../services/api';
 import './styles/travelPlanPage.css';
 
-// ==========================================
-// 1. CONSTANTS: VEHICLE OPTIONS & COSTS
-// ==========================================
-const VEHICLE_RATES = {
-  'van': { label: 'Private Van', rate: 1.0, icon: <Car size={16}/> },   
-  'tuktuk': { label: 'Tuk-Tuk', rate: 0.4, icon: <Bike size={16}/> },   
-  'bus': { label: 'Public Bus', rate: 0.1, icon: <Bus size={16}/> },    
-  'walk': { label: 'Walking', rate: 0, icon: <Navigation size={16}/> }  
-};
+// Fix Leaflet's default marker icons (they break under bundlers otherwise).
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
-// ==========================================
-// 2. MOCK DATA (Interleaved Transport)
-// ==========================================
-const mockTripData = {
-  tripId: "AUR-8821",
-  initialBudget: 300000,
-  duration: "3 Days",
-  route: [
-    { type: 'start', label: 'Start Journey', location: 'Kandy, Sri Lanka', time: '08:00 AM', icon: <Navigation size={20} /> },
-    {
-      day: 1,
-      title: "Day 1: The Hill Capital",
-      activities: [
-        { id: 't-1-1', type: 'transport', defaultVehicle: 'van', baseCost: 3000, from: 'Hotel', to: 'Temple of Tooth', time: '15 mins' },
-        { type: 'location', label: 'Temple of the Tooth', detail: 'Cultural Visit', time: '09:30 AM', cost: 6000, icon: <MapPin size={18} /> },
-        { id: 't-1-2', type: 'transport', defaultVehicle: 'tuktuk', baseCost: 800, from: 'Temple', to: 'Empire Cafe', time: '10 mins' },
-        { type: 'food', label: 'Empire Cafe', detail: 'Brunch Platter', time: '12:00 PM', cost: 12000, icon: <Coffee size={18} /> },
-        { id: 't-1-3', type: 'transport', defaultVehicle: 'van', baseCost: 2000, from: 'Cafe', to: 'The Radh', time: '20 mins' },
-        { type: 'stay', label: 'The Radh Hotel', detail: 'Luxury Triple Room', time: '02:00 PM', cost: 45000, icon: <Home size={18} /> }
-      ]
-    },
-    {
-      day: 2,
-      title: "Day 2: The Scenic Train",
-      activities: [
-        { id: 't-2-1', type: 'transport', defaultVehicle: 'van', baseCost: 1500, from: 'Hotel', to: 'Kandy Station', time: '15 mins' },
-        { type: 'transport-highlight', label: 'The Blue Train', detail: 'Kandy to Ella (Scenic)', time: '08:45 AM', cost: 4000, icon: <Train size={18} /> },
-        { id: 't-2-2', type: 'transport', defaultVehicle: 'tuktuk', baseCost: 1200, from: 'Ella Station', to: '9 Arch Bridge', time: '20 mins' },
-        { type: 'location', label: 'Nine Arches Bridge', detail: 'Sightseeing', time: '03:00 PM', cost: 0, icon: <MapPin size={18} /> },
-        { id: 't-2-3', type: 'transport', defaultVehicle: 'walk', baseCost: 0, from: 'Bridge', to: 'Cafe Chill', time: '30 mins' },
-        { type: 'food', label: 'Cafe Chill', detail: 'Dinner', time: '07:00 PM', cost: 18000, icon: <Coffee size={18} /> }
-      ]
-    },
-    { type: 'end', label: 'Trip Complete', location: 'Ella', time: 'Day 3', icon: <Flag size={20} /> }
-  ]
-};
+// The visible progress steps, mapped to the agent's real stages.
+const STEPS = [
+  { key: 'planning', label: 'Pacing your route', icon: <Compass size={18} /> },
+  { key: 'hotels', label: 'Finding real hotels', icon: <Hotel size={18} /> },
+  { key: 'weather', label: 'Checking the weather', icon: <CloudRain size={18} /> },
+  { key: 'assembling', label: 'Assembling itinerary', icon: <Navigation size={18} /> },
+];
+
+// Free geocoding via Open-Meteo (no key) to place towns on the map.
+async function geocode(name) {
+  try {
+    const r = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name + ', Sri Lanka')}&count=1`
+    );
+    const j = await r.json();
+    const hit = j.results && j.results[0];
+    return hit ? [hit.latitude, hit.longitude] : null;
+  } catch {
+    return null;
+  }
+}
 
 const TravelPlanPage = () => {
   const navigate = useNavigate();
-  const [activeStep, setActiveStep] = useState(null);
-  const [transportChoices, setTransportChoices] = useState({});
+  const location = useLocation();
+  const formData = location.state?.formData;
 
-  const getTransportCost = (item) => {
-    if (item.type !== 'transport') return item.cost || 0;
-    const choice = transportChoices[item.id] || item.defaultVehicle;
-    if(item.type === 'transport-highlight') return item.cost;
-    return item.baseCost * VEHICLE_RATES[choice].rate;
-  };
+  const [job, setJob] = useState({ status: 'starting', stage: 'planning', progress: 0, detail: 'Starting…' });
+  const [itinerary, setItinerary] = useState(null);
+  const [error, setError] = useState(null);
+  const [activeRoute, setActiveRoute] = useState(0);
+  const [points, setPoints] = useState([]); // [{name, coords}]
+  const pollRef = useRef(null);
 
-  const { totalSpent, remainingBudget } = useMemo(() => {
-    let spent = 0;
-    mockTripData.route.forEach(node => {
-      if (node.activities) {
-        node.activities.forEach(act => {
-          spent += getTransportCost(act);
-        });
+  // 1. Kick off the job when the page mounts.
+  useEffect(() => {
+    if (!formData) {
+      setError('No trip details provided. Please start from the planner.');
+      return;
+    }
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { data } = await travelAPI.startPlan(formData);
+        if (cancelled) return;
+        pollRef.current = setInterval(() => poll(data.jobId), 3000);
+      } catch (e) {
+        setError('Could not start the planner. Is the service running?');
       }
-    });
-    return { 
-      totalSpent: spent, 
-      remainingBudget: mockTripData.initialBudget - spent 
-    };
-  }, [transportChoices]);
+    })();
 
-  const handleVehicleChange = (id, newVehicle) => {
-    setTransportChoices(prev => ({ ...prev, [id]: newVehicle }));
+    return () => {
+      cancelled = true;
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const poll = async (jobId) => {
+    try {
+      const { data } = await travelAPI.getPlanStatus(jobId);
+      setJob(data);
+      if (data.status === 'done') {
+        clearInterval(pollRef.current);
+        setItinerary(data.result);
+      } else if (data.status === 'error') {
+        clearInterval(pollRef.current);
+        setError(data.error || 'Generation failed.');
+      }
+    } catch {
+      // transient network blip; keep polling
+    }
   };
+
+  // 2. When an itinerary arrives (or active route changes), geocode its towns.
+  useEffect(() => {
+    if (!itinerary) return;
+    const route = itinerary.routes[activeRoute];
+    if (!route) return;
+
+    (async () => {
+      const towns = [];
+      towns.push(formData.startLocation);
+      route.daily_breakdown.forEach((d) => {
+        const seg = (d.route_segment || '').split(/->|to/i);
+        if (seg.length >= 2) towns.push(seg[seg.length - 1].trim());
+      });
+      if (formData.endLocation) towns.push(formData.endLocation);
+
+      const resolved = [];
+      for (const t of towns) {
+        const c = await geocode(t);
+        if (c) resolved.push({ name: t, coords: c });
+      }
+      setPoints(resolved);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itinerary, activeRoute]);
+
+  const mapCenter = useMemo(() => {
+    if (points.length) return points[0].coords;
+    return [7.8731, 80.7718]; // Sri Lanka center
+  }, [points]);
+
+  // ---------- RENDER: ERROR ----------
+  if (error) {
+    return (
+      <div className="travel-plan-page">
+        <div className="plan-state-center">
+          <AlertTriangle size={48} className="state-icon error" />
+          <h2>Something went wrong</h2>
+          <p>{error}</p>
+          <button className="btn-primary" onClick={() => navigate('/travel-plan')}>Back to Planner</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- RENDER: LOADING (animated progress) ----------
+  if (!itinerary) {
+    const currentIndex = STEPS.findIndex((s) => s.key === job.stage);
+    return (
+      <div className="travel-plan-page">
+        <div className="plan-state-center">
+          <div className="progress-ring">
+            <Loader size={40} className="spin" />
+            <span className="progress-pct">{job.progress || 0}%</span>
+          </div>
+          <h2>Designing your perfect escape</h2>
+          <p className="progress-detail">{job.detail}</p>
+
+          <div className="progress-steps">
+            {STEPS.map((step, i) => {
+              const done = i < currentIndex;
+              const active = i === currentIndex;
+              return (
+                <div key={step.key} className={`progress-step ${done ? 'done' : ''} ${active ? 'active' : ''}`}>
+                  <div className="step-icon">{done ? <CheckCircle size={18} /> : step.icon}</div>
+                  <span>{step.label}</span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="progress-hint">This can take a minute or two — we're checking real hotels and live weather.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- RENDER: RESULT ----------
+  const route = itinerary.routes[activeRoute];
 
   return (
     <div className="travel-plan-page">
+      {/* LEFT: itinerary */}
       <div className="flow-sidebar">
-        
-        {/* HEADER */}
         <header className="plan-header">
-          <button onClick={() => navigate(-1)} className="back-link">← Back to Plans</button>
+          <button onClick={() => navigate('/travel-plan')} className="back-link">← Plan another trip</button>
           <div className="budget-widget">
             <div className="budget-row">
-              <span className="label"><Wallet size={16}/> Remaining Budget</span>
-              <span className={`value ${remainingBudget < 50000 ? 'low' : ''}`}>
-                {remainingBudget.toLocaleString()} <span className="currency">LKR</span>
-              </span>
+              <span className="label"><Wallet size={16} /> Trip Summary</span>
             </div>
-            <div className="budget-details-row">
-              <span>Estimated Cost:</span>
-              <span className="expense-value">{totalSpent.toLocaleString()} LKR</span>
-            </div>
+            <div className="budget-details-row"><span>{itinerary.trip_summary}</span></div>
           </div>
         </header>
 
-        {/* ACTION BUTTONS */}
-        <div className="plan-actions">
-          <button className="btn-secondary" onClick={() => navigate('/trip-dashboard')} title="Edit time, costs, and details">
-            <Edit3 size={16} /> Customize
-          </button>
-          <button className="btn-primary">Confirm Itinerary</button>
+        {/* Route option tabs */}
+        <div className="route-tabs">
+          {itinerary.routes.map((r, i) => (
+            <button
+              key={i}
+              className={`route-tab ${i === activeRoute ? 'active' : ''}`}
+              onClick={() => setActiveRoute(i)}
+            >
+              {r.path_name}
+            </button>
+          ))}
         </div>
 
-        {/* TIMELINE */}
         <div className="timeline-container">
-          {mockTripData.route.map((node, index) => {
-            if (node.type === 'start' || node.type === 'end') {
-              return (
-                <div key={index} className={`timeline-node special-node ${node.type}`}>
-                  <div className="node-icon">{node.icon}</div>
-                  <div className="node-content"><h3>{node.label}</h3><p>{node.location}</p></div>
-                </div>
-              );
-            }
+          <div className="route-why">
+            <Compass size={16} /> <span>{route.why_it_fits}</span>
+          </div>
 
-            return (
-              <div key={index} className="day-group">
-                <div className="day-header"><h2>{node.title}</h2></div>
-                <div className="activities-list">
-                  {node.activities.map((act, i) => {
-                    const uniqueId = act.id || `${index}-${i}`;
-                    const isTransport = act.type === 'transport';
-                    const currentCost = getTransportCost(act);
-                    
-                    if (isTransport) {
-                      const currentVehicle = transportChoices[act.id] || act.defaultVehicle;
-                      return (
-                        <div key={i} className="activity-card transport" onMouseEnter={() => setActiveStep(uniqueId)}>
-                          <div className="act-icon">{VEHICLE_RATES[currentVehicle].icon}</div>
-                          <div className="act-details">
-                            <div className="transport-row">
-                              <h4>{act.from} <span className="arrow">→</span> {act.to}</h4>
-                              <span className="cost-tag">-{currentCost.toLocaleString()}</span>
-                            </div>
-                            <div className="vehicle-selector">
-                              <select value={currentVehicle} onChange={(e) => handleVehicleChange(act.id, e.target.value)}>
-                                {Object.entries(VEHICLE_RATES).map(([key, data]) => (
-                                  <option key={key} value={key}>{data.label} {key === 'walk' ? '(Free)' : ''}</option>
-                                ))}
-                              </select>
-                              <span className="time-est"><Clock size={12} /> {act.time}</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
+          <div className="special-node">
+            <div className="node-icon"><Navigation size={20} /></div>
+            <div className="node-content"><h3>Start</h3><p>{formData.startLocation}</p></div>
+          </div>
 
-                    return (
-                      <div key={i} className={`activity-card ${act.type}`} onMouseEnter={() => setActiveStep(uniqueId)}>
-                        <div className="act-connector"></div>
-                        <div className="act-icon">{act.icon}</div>
-                        <div className="act-details">
-                          <div className="act-top">
-                            <h4>{act.label}</h4>
-                            {currentCost > 0 && <span className="cost-tag">-{currentCost.toLocaleString()}</span>}
-                          </div>
-                          <p>{act.detail}</p>
-                        </div>
-                        <span className="act-time">{act.time}</span>
-                      </div>
-                    );
-                  })}
+          {route.daily_breakdown.map((day, i) => (
+            <div key={i} className="day-group">
+              <div className="day-header"><h2>Day {day.day_number}: {day.route_segment}</h2></div>
+              <div className="activities-list">
+                {day.activities.map((act, j) => (
+                  <div key={j} className="activity-card location">
+                    <div className="act-icon"><MapPin size={18} /></div>
+                    <div className="act-details"><h4>{act}</h4></div>
+                  </div>
+                ))}
+                <div className="activity-card stay">
+                  <div className="act-icon"><Home size={18} /></div>
+                  <div className="act-details">
+                    <div className="act-top">
+                      <h4>{day.hotel_name}</h4>
+                      <span className="cost-tag">{day.hotel_price}</span>
+                    </div>
+                    <p>{day.room_configuration}</p>
+                  </div>
                 </div>
+                {day.weather && (
+                  <div className="weather-chip"><CloudRain size={14} /> {day.weather}</div>
+                )}
               </div>
-            );
-          })}
+            </div>
+          ))}
+
+          <div className="special-node end">
+            <div className="node-icon"><Flag size={20} /></div>
+            <div className="node-content"><h3>Trip Complete</h3><p>{formData.endLocation || formData.startLocation}</p></div>
+          </div>
+
+          <a className="btn-primary maps-link" href={route.full_google_maps_url} target="_blank" rel="noreferrer">
+            <Navigation size={16} /> Open full route in Google Maps
+          </a>
         </div>
       </div>
 
-      {/* MAP SECTION */}
+      {/* RIGHT: live Leaflet map */}
       <div className="map-section">
-        <div className="map-placeholder">
-           <div className="map-overlay">
-            <MapPin size={48} className="floating-pin" />
-            <h3>Interactive Routing</h3>
-            <p>Routes update dynamically based on your vehicle choice.</p>
-          </div>
-           {/* Clean map placeholder image */}
-           <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80" alt="map" className="map-image"/>
-        </div>
+        <MapContainer center={mapCenter} zoom={8} style={{ height: '100%', width: '100%' }}>
+          <TileLayer
+            attribution='&copy; OpenStreetMap contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          {points.map((p, i) => (
+            <Marker key={i} position={p.coords}>
+              <Popup>{p.name}</Popup>
+            </Marker>
+          ))}
+          {points.length > 1 && (
+            <Polyline positions={points.map((p) => p.coords)} color="#2563eb" weight={4} />
+          )}
+        </MapContainer>
       </div>
     </div>
   );

@@ -203,3 +203,63 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
     grid-template-columns: 1fr; 
   }
 }
+
+/* =========================================================
+   APPEND THESE to src/components/common/styles/plannerContainer.css
+   (new form elements only — reuses your existing design tokens)
+   ========================================================= */
+
+.optional-hint { font-weight: 400; font-size: 0.78rem; color: var(--text-muted); }
+
+.planner-card textarea {
+  width: 100%; padding: 12px 14px;
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: var(--radius-sm, 8px);
+  font-family: var(--font-main); font-size: 0.95rem; resize: vertical;
+  background: var(--color-surface); color: var(--color-dark); box-sizing: border-box;
+}
+.planner-card textarea:focus {
+  outline: none; border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.block-label {
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 700; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;
+}
+
+.counters-block { margin-bottom: 4px; }
+.counters-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.counter-group {
+  border: 1px solid var(--border-subtle, #e2e8f0); border-radius: var(--radius-sm, 8px);
+  padding: 12px; display: flex; flex-direction: column; gap: 10px; background: var(--color-background);
+}
+.counter-label { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); }
+.counter-controls { display: flex; align-items: center; justify-content: space-between; }
+.counter-controls button {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 1px solid var(--border-subtle, #e2e8f0); background: var(--color-surface);
+  color: var(--color-primary); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: var(--transition-smooth, all .2s ease);
+}
+.counter-controls button:hover { background: var(--color-primary); color: #fff; }
+.counter-value { font-weight: 800; font-size: 1.1rem; color: var(--color-dark); }
+
+.custom-pace-input {
+  width: 100%; margin-top: 12px; padding: 10px 14px;
+  border: 1px dashed var(--border-subtle, #e2e8f0); border-radius: var(--radius-sm, 8px);
+  font-size: 0.9rem; background: var(--color-surface); box-sizing: border-box;
+}
+.custom-pace-input:focus { outline: none; border-style: solid; border-color: var(--color-primary); }
+
+.amenities-block { margin: 4px 0; }
+.amenities-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.amenity-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px;
+  border: 1px solid var(--border-subtle, #e2e8f0); background: var(--color-background);
+  color: var(--text-secondary); font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  transition: var(--transition-smooth, all .2s ease);
+}
+.amenity-chip:hover { border-color: var(--color-primary); }
+.amenity-chip.checked { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+.amenity-chip .chip-check { display: inline-flex; width: 14px; justify-content: center; }
