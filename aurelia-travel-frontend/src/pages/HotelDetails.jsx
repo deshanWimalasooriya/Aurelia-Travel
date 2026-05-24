@@ -150,55 +150,32 @@ const HotelDetails = () => {
   const currentRoomImages = viewingRoom ? getRoomImages(viewingRoom) : [];
 
   // --- 4. HANDLE RESERVATION ---
-  const handleReserve = async () => {
-    if (!user) { 
-        if(!window.confirm("You need to login to book. Proceed to login?")) return;
-        navigate('/auth'); 
-        return; 
-    }
+  // Inside HotelDetails.js - Replace your existing handleReserve function
+
+const handleReserve = () => {
     if (!selectedRoomId) { 
         roomsRef.current?.scrollIntoView({ behavior: 'smooth' });
         alert("Please select a room from the table below.");
         return; 
     }
-    if (!dates.checkIn || !dates.checkOut) { alert("Please select check-in and check-out dates."); return; }
-
-    try {
-        let paymentToken = "tok_cash_on_arrival";
-        try {
-            const walletRes = await api.get('/wallet');
-            if (walletRes.data.data && walletRes.data.data.length > 0) {
-                paymentToken = walletRes.data.data[0].payment_method_id;
-            }
-        } catch (e) { console.warn("Wallet check skipped"); }
-
-        const bookingPayload = {
-            room_id: selectedRoomId,
-            check_in: dates.checkIn,
-            check_out: dates.checkOut,
-            adults: guests.adults,
-            children: guests.children,
-            room_count: roomQty, 
-            total_price: totalPrice, 
-            payment_token: paymentToken,
-            payment_provider: 'stripe'
-        };
-
-        const res = await api.post('/bookings', bookingPayload);
-        
-        if (res.status === 200 || res.status === 201) {
-            alert(`🎉 Reservation Successful! Ref: ${res.data.reference}`);
-            navigate('/profile');
-        }
-    } catch (err) {
-        if (err.response && err.response.status === 401) {
-            alert("Session expired. Please login again.");
-            navigate('/auth');
-        } else {
-            alert(err.response?.data?.message || "Booking Failed.");
-        }
+    if (!dates.checkIn || !dates.checkOut) { 
+        alert("Please select check-in and check-out dates."); 
+        return; 
     }
-  };
+
+    // Instead of calling the API, navigate to the confirmation page 
+    // and pass the selected booking details via React Router state
+    navigate('/booking-confirmation', {
+        state: {
+            hotel,
+            room: rooms.find(r => (r._id || r.id) === selectedRoomId),
+            dates,
+            guests,
+            roomQty,
+            totalPrice
+        }
+    });
+};
 
   const renderStars = (rating) => {
     return (

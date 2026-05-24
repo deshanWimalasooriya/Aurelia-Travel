@@ -10,6 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute'; // Your auth guard
 import Home from './pages/Home'
 import SearchResults from './pages/SearchResults'
 import HotelDetails from './pages/HotelDetails'
+import BookingConfirmation from './pages/BookingConfirmation';
 import LoginRegister from './pages/LoginRegister'
 import Profile from './pages/Profile'
 import TravelPage from './pages/TravelPage'
@@ -97,6 +98,7 @@ const AppRoutes = () => {
             <Route path="/" element={<Home />} />
             <Route path="/search" element={<SearchResults />} />
             <Route path="/hotel/:id" element={<HotelDetails />} />
+            <Route path="/booking-confirmation" element={<BookingConfirmation />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/hotels" element={<HotelPage />} />

@@ -9,10 +9,14 @@ const generateReference = () => {
 exports.createBooking = async (bookingData, paymentData) => {
     return await knex.transaction(async (trx) => {
         
-        // STEP A: Fetch Availability (Fast, non-blocking read - NO .forUpdate()!)
+        // Define how many rooms the guest actually wants (default to 1)
+        const requestedQty = bookingData.room_count || 1;
+        
+        // STEP A: Fetch Availability (Fast, non-blocking read)
         const checkAvailability = await trx('room_availability')
             .where('room_id', bookingData.room_id)
-            .whereBetween('date', [bookingData.check_in, bookingData.check_out])
+            .where('date', '>=', bookingData.check_in)    // ✅ Include check-in date
+            .where('date', '<', bookingData.check_out)    // ✅ Exclude check-out date
             .orderBy('date', 'asc'); 
 
         // Validation 1: Prevent "Ghost" Bookings
@@ -20,46 +24,47 @@ exports.createBooking = async (bookingData, paymentData) => {
             throw new Error('Room configuration not found for these dates.');
         }
 
-        // Validation 2: Check for sold out days
-        const soldOutDays = checkAvailability.filter(day => day.available_quantity < 1);
+        // Validation 2: Check for sold out days dynamically
+        const soldOutDays = checkAvailability.filter(day => day.available_quantity < requestedQty);
         if (soldOutDays.length > 0) {
             throw new Error('Room is no longer available for these dates.');
         }
 
         // STEP B: The Industry Standard - Atomic Optimistic Locking
-        // Instead of locking the DB, we attempt an atomic decrement.
         for (const day of checkAvailability) {
             const updatedRows = await trx('room_availability')
                 .where('id', day.id)
-                .where('available_quantity', '>=', 1) // ✅ OPTIMISTIC LOCK: Only update if still available!
-                .decrement('available_quantity', 1);
+                .where('available_quantity', '>=', requestedQty) // ✅ Check against requested quantity
+                .decrement('available_quantity', requestedQty);  // ✅ Deduct requested quantity
 
             if (updatedRows === 0) {
-                // If 0 rows were updated, someone else snatched the room in the last 2 milliseconds!
-                // The transaction automatically rolls back and releases any previous days.
                 throw new Error(`Someone just booked this room for ${new Date(day.date).toLocaleDateString()}. Please try different dates.`);
             }
         }
 
         // STEP C: Insert Booking
         const reference = typeof generateReference === 'function' 
-            ? generateReference() 
-            : `BK-${Date.now()}`;
+             ? generateReference() 
+             : `BK-${Date.now()}`;
+             
+        const isPayOnArrival = bookingData.payment_method === 'arrival';
+        const isPaid = !isPayOnArrival && !!paymentData;
 
-        const isPaid = !!paymentData; 
+        // 🚨 NEW: Extract room_count so it doesn't go into the insert query
+        const { room_count, ...dataForDatabase } = bookingData;
 
         const [bookingId] = await trx('bookings').insert({
-            ...bookingData,
+            ...dataForDatabase, // Use the separated data here
             booking_reference: reference,
-            status: isPaid ? 'confirmed' : 'pending_payment', 
-            payment_status: isPaid ? 'paid' : 'unpaid'
+            status: bookingData.status || 'pending', 
+            payment_status: isPayOnArrival ? 'pending' : 'paid'
         });
 
-        // STEP D: Record Payment Transaction (Only if payment exists)
+        // STEP D: Record Payment Transaction 
         if (isPaid) {
             await trx('payment_transactions').insert({
                 booking_id: bookingId,
-                user_id: bookingData.user_id,
+                user_id: bookingData.user_id || null, 
                 transaction_id: paymentData.token_id, 
                 payment_provider: paymentData.provider,
                 amount: bookingData.total_price,

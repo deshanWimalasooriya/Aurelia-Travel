@@ -9,10 +9,12 @@ const { sendNotification } = require('./notificationController');
 // 1. CREATE BOOKING (Consumer)
 exports.createBooking = async (req, res) => {
     try {
-        const userId = req.user.userId;
+        const userId = req.user ? req.user.userId : null;
+        
         const { 
             room_id, check_in, check_out, 
-            adults, children, payment_token, payment_provider, room_count 
+            adults, children, payment_token, payment_provider, room_count,
+            guest_first_name, guest_last_name, guest_email, guest_country, guest_phone, arrival_time, special_requests
         } = req.body;
 
         // A. Validation
@@ -43,11 +45,13 @@ exports.createBooking = async (req, res) => {
         const globalRate = settings && settings.commission_rate ? parseFloat(settings.commission_rate) : 5;
         const lockedCommission = totalPrice * (globalRate / 100);
 
+        const requestedStatus = req.body.status === 'incomplete' ? 'pending' : (req.body.status || 'confirmed');
         // C. Construct Data
         const bookingData = {
             user_id: userId,
             hotel_id: room.hotel_id,
             room_id: room.id,
+            room_count: qty,
             check_in,
             check_out,
             number_of_nights: nights,
@@ -58,7 +62,15 @@ exports.createBooking = async (req, res) => {
             service_charge: service,
             total_price: totalPrice,
             commission: lockedCommission,
-            status: 'confirmed'
+            status: requestedStatus,
+            payment_method: payment_provider || 'card',
+            guest_first_name,
+            guest_last_name,
+            guest_email,
+            guest_country,
+            guest_phone,
+            arrival_time,
+            special_requests
         };
 
         const paymentData = {
@@ -76,14 +88,16 @@ exports.createBooking = async (req, res) => {
             reference: result.reference
         });
 
-        // 1. Notify User
-        await sendNotification(
-            req.user.userId,
-            "Booking Confirmed",
-            `Your stay at ${room.hotel_name || 'the hotel'} is confirmed!`,
-            "success",
-            `/profile`
-        );
+        // 1. Notify User (WRAPPED IN AN IF STATEMENT)
+        if (userId) {
+            await sendNotification(
+                userId,
+                "Booking Confirmed",
+                `Your stay at ${room.title || 'the hotel'} is confirmed!`,
+                "success",
+                `/profile`
+            );
+        }
 
         // 2. Notify Hotel Manager (if exists)
         const hotel = await hotelModel.getById(room.hotel_id);
@@ -98,13 +112,11 @@ exports.createBooking = async (req, res) => {
         }
 
     } catch (err) {
-        console.error("Booking Error:", err);
-        res.status(500).json({ success: false, error: err.message }); // Handles "Room not available"
+        // This will print the exact reason to your terminal if it fails again
+        console.error("Booking Error:", err); 
+        res.status(500).json({ success: false, error: err.message });
     }
 };
-
-// 2. GET MY BOOKINGS (Consumer)
-// API/controllers/bookingController.js
 
 // 2. GET MY BOOKINGS (Consumer)
 exports.getMyBookings = async (req, res) => {
@@ -205,4 +217,33 @@ exports.deleteBooking = async (req, res) => {
 exports.getBookingsByHotelId = async (req, res) => {
     try { const bookings = await bookingModel.getBookingsByHotelId(req.params.hotelId); res.json(bookings); }
     catch (err) { res.status(500).json({ error: err.message }); }
+};
+
+// Add this at the bottom of bookingController.js
+// Ensure this code exists at the bottom of API/controllers/bookingController.js
+// Ensure confirmGuestBooking is defined and exported
+exports.confirmGuestBooking = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const booking = await bookingModel.getBookingById(id);
+        if (!booking) return res.status(404).json({ message: "Booking not found" });
+        const updated = await bookingModel.updateStatus(id, 'completed');
+        res.json({ success: true, message: "Guest Booking confirmed!", data: updated });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// Ensure confirmUserBooking is defined and exported
+exports.confirmUserBooking = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const booking = await bookingModel.getBookingById(id);
+        if (!booking) return res.status(404).json({ message: "Booking not found" });
+        if (booking.user_id !== req.user.userId) return res.status(403).json({ message: "Access denied" });
+        const updated = await bookingModel.updateStatus(id, 'completed');
+        res.json({ success: true, message: "Booking confirmed!", data: updated });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
 };
