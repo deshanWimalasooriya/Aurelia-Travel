@@ -1,6 +1,7 @@
 const bookingModel = require('../models/bookingModel');
 const roomModel = require('../models/roomModel');
 const hotelModel = require('../models/hotelModel');
+const platformModel = require('../models/platformModel');
 
 // Import the helper
 const { sendNotification } = require('./notificationController');
@@ -8,10 +9,12 @@ const { sendNotification } = require('./notificationController');
 // 1. CREATE BOOKING (Consumer)
 exports.createBooking = async (req, res) => {
     try {
-        const userId = req.user.userId;
+        const userId = req.user ? req.user.userId : null;
+        
         const { 
             room_id, check_in, check_out, 
-            adults, children, payment_token, payment_provider, room_count 
+            adults, children, payment_token, payment_provider, room_count,
+            guest_first_name, guest_last_name, guest_email, guest_country, guest_phone, arrival_time, special_requests
         } = req.body;
 
         // A. Validation
@@ -38,11 +41,18 @@ exports.createBooking = async (req, res) => {
         const service = 0; // Removed 5% Service Fee
         const totalPrice = roomPrice + tax + service;
 
+        const settings = await platformModel.getSettings();
+        const globalRate = settings && settings.commission_rate ? parseFloat(settings.commission_rate) : 5;
+        const lockedCommission = totalPrice * (globalRate / 100);
+
+        const requestedStatus = req.body.status === 'incomplete' ? 'pending' : (req.body.status || 'confirmed');
+        
         // C. Construct Data
         const bookingData = {
             user_id: userId,
             hotel_id: room.hotel_id,
             room_id: room.id,
+            room_count: qty,
             check_in,
             check_out,
             number_of_nights: nights,
@@ -52,7 +62,16 @@ exports.createBooking = async (req, res) => {
             tax_amount: tax,
             service_charge: service,
             total_price: totalPrice,
-            status: 'confirmed'
+            commission: lockedCommission,
+            status: requestedStatus,
+            payment_method: payment_provider || 'card',
+            guest_first_name,
+            guest_last_name,
+            guest_email,
+            guest_country,
+            guest_phone,
+            arrival_time,
+            special_requests
         };
 
         const paymentData = {
@@ -60,24 +79,26 @@ exports.createBooking = async (req, res) => {
             provider: payment_provider || 'stripe'
         };
 
-        // D. Execute Transaction
+        // D. Execute Transaction (Now safely handles draft logic internally)
         const result = await bookingModel.createBooking(bookingData, paymentData);
 
         res.status(201).json({
             success: true,
-            message: "Booking confirmed!",
+            message: "Booking process initiated!",
             bookingId: result.bookingId,
             reference: result.reference
         });
 
-        // 1. Notify User
-        await sendNotification(
-            req.user.userId,
-            "Booking Confirmed",
-            `Your stay at ${room.hotel_name || 'the hotel'} is confirmed!`,
-            "success",
-            `/profile`
-        );
+        // 1. Notify User (WRAPPED IN AN IF STATEMENT)
+        if (userId) {
+            await sendNotification(
+                userId,
+                "Booking Status",
+                `Your booking process for ${room.title || 'the hotel'} has started.`,
+                "success",
+                `/profile`
+            );
+        }
 
         // 2. Notify Hotel Manager (if exists)
         const hotel = await hotelModel.getById(room.hotel_id);
@@ -85,20 +106,18 @@ exports.createBooking = async (req, res) => {
             await sendNotification(
                 hotel.manager_id,
                 "New Reservation",
-                `You have a new booking for ${room.title}.`,
+                `You have a new booking request for ${room.title}.`,
                 "info",
                 "/admin/bookings"
             );
         }
 
     } catch (err) {
-        console.error("Booking Error:", err);
-        res.status(500).json({ success: false, error: err.message }); // Handles "Room not available"
+        // This will print the exact reason to your terminal if it fails again
+        console.error("Booking Error:", err); 
+        res.status(500).json({ success: false, error: err.message });
     }
 };
-
-// 2. GET MY BOOKINGS (Consumer)
-// API/controllers/bookingController.js
 
 // 2. GET MY BOOKINGS (Consumer)
 exports.getMyBookings = async (req, res) => {
@@ -114,7 +133,7 @@ exports.getMyBookings = async (req, res) => {
             totalPrice: b.total_price,
             status: b.status,
             hotel: { 
-                id: b.hotel_id,  // <--- ADD THIS LINE (This fixes the error)
+                id: b.hotel_id,  
                 name: b.hotel_name, 
                 image: b.hotel_image, 
                 city: b.hotel_city 
@@ -127,6 +146,7 @@ exports.getMyBookings = async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 };
+
 // 3. MANAGER DASHBOARD: Get Reservations
 exports.getManagerBookings = async (req, res) => {
     try {
@@ -199,4 +219,56 @@ exports.deleteBooking = async (req, res) => {
 exports.getBookingsByHotelId = async (req, res) => {
     try { const bookings = await bookingModel.getBookingsByHotelId(req.params.hotelId); res.json(bookings); }
     catch (err) { res.status(500).json({ error: err.message }); }
+};
+
+exports.confirmGuestBooking = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const booking = await bookingModel.getBookingById(id);
+        if (!booking) return res.status(404).json({ message: "Booking not found" });
+        const updated = await bookingModel.updateStatus(id, 'completed');
+        res.json({ success: true, message: "Guest Booking confirmed!", data: updated });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+exports.confirmUserBooking = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const booking = await bookingModel.getBookingById(id);
+        if (!booking) return res.status(404).json({ message: "Booking not found" });
+        if (booking.user_id !== req.user.userId) return res.status(403).json({ message: "Access denied" });
+        const updated = await bookingModel.updateStatus(id, 'completed');
+        res.json({ success: true, message: "Booking confirmed!", data: updated });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// 🚨 NEW: Payment Success & Inventory Deduction Handler
+// Call this endpoint from your frontend when the user successfully pays
+exports.handlePaymentSuccess = async (req, res) => {
+    const { bookingId } = req.body; 
+
+    try {
+        if (!bookingId) {
+            return res.status(400).json({ success: false, message: "Booking ID is required" });
+        }
+
+        // Call the model function that securely updates status AND decrements inventory
+        await bookingModel.confirmBookingPayment(bookingId);
+        
+        return res.status(200).json({ 
+            success: true, 
+            message: "Payment successful. Inventory updated and booking confirmed." 
+        });
+
+    } catch (error) {
+        console.error("Payment confirmation error:", error);
+        return res.status(500).json({ 
+            success: false, 
+            message: "Error confirming booking: " + error.message 
+        });
+    }
 };

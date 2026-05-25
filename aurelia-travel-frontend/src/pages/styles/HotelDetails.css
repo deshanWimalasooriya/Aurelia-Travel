@@ -366,3 +366,90 @@
 @media (max-width: 600px) {
     .room-features-grid { grid-template-columns: 1fr; }
 }
+
+
+/* Update close button position to sit top right of the white modal */
+.room-modal-close {
+    position: absolute; top: 16px; right: 16px; left: auto; background: #f1f5f9;
+    border: none; border-radius: 50%; width: 36px; height: 36px;
+    display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 20;
+    color: #333; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.2s;
+}
+.room-modal-close:hover { background: #e2e8f0; transform: scale(1.05); color: #ef4444; }
+
+/* The Hero Image Container - Margins Added */
+.room-modal-hero { 
+    height: 320px; 
+    position: relative; 
+    margin: 24px 24px 0 24px; /* Added margins to pull it away from the modal borders */
+    border-radius: 12px; /* Smooth corners */
+    overflow: hidden; 
+    background: #f1f5f9;
+}
+
+/* New Slider Image Style */
+.room-slider-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Interactive Slider Arrows */
+.slider-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent; 
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 8px;
+    z-index: 10;
+    transition: background 0.2s, transform 0.2s;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.slider-arrow:hover {
+    background: rgba(0, 0, 0, 0.4); 
+    transform: translateY(-50%) scale(1.1);
+}
+.slider-arrow.left { left: 16px; }
+.slider-arrow.right { right: 16px; }
+
+/* Slider Pagination Dots */
+.slider-dots {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+.slider-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.slider-dot:hover {
+    background: rgba(255, 255, 255, 0.8);
+}
+.slider-dot.active {
+    background: white;
+    transform: scale(1.2);
+    box-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+
+/* Keeps View Photos button safely out of the way */
+.view-gallery-btn {
+    position: absolute; top: 16px; right: 16px; background: #ffffff; border: none; padding: 8px 16px; border-radius: 8px;
+    font-weight: 600; font-size: 0.9rem; color: #1e293b; display: flex; align-items: center; gap: 8px; cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: background 0.2s; z-index: 5;
+}
+.view-gallery-btn:hover { background: #f8fafc; }

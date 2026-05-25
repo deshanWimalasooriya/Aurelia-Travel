@@ -3,12 +3,15 @@
  * @returns { Promise<void> }
  */
 exports.up = async function(knex) {
-  console.log('📅  Building: Bookings, Reviews, and CRM...');
+  console.log('   Building: Bookings, Reviews, and CRM...');
 
   // 1. Create BOOKINGS
   await knex.schema.createTable('bookings', (table) => {
     table.increments('id').primary();
-    table.integer('user_id').unsigned().references('id').inTable('users').onDelete('RESTRICT'); 
+    
+    // FIX APPLIED: Added .nullable() to user_id to allow Guest Checkouts
+    table.integer('user_id').unsigned().nullable().references('id').inTable('users').onDelete('RESTRICT'); 
+    
     table.integer('hotel_id').unsigned().references('id').inTable('hotels').onDelete('RESTRICT');
     table.integer('room_id').unsigned().references('id').inTable('rooms').onDelete('RESTRICT');
     
@@ -41,7 +44,9 @@ exports.up = async function(knex) {
   await knex.schema.createTable('payment_transactions', (table) => {
     table.increments('id').primary();
     table.integer('booking_id').unsigned().references('id').inTable('bookings').onDelete('RESTRICT');
-    table.integer('user_id').unsigned().references('id').inTable('users').onDelete('RESTRICT');
+    
+    // FIX APPLIED: Added .nullable() to user_id to prevent crashes on guest payments
+    table.integer('user_id').unsigned().nullable().references('id').inTable('users').onDelete('RESTRICT');
     
     table.string('transaction_id').notNullable(); // Stripe/PayPal ID
     table.string('payment_provider').notNullable(); // 'stripe', 'paypal'
@@ -95,7 +100,7 @@ exports.up = async function(knex) {
     
     table.timestamps(true, true);
   });
-  
+
   // 5. Create WISHLISTS
   await knex.schema.createTable('wishlists', (table) => {
       table.increments('id').primary();
@@ -117,6 +122,10 @@ exports.up = async function(knex) {
   });
 };
 
+/**
+ * @param { import("knex").Knex } knex
+ * @returns { Promise<void> }
+ */
 exports.down = function(knex) {
   // Handled in migration 01
 };

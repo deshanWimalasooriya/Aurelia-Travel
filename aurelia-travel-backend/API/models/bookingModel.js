@@ -9,10 +9,14 @@ const generateReference = () => {
 exports.createBooking = async (bookingData, paymentData) => {
     return await knex.transaction(async (trx) => {
         
-        // STEP A: Fetch Availability (Fast, non-blocking read - NO .forUpdate()!)
+        // Define how many rooms the guest actually wants (default to 1)
+        const requestedQty = bookingData.room_count || 1;
+        
+        // STEP A: Fetch Availability (Fast, non-blocking read)
         const checkAvailability = await trx('room_availability')
             .where('room_id', bookingData.room_id)
-            .whereBetween('date', [bookingData.check_in, bookingData.check_out])
+            .where('date', '>=', bookingData.check_in)    // ✅ Include check-in date
+            .where('date', '<', bookingData.check_out)    // ✅ Exclude check-out date
             .orderBy('date', 'asc'); 
 
         // Validation 1: Prevent "Ghost" Bookings
@@ -20,46 +24,47 @@ exports.createBooking = async (bookingData, paymentData) => {
             throw new Error('Room configuration not found for these dates.');
         }
 
-        // Validation 2: Check for sold out days
-        const soldOutDays = checkAvailability.filter(day => day.available_quantity < 1);
+        // Validation 2: Check for sold out days dynamically
+        const soldOutDays = checkAvailability.filter(day => day.available_quantity < requestedQty);
         if (soldOutDays.length > 0) {
             throw new Error('Room is no longer available for these dates.');
         }
 
         // STEP B: The Industry Standard - Atomic Optimistic Locking
-        // Instead of locking the DB, we attempt an atomic decrement.
         for (const day of checkAvailability) {
             const updatedRows = await trx('room_availability')
                 .where('id', day.id)
-                .where('available_quantity', '>=', 1) // ✅ OPTIMISTIC LOCK: Only update if still available!
-                .decrement('available_quantity', 1);
+                .where('available_quantity', '>=', requestedQty) // ✅ Check against requested quantity
+                .decrement('available_quantity', requestedQty);  // ✅ Deduct requested quantity
 
             if (updatedRows === 0) {
-                // If 0 rows were updated, someone else snatched the room in the last 2 milliseconds!
-                // The transaction automatically rolls back and releases any previous days.
                 throw new Error(`Someone just booked this room for ${new Date(day.date).toLocaleDateString()}. Please try different dates.`);
             }
         }
 
         // STEP C: Insert Booking
         const reference = typeof generateReference === 'function' 
-            ? generateReference() 
-            : `BK-${Date.now()}`;
+             ? generateReference() 
+             : `BK-${Date.now()}`;
+             
+        const isPayOnArrival = bookingData.payment_method === 'arrival';
+        const isPaid = !isPayOnArrival && !!paymentData;
 
-        const isPaid = !!paymentData; 
+        // 🚨 NEW: Extract room_count so it doesn't go into the insert query
+        const { room_count, ...dataForDatabase } = bookingData;
 
         const [bookingId] = await trx('bookings').insert({
-            ...bookingData,
+            ...dataForDatabase, // Use the separated data here
             booking_reference: reference,
-            status: isPaid ? 'confirmed' : 'pending_payment', 
-            payment_status: isPaid ? 'paid' : 'unpaid'
+            status: bookingData.status || 'pending', 
+            payment_status: isPayOnArrival ? 'pending' : 'paid'
         });
 
-        // STEP D: Record Payment Transaction (Only if payment exists)
+        // STEP D: Record Payment Transaction 
         if (isPaid) {
             await trx('payment_transactions').insert({
                 booking_id: bookingId,
-                user_id: bookingData.user_id,
+                user_id: bookingData.user_id || null, 
                 transaction_id: paymentData.token_id, 
                 payment_provider: paymentData.provider,
                 amount: bookingData.total_price,
@@ -133,3 +138,40 @@ exports.updateStatus = async (id, status) => {
 exports.getAllBookings = () => knex('bookings').select('*');
 exports.deleteBooking = (id) => knex('bookings').where({ id }).del();
 exports.getBookingsByHotelId = (hotelId) => knex('bookings').where({ hotel_id: hotelId });
+
+// Inside bookingModel.js
+
+exports.confirmBookingPayment = async (bookingId) => {
+    // We use a transaction so if the inventory update fails, the status update rolls back safely.
+    return connection.transaction(async (trx) => {
+        
+        // 1. Fetch the draft booking to get the room_id and check its status
+        const booking = await trx('bookings').where('id', bookingId).first();
+        
+        if (!booking) {
+            throw new Error('Booking not found');
+        }
+        
+        // Prevent double-decrementing if the webhook hits twice
+        if (booking.status === 'confirmed') {
+            return { message: 'Booking already confirmed', bookingId };
+        }
+
+        // 2. Update the booking status to confirmed & paid
+        await trx('bookings')
+            .where('id', bookingId)
+            .update({
+                status: 'confirmed',
+                payment_status: 'paid',
+                updated_at: connection.fn.now()
+            });
+
+        // 3. NOW we decrement the inventory safely, because payment is complete
+        // (Assuming a standard 1 room per booking. If users can book multiple rooms, replace '1' with booking.quantity)
+        await trx('rooms')
+            .where('id', booking.room_id)
+            .decrement('available_quantity', 1); 
+
+        return { success: true, bookingId };
+    });
+};

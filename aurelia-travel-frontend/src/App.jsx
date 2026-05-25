@@ -10,6 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute'; // Your auth guard
 import Home from './pages/Home'
 import SearchResults from './pages/SearchResults'
 import HotelDetails from './pages/HotelDetails'
+import BookingConfirmation from './pages/BookingConfirmation';
 import LoginRegister from './pages/LoginRegister'
 import Profile from './pages/Profile'
 import TravelPage from './pages/TravelPage'
@@ -37,6 +38,8 @@ import DashboardAnalytics from './pages/admin/DashboardAnalytics'
 import DashboardCustomers from './pages/admin/DashboardCustomers'
 import ManagerFinance from './pages/admin/ManagerFinance'
 import ManagerReviews from './pages/admin/ManagerReviews'
+import SafetyCenter from './pages/SafetyCenter';
+import DisputeResolution from './pages/DisputeResolution';
 
 import SuperAdminLayout from './pages/aurelia_admin/SuperAdminLayout'; // Super Admin
 // Super Admin Pages
@@ -95,6 +98,7 @@ const AppRoutes = () => {
             <Route path="/" element={<Home />} />
             <Route path="/search" element={<SearchResults />} />
             <Route path="/hotel/:id" element={<HotelDetails />} />
+            <Route path="/booking-confirmation" element={<BookingConfirmation />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/hotels" element={<HotelPage />} />
@@ -113,6 +117,8 @@ const AppRoutes = () => {
             <Route path="/travel-itinerary" element={user ? <TravelPlanPage /> : <Navigate to="/auth" />} />
             <Route path="/trip-dashboard" element={user ? <TripDashboard /> : <Navigate to="/auth" />} />
             <Route path="/list-property" element={<ProtectedRoute><PropertyOnboarding /></ProtectedRoute>} />
+            <Route path="/profile/safety" element={<SafetyCenter />} />
+            <Route path="/profile/disputes" element={<DisputeResolution />} />
 
             {/* Old Legacy Admin Route */}
             <Route path="/adminDashboard" element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />

@@ -180,7 +180,6 @@ const HotelShowcase = () => {
         <div className="showcase-container">
             <section className="showcase-section">
                 <div className="section-title">
-                    <div className="icon-badge yellow"><Star size={24} fill="currentColor" /></div>
                     <h2>Top Rated Stays</h2>
                     <p>Guests love these 5-star experiences</p>
                 </div>
@@ -197,7 +196,6 @@ const HotelShowcase = () => {
 
             <section className="showcase-section">
                 <div className="section-title">
-                    <div className="icon-badge blue"><Zap size={24} fill="currentColor" /></div>
                     <h2>New & Trending</h2>
                     <p>Be the first to explore these new additions</p>
                 </div>
