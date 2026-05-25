@@ -30,3 +30,23 @@ exports.sendVerificationEmail = async (userEmail, token) => {
 
     return transporter.sendMail(mailOptions);
 };
+
+exports.sendPasswordResetEmail = async (userEmail, otpCode) => {
+    const mailOptions = {
+        from: `"Aurelia Travel" <${process.env.SMTP_USER}>`, 
+        to: userEmail,
+        subject: 'Password Reset Code - Aurelia Travel',
+        html: `
+            <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <h2 style="color: #0f172a;">Password Reset Request</h2>
+                <p style="color: #334155; font-size: 16px;">We received a request to reset the password for your Aurelia Travel account. Your 6-digit verification code is:</p>
+                <div style="background-color: #f8fafc; padding: 15px; text-align: center; border-radius: 6px; margin: 20px 0;">
+                    <h1 style="letter-spacing: 8px; color: #2563eb; margin: 0; font-size: 32px;">${otpCode}</h1>
+                </div>
+                <p style="color: #64748b; font-size: 14px;">This code will expire in 10 minutes. If you did not request this reset, please ignore this email.</p>
+            </div>
+        `
+    };
+
+    return transporter.sendMail(mailOptions);
+};

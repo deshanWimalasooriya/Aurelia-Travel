@@ -1,8 +1,6 @@
 const hotelModel = require("../models/hotelModel");
 const { notifyAdmins } = require('./notificationController');
 const logService = require('../services/logService');
-// ✅ STEP 1: Import our new Redis Client
-const redisClient = require('../config/redisClient'); 
 
 const parseHotelData = (hotel) => {
     if (!hotel) return null;
@@ -15,29 +13,8 @@ const parseHotelData = (hotel) => {
 // --- PUBLIC ---
 exports.getAllHotels = async (req, res) => {
     try {
-        const cacheKey = 'all_hotels';
-        
-        // ✅ STEP 2: Try to get data from Redis first
-        // Note: Make sure redisClient is connected. We use an optional chaining `.?` 
-        // to prevent crashing if Redis is offline during development.
-        if (redisClient?.isReady) {
-            const cachedHotels = await redisClient.get(cacheKey);
-            if (cachedHotels) {
-                console.log("⚡ Served Hotels from Redis Cache!");
-                return res.json({ success: true, data: JSON.parse(cachedHotels) });
-            }
-        }
-
-        // ✅ STEP 3: Cache Miss - Get from Database
-        console.log("🗄️ Served Hotels from MySQL Database");
         const hotels = await hotelModel.getAll();
         const parsedHotels = hotels.map(parseHotelData);
-
-        // ✅ STEP 4: Save to Redis for the next user (Cache for 1 Hour: 3600 seconds)
-        if (redisClient?.isReady) {
-            await redisClient.setEx(cacheKey, 3600, JSON.stringify(parsedHotels));
-        }
-
         res.json({ success: true, data: parsedHotels });
     } catch (err) { 
         res.status(500).json({ success: false, error: err.message }); 
@@ -167,9 +144,6 @@ exports.create = async (req, res) => {
 
         const newHotelId = await hotelModel.create(hotelData, images, amenities);
 
-        // ✅ INVALIDATE CACHE: Force next search query to grab this new hotel
-        if (redisClient?.isReady) await redisClient.del('all_hotels');
-
         res.status(201).json({ success: true, message: "Hotel created", hotelId: newHotelId });
 
     } catch (err) {
@@ -204,8 +178,6 @@ exports.update = async (req, res) => {
 
         await hotelModel.update(hotelId, updateData, images, amenities);
 
-        // ✅ INVALIDATE CACHE: Changes made (e.g., price drop), wipe old cache
-        if (redisClient?.isReady) await redisClient.del('all_hotels');
 
         if (req.user.role === 'admin') {
             let changes = [];
@@ -240,8 +212,6 @@ exports.delete = async (req, res) => {
         }
         await hotelModel.delete(req.params.id);
 
-        // ✅ INVALIDATE CACHE: Hotel is gone, remove it from memory
-        if (redisClient?.isReady) await redisClient.del('all_hotels');
 
         if (req.user.role === 'admin') {
             await logService.logAction(req.user.userId, 'DELETE_HOTEL', 'Hotels', hotel.name, 'Admin permanently deleted property.', 'error');

@@ -4,23 +4,33 @@
 
 .planner-container {
   max-width: 1000px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1.8fr 1fr; 
-  gap: 30px;
+  /* Align to left instead of center */
+  margin: 0; 
+  display: block;
+  pointer-events: auto;
 }
 
-/* --- THE FORM CARD --- */
+/* Ensure the card doesn't stretch too wide */
 .planner-card {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-float);
-  border: 1px solid var(--border-subtle, #e2e8f0);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: var(--shadow-float, 0 10px 30px rgba(0,0,0,0.08));
+  border: 1px solid rgba(255, 255, 255, 0.5);
   padding: 40px;
+  max-width: 550px; /* Constrain width for a professional look */
+}
+
+/* Responsive adjustment */
+@media (max-width: 900px) {
+  .planner-card {
+    max-width: 100%;
+  }
 }
 
 /* Input Groups */
 .input-group {
+  position: relative; /* Add this line to fix Shadow DOM overlays */
   margin-bottom: 24px;
   display: flex;
   flex-direction: column;
@@ -31,7 +41,7 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #475569);
   font-weight: 700;
   font-size: 0.85rem;
   text-transform: uppercase;
@@ -39,28 +49,42 @@
 }
 
 .input-group label svg {
-  color: var(--color-primary);
+  color: var(--color-primary, #2563eb);
 }
 
-/* Inputs & Selects */
+/* Inputs, Selects & Textareas */
 .input-group input, 
-.input-group select {
-  background: var(--color-surface) !important;
+.input-group select,
+.input-group textarea {
+  background: var(--color-surface, #ffffff) !important;
   border: 1px solid #cbd5e1;
   padding: 14px 16px;
-  border-radius: var(--radius-sm);
-  color: var(--text-main) !important;
+  border-radius: var(--radius-sm, 8px);
+  color: var(--text-main, #0f172a) !important;
   font-size: 1rem;
-  transition: var(--transition-smooth);
+  transition: all 0.2s ease;
   width: 100%;
   box-sizing: border-box; 
+  font-family: inherit;
+}
+
+.input-group textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
 }
 
 .input-group input:focus,
-.input-group select:focus {
-  border-color: var(--color-primary);
+.input-group select:focus,
+.input-group textarea:focus {
+  border-color: var(--color-primary, #2563eb);
   outline: none;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.input-group input::placeholder,
+.input-group textarea::placeholder {
+  color: #94a3b8;
 }
 
 /* Remove default dark mode indicator for date picker */
@@ -79,80 +103,36 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
   gap: 20px;
 }
 
-/* --- PACE SELECTOR --- */
-.pace-selector {
-  margin-top: 10px;
-}
-
-.pace-selector label {
-  display: block;
-  margin-bottom: 12px;
-  color: var(--text-secondary);
-  font-weight: 700;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.pace-options {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 30px;
-}
-
-.pace-options button {
-  background: var(--color-background);
-  border: 1px solid #cbd5e1;
-  padding: 14px;
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: var(--transition-smooth);
-}
-
-.pace-options button:hover {
-  background: #e2e8f0;
-  color: var(--text-main);
-}
-
-.pace-options button.active {
-  background: var(--color-dark);
-  color: white;
-  border-color: var(--color-dark);
-}
-
 /* --- ACTION BUTTON --- */
 .generate-btn {
   width: 100%;
-  background: var(--color-primary);
+  background: var(--color-primary, #2563eb);
   color: white;
   border: none;
   padding: 16px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md, 12px);
   font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: var(--transition-smooth);
+  transition: all 0.2s ease;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  margin-top: 10px;
 }
 
 .generate-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
-  background: var(--color-primary-hover);
+  background: var(--color-primary-hover, #1d4ed8);
 }
 
 /* --- SIDEBAR (Right Side) --- */
 .safety-sidebar {
   display: flex;
   flex-direction: column;
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
+  background: var(--color-surface, #ffffff);
+  border-radius: var(--radius-lg, 16px);
   padding: 30px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.1));
   border: 1px solid var(--border-subtle, #e2e8f0);
   height: fit-content;
 }
@@ -161,19 +141,19 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--color-dark);
+  color: var(--color-dark, #0f172a);
   margin-bottom: 20px;
   font-size: 1.2rem;
   font-weight: 800;
 }
 
-.icon-primary { color: var(--color-primary); }
+.icon-primary { color: var(--color-primary, #2563eb); }
 
 .insight-item {
   background: #fffbeb;
   padding: 20px 16px;
-  border-radius: var(--radius-md);
-  border-left: 4px solid var(--color-accent);
+  border-radius: var(--radius-md, 12px);
+  border-left: 4px solid var(--color-accent, #f59e0b);
   display: flex;
   gap: 12px;
   align-items: flex-start;
@@ -182,12 +162,12 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
 .insight-item p {
   font-size: 0.95rem;
   line-height: 1.5;
-  color: #92400e; /* Deep amber text for readability on yellow */
+  color: #92400e; 
   margin: 0;
 }
 
 .warning-icon {
-  color: var(--color-accent);
+  color: var(--color-accent, #f59e0b);
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -202,4 +182,396 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
   .input-row {
     grid-template-columns: 1fr; 
   }
+}
+
+/* =========================================
+   LOCATION INPUT & MAP MODAL STYLES
+   ========================================= */
+
+/* Location Input Wrapper */
+.location-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.location-input-wrapper input {
+  padding-right: 50px; /* Make room for the map icon */
+}
+
+.map-trigger-btn {
+  position: absolute;
+  right: 8px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: var(--color-primary, #2563eb);
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.map-trigger-btn:hover {
+  background: var(--color-primary, #2563eb);
+  color: #ffffff;
+  border-color: var(--color-primary, #2563eb);
+}
+
+/* Map Modal Overlay */
+.map-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+/* Map Modal Card */
+.map-modal-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: modalPopIn 0.3s ease-out;
+}
+
+@keyframes modalPopIn {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.map-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.map-modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.close-modal-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  transition: all 0.2s;
+}
+
+.close-modal-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.map-modal-body {
+  padding: 24px;
+}
+
+.btn-use-location {
+  width: 100%;
+  background: #eff6ff;
+  color: var(--color-primary, #2563eb);
+  border: 1px solid #bfdbfe;
+  padding: 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-use-location:hover {
+  background: #dbeafe;
+  transform: translateY(-1px);
+}
+
+/* Simulated Map Frame */
+.map-frame {
+  width: 100%;
+  height: 250px;
+  background-image: url('https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1000&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  position: relative;
+  cursor: crosshair;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+}
+
+.map-pin-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.pin-shadow {
+  width: 12px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  margin-top: -4px;
+  filter: blur(1px);
+}
+
+.map-modal-footer {
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.map-modal-footer .btn-ghost {
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+}
+
+.map-modal-footer .btn-ghost:hover {
+  background: #f1f5f9;
+}
+
+.map-modal-footer .btn-primary {
+  padding: 10px 20px;
+  background: var(--color-primary, #2563eb);
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+.map-modal-footer .btn-primary:hover {
+  background: var(--color-primary-hover, #1d4ed8);
+}
+
+/* =========================================
+   LOCATION INPUT & MAP MODAL STYLES
+   ========================================= */
+
+/* Location Input Wrapper */
+.location-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.location-input-wrapper input {
+  padding-right: 50px; /* Make room for the map icon */
+}
+
+.map-trigger-btn {
+  position: absolute;
+  right: 8px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: var(--color-primary, #2563eb);
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.map-trigger-btn:hover {
+  background: var(--color-primary, #2563eb);
+  color: #ffffff;
+  border-color: var(--color-primary, #2563eb);
+}
+
+/* Map Modal Overlay */
+.map-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+/* Map Modal Card */
+.map-modal-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: modalPopIn 0.3s ease-out;
+}
+
+@keyframes modalPopIn {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.map-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.map-modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.close-modal-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  transition: all 0.2s;
+}
+
+.close-modal-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.map-modal-body {
+  padding: 24px;
+}
+
+.btn-use-location {
+  width: 100%;
+  background: #eff6ff;
+  color: var(--color-primary, #2563eb);
+  border: 1px solid #bfdbfe;
+  padding: 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-use-location:hover {
+  background: #dbeafe;
+  transform: translateY(-1px);
+}
+
+/* Simulated Map Frame */
+.map-frame {
+  width: 100%;
+  height: 250px;
+  background-image: url('https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1000&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  position: relative;
+  cursor: crosshair;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+}
+
+.map-pin-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.pin-shadow {
+  width: 12px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  margin-top: -4px;
+  filter: blur(1px);
+}
+
+.map-modal-footer {
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.map-modal-footer .btn-ghost {
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+}
+
+.map-modal-footer .btn-ghost:hover {
+  background: #f1f5f9;
+}
+
+.map-modal-footer .btn-primary {
+  padding: 10px 20px;
+  background: var(--color-primary, #2563eb);
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+.map-modal-footer .btn-primary:hover {
+  background: var(--color-primary-hover, #1d4ed8);
 }

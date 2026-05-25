@@ -1,0 +1,132 @@
+/* Booking Confirmation Layout */
+.booking-confirmation-layout {
+    display: flex;
+    min-height: 80vh;
+    background: #f8fafc;
+}
+
+/* Left Sidebar (25%) */
+.booking-summary-sidebar {
+    width: 25%;
+    padding: 2rem;
+    background: #ffffff;
+    border-right: 1px solid #e2e8f0;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.02);
+}
+
+.summary-card { position: sticky; top: 100px; }
+.step-title { display: flex; align-items: center; gap: 8px; color: #0f172a; margin-bottom: 20px; }
+.completed-icon { color: #10b981; }
+.summary-img { width: 100%; height: 180px; object-fit: cover; border-radius: 12px; margin-bottom: 15px; }
+.summary-divider { height: 1px; background: #e2e8f0; margin: 15px 0; }
+.summary-details p { margin-bottom: 8px; color: #475569; display: flex; align-items: center; gap: 6px; }
+.summary-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; margin-top: 20px; }
+.summary-total .price { color: #2563eb; }
+
+/* Right Action Area (75%) */
+.booking-action-area {
+    width: 75%;
+    padding: 3rem 5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Step Tracker */
+.step-tracker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 3rem;
+}
+
+.step { display: flex; flex-direction: column; align-items: center; gap: 8px; color: #94a3b8; transition: 0.3s; }
+.step-circle { width: 35px; height: 35px; border-radius: 50%; background: #e2e8f0; display: flex; justify-content: center; align-items: center; font-weight: bold; }
+.step-line { height: 3px; flex-grow: 1; background: #e2e8f0; margin: 0 15px; transform: translateY(-12px); transition: 0.3s; }
+
+.step.active { color: #2563eb; }
+.step.active .step-circle { background: #2563eb; color: #fff; }
+.step.completed .step-circle { background: #10b981; color: #fff; }
+.step-line.active { background: #10b981; }
+
+/* Form Content */
+.step-content-container { background: #fff; padding: 2.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+.fade-in { animation: fadeIn 0.4s ease-in-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.payment-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
+.pay-card { border: 2px solid #e2e8f0; padding: 15px; border-radius: 12px; cursor: pointer; transition: 0.2s; }
+.pay-card:hover { border-color: #93c5fd; transform: translateY(-2px); }
+.pay-card.selected { border-color: #2563eb; background: #eff6ff; }
+
+button.primary-btn, button.confirm-btn {
+    width: 100%; padding: 15px; border-radius: 8px; font-weight: bold; color: #fff; cursor: pointer; transition: 0.3s; border: none; font-size: 1.1rem;
+}
+button.primary-btn { background: #2563eb; }
+button.primary-btn:hover { background: #1d4ed8; }
+button.confirm-btn { background: #10b981; margin-top: 20px; }
+button.confirm-btn:hover { background: #059669; transform: translateY(-2px); box-shadow: 0 10px 15px rgba(16, 185, 129, 0.2); }
+
+/* Floating Incomplete Tag */
+.incomplete-floating-tag {
+    position: fixed; top: 50%; right: 0; transform: translateY(-50%);
+    background: #fff; border: 2px solid #f59e0b; border-right: none;
+    padding: 12px 20px; border-radius: 25px 0 0 25px; box-shadow: -4px 4px 15px rgba(0,0,0,0.1);
+    display: flex; align-items: center; gap: 10px; font-weight: 600; color: #b45309;
+    cursor: pointer; z-index: 1000; transition: 0.3s;
+}
+.incomplete-floating-tag:hover { padding-right: 30px; background: #fffbeb; }
+.pulse-dot { width: 10px; height: 10px; background: #f59e0b; border-radius: 50%; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); } 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); } }
+
+/* Guest Login Banner */
+.guest-login-banner {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 15px 20px; margin-bottom: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+}
+.banner-icon-container {
+    width: 45px; height: 45px; background: #475569; border-radius: 50%;
+    display: flex; justify-content: center; align-items: center; flex-shrink: 0;
+}
+.banner-text { flex-grow: 1; margin: 0 15px; color: #334155; font-size: 0.95rem; line-height: 1.4; }
+.blue-link { color: #2563eb; cursor: pointer; }
+.banner-signin-btn {
+    background: #2563eb; color: #fff; border: none; padding: 10px 20px;
+    border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;
+}
+.banner-signin-btn:hover { background: #1d4ed8; }
+
+/* Form Blocks */
+.form-section-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 25px; margin-bottom: 25px;
+}
+.form-section-card h2 { margin-top: 0; margin-bottom: 15px; font-size: 1.3rem; color: #0f172a; }
+.info-alert-box {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+    padding: 12px 15px; display: flex; align-items: center; gap: 10px;
+    color: #475569; font-size: 0.9rem; margin-bottom: 20px;
+}
+.section-desc { font-size: 0.9rem; color: #475569; margin-bottom: 15px; }
+
+/* Inputs */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.input-group { margin-bottom: 18px; display: flex; flex-direction: column; }
+.input-group label { font-weight: 600; color: #1e293b; margin-bottom: 6px; font-size: 0.9rem; }
+.input-group label .req { color: #ef4444; }
+.input-group label .opt { color: #94a3b8; font-weight: normal; }
+.input-group input, .input-group select, .input-group textarea {
+    padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px;
+    font-size: 1rem; color: #334155; outline: none; transition: 0.2s;
+}
+.input-group input:focus, .input-group select:focus, .input-group textarea:focus { border-color: #2563eb; }
+.input-hint { font-size: 0.8rem; color: #64748b; margin-top: 5px; }
+
+/* Phone Specific */
+.phone-input-row { display: flex; gap: 10px; }
+.phone-prefix { width: 120px; }
+.phone-input-row input { flex-grow: 1; }
+
+/* Arrival Perks */
+.arrival-perks { margin-bottom: 20px; }
+.arrival-perks p { display: flex; align-items: center; gap: 8px; color: #334155; margin-bottom: 8px; font-size: 0.95rem; }

@@ -12,12 +12,13 @@ import {
   HelpCircle, ShieldCheck, Scale, FileText, Home, 
   ChevronRight, Loader2, Camera, Check, Plus, Trash2, 
   AlertTriangle, Download, LogOut, CheckCircle2,
-  Calendar, MapPin, Clock, Star, X, BedDouble, Ticket, Building2, CornerDownRight // <-- New icons added
+  Calendar, MapPin, Clock, Star, X, BedDouble, Ticket, Building2, CornerDownRight, Eye, EyeOff // <-- New icons added
 } from 'lucide-react'; 
 import './styles/profile.css';
 import './styles/my-bookings.css'; // <-- Retained original CSS
 import './styles/my-reviews.css';  // <-- Retained original CSS
 import './styles/wishlist.css';    // <-- Retained original CSS
+import DisputeResolution from './DisputeResolution';
 
 export default function Profile() {
   const { user, refreshUser } = useUser();
@@ -38,6 +39,8 @@ export default function Profile() {
   
   // --- View Navigation State ---
   const [currentView, setCurrentView] = useState('directory');
+
+  const [showPassword, setShowPassword] = useState(false);
   
   // Loading & Actions state
   const [loadingProfile, setLoadingProfile] = useState(false);
@@ -88,20 +91,44 @@ export default function Profile() {
   
   useEffect(() => {
     if (user) {
+        // --- BULLETPROOF DATE PARSING ---
+        let formattedDob = '';
+        
+        if (user.dob) {
+            try {
+                // Scenario 1: The database sends a string that already starts with YYYY-MM-DD (like an ISO string or SQL timestamp)
+                if (typeof user.dob === 'string' && user.dob.match(/^\d{4}-\d{2}-\d{2}/)) {
+                    formattedDob = user.dob.substring(0, 10);
+                } 
+                // Scenario 2: The database sends an unusual format, so we force JavaScript to convert it
+                else {
+                    const d = new Date(user.dob);
+                    if (!isNaN(d.getTime())) {
+                        const year = d.getFullYear();
+                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        formattedDob = `${year}-${month}-${day}`;
+                    }
+                }
+            } catch (e) {
+                console.error("Could not parse date:", e);
+            }
+        }
+
+        // Set the state with the safely formatted date
         setProfileData({
             username: user.username || user.first_name || '', 
             email: user.email || '',
             password: '', 
-            phone: user.phone || '', // Map phone from backend
-            // Format date for the <input type="date"> field (YYYY-MM-DD)
-            dob: user.dob ? new Date(user.dob).toISOString().split('T')[0] : '',        // Added Date of Birth
+            phone: user.phone || '', 
+            dob: formattedDob, // <-- Now strictly YYYY-MM-DD
             address_line_1: user.address_line_1 || '', 
             city: user.city || '', 
             country: user.country || ''
         });
+        
         setTwoFactor(user.is_verified === 1 || user.is_verified === true);
         
-        // --- NEW: Sync Preferences ---
         setCustomizationData({
             currency: user.currency || 'USD',
             language: user.language || 'EN'
@@ -111,7 +138,7 @@ export default function Profile() {
             setEmailPrefs({
                 promos: user.email_preferences.promos ?? true,
                 bookings: user.email_preferences.bookings ?? true,
-                account: true // Always true for security
+                account: true 
             });
         }
     }
@@ -404,8 +431,20 @@ export default function Profile() {
       title: "Help and support",
       items: [
         { icon: <HelpCircle size={18} strokeWidth={1.5}/>, label: "Contact Customer Service", link: "/contact" },
-        { icon: <ShieldCheck size={18} strokeWidth={1.5}/>, label: "Safety resource center", view: 'safety_center' },
-        { icon: <Scale size={18} strokeWidth={1.5}/>, label: "Dispute resolution", view: 'disputes' }
+    
+    // --- UPDATED: These items are now disabled ---
+    { 
+        icon: <ShieldCheck size={18} strokeWidth={1.5}/>, 
+        label: "Safety resource center", 
+        view: 'safety_center',
+        disabled: true // Add this flag
+    },
+    { 
+        icon: <Scale size={18} strokeWidth={1.5}/>, 
+        label: "Dispute resolution", 
+        view: 'disputes',
+        disabled: true // Add this flag
+    }
       ]
     },
     {
@@ -491,6 +530,8 @@ export default function Profile() {
             
             {/* VIEW 0: MAIN DIRECTORY GRID */}
             {currentView === 'directory' ? (
+
+                
                 <motion.div key="directory" className="profile-hub-grid"
                     initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}
                 >
@@ -505,9 +546,22 @@ export default function Profile() {
                                             <ChevronRight size={18} className="hub-chevron" strokeWidth={1.5} />
                                         </Link>
                                     ) : (
-                                        <button key={i} className="hub-item" onClick={() => setCurrentView(item.view)}>
-                                            <div className="hub-item-left"><span className="hub-icon">{item.icon}</span><span className="hub-label">{item.label}</span></div>
-                                            <ChevronRight size={18} className="hub-chevron" strokeWidth={1.5} />
+                                        <button 
+                                            key={i} 
+                                            className={`hub-item ${item.disabled ? 'disabled' : ''}`} 
+                                            onClick={() => {
+                                                if (item.disabled) {
+                                                    alert("This feature is coming soon!");
+                                                } else {
+                                                    setCurrentView(item.view);
+                                                }
+                                            }}
+                                        >
+                                            <div className="hub-item-left">
+                                                <span className="hub-icon">{item.icon}</span>
+                                                <span className="hub-label">{item.label}</span>
+                                            </div>
+                                            {!item.disabled && <ChevronRight size={18} className="hub-chevron" strokeWidth={1.5} />}
                                         </button>
                                     )
                                 ))}
@@ -608,13 +662,35 @@ export default function Profile() {
 
                                             <div className="form-row">
                                                 <div className="form-group">
-                                                    <label>Date of Birth</label>
-                                                    <input type="date" value={profileData.dob} onChange={e => setProfileData({...profileData, dob: e.target.value})} className="form-input"/>
-                                                </div>
+                                                <label>Date of Birth</label>
+                                                <input 
+                                                    type="date" 
+                                                    value={profileData.dob || ''} 
+                                                    onChange={e => setProfileData({...profileData, dob: e.target.value})} 
+                                                    className="form-input"
+                                                />
+                                            </div>
                                                 <div className="form-group">
-                                                    <label>New Password (Optional)</label>
-                                                    <input type="password" placeholder="••••••••" value={profileData.password} onChange={e => setProfileData({...profileData, password: e.target.value})} className="form-input" minLength={6}/>
+                                                <label>New Password (Optional)</label>
+                                                <div className="password-input-wrapper">
+                                                    <input 
+                                                        type={showPassword ? "text" : "password"} 
+                                                        placeholder="••••••••" 
+                                                        value={profileData.password} 
+                                                        onChange={e => setProfileData({...profileData, password: e.target.value})} 
+                                                        className="form-input" 
+                                                        minLength={6}
+                                                    />
+                                                    <button 
+                                                        type="button" 
+                                                        className="password-toggle-btn"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                        title={showPassword ? "Hide password" : "Show password"}
+                                                    >
+                                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                    </button>
                                                 </div>
+                                            </div>
                                             </div>
 
                                             <div className="form-group">
@@ -1132,47 +1208,14 @@ export default function Profile() {
                                 </motion.div>
                             )}
 
-                            {/* VIEW 10: DISPUTE RESOLUTION */}
+                            {/* VIEW: DISPUTE RESOLUTION */}
                             {currentView === 'disputes' && (
                                 <motion.div key="disputes" className="profile-sub-page"
                                     initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
                                     
-                                    <div className="sub-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-                                        <div>
-                                            <h2>Dispute Resolution</h2>
-                                            <p>Track active tickets or open a new dispute for mediation.</p>
-                                        </div>
-                                        <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <Plus size={16} /> Open New Ticket
-                                        </button>
-                                    </div>
+                                    {/* We reuse the component we built earlier */}
+                                    <DisputeResolution />
                                     
-                                    <div className="sub-page-card" style={{ padding: 0, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                                        {/* Empty State / Active Disputes */}
-                                        <div style={{ padding: '48px 20px', textAlign: 'center', backgroundColor: '#ffffff' }}>
-                                            <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#f8fafc', border: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
-                                                <Scale size={32} color="#94a3b8" />
-                                            </div>
-                                            <h3 style={{ fontSize: '1.1rem', color: '#0f172a', marginBottom: '8px' }}>No active disputes</h3>
-                                            <p style={{ color: '#64748b', fontSize: '0.95rem', maxWidth: '400px', margin: '0 auto', lineHeight: '1.5' }}>
-                                                You currently have no open tickets. If you have an unresolved issue with a recent stay, refund, or property manager, you can open a ticket for our team to mediate.
-                                            </p>
-                                        </div>
-                                        
-                                        {/* Mock Past Ticket */}
-                                        <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                                <div style={{ padding: '8px', backgroundColor: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '8px', color: '#64748b' }}>
-                                                    <CheckCircle2 size={20} />
-                                                </div>
-                                                <div>
-                                                    <strong style={{ display: 'block', color: '#475569', fontSize: '0.95rem', marginBottom: '2px' }}>Refund Request - Ocean View Resort</strong>
-                                                    <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Ticket #88492 • Closed & Resolved on Oct 15</span>
-                                                </div>
-                                            </div>
-                                            <button className="btn-ghost-small" style={{ backgroundColor: '#fff', border: '1px solid #cbd5e1' }}>View Details</button>
-                                        </div>
-                                    </div>
                                 </motion.div>
                             )}
 

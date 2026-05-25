@@ -3,16 +3,30 @@ const knex = require('../../config/db');
 exports.getGlobalStats = async () => {
     const [bookings, revenue, users, hotels] = await Promise.all([
         knex('bookings').count('id as count').first(),
-        knex('bookings').whereIn('status', ['confirmed', 'completed']).sum('total_price as total').first(),
+        // Add the commission sum here
+        knex('bookings').whereIn('status', ['confirmed', 'completed']).sum('total_price as total').sum('commission as total_commission').first(),
         knex('users').where('role', 'user').count('id as count').first(),
         knex('hotels').where('is_active', true).count('id as count').first()
     ]);
     return {
         total_bookings: bookings.count,
         total_revenue: revenue.total || 0,
+        total_commission: revenue.total_commission || 0,
         total_users: users.count,
         active_hotels: hotels.count
     };
+};
+
+exports.getHotelFinancials = () => {
+    return knex('bookings')
+    .join('hotels', 'bookings.hotel_id', 'hotels.id')
+    .select('hotels.id', 'hotels.name')
+    .count('bookings.id as bookings')
+    .sum('bookings.total_price as revenue')
+    .sum('bookings.commission as commission') // <-- DB SUM DIRECTLY
+    .whereIn('bookings.status', ['confirmed', 'completed'])
+    .groupBy('hotels.id', 'hotels.name')
+    .orderBy('revenue', 'desc');
 };
 
 // --- DB AGNOSTIC ANALYTICS FIXES ---
@@ -38,17 +52,6 @@ exports.getBookingsByHotel = () => {
 
 exports.getBookingStatusStats = () => {
     return knex('bookings').select('status as name').count('id as value').groupBy('status');
-};
-
-exports.getHotelFinancials = () => {
-    return knex('bookings')
-    .join('hotels', 'bookings.hotel_id', 'hotels.id')
-    .select('hotels.id', 'hotels.name', 'hotels.commission_rate')
-    .count('bookings.id as bookings')
-    .sum('bookings.total_price as revenue')
-    .whereIn('bookings.status', ['confirmed', 'completed'])
-    .groupBy('hotels.id', 'hotels.name', 'hotels.commission_rate')
-    .orderBy('revenue', 'desc');
 };
 
 exports.getRecentActivity = () => {

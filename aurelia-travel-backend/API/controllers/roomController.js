@@ -27,6 +27,24 @@ exports.getRoomsByHotelId = async (req, res) => {
 // 2. MANAGER: Create Room (Auto-Inventory)
 exports.createRoom = async (req, res) => {
     try {
+        const initializeRoomAvailability = async (trx, roomId, startDate) => {
+            const availabilityRows = [];
+            const start = new Date(startDate);
+
+            for (let i = 0; i < 365; i++) {
+                let date = new Date(start);
+                date.setDate(start.getDate() + i);
+                
+                availabilityRows.push({
+                    room_id: roomId,
+                    date: date.toISOString().split('T')[0], // YYYY-MM-DD
+                    available_quantity: 1, // Default to 1, or your room's total capacity
+                    is_blocked: false
+                });
+            }
+
+            await trx('room_availability').insert(availabilityRows);
+        };
         const { 
             hotel_id, title, room_type, base_price_per_night, 
             total_quantity, images, description,
@@ -145,3 +163,4 @@ exports.deleteRoom = async (req, res) => {
         res.json({ success: true, message: "Deleted" });
     } catch (err) { res.status(500).json({ error: err.message }); }
 };
+
