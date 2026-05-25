@@ -176,7 +176,6 @@ exports.logout = (req, res) => {
   res.json({ success: true, message: 'Logged out successfully' });
 };
 
-
 exports.getCurrentUser = async (req, res) => {
   try {
     const user = await userModel.findById(req.user.userId);
