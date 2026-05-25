@@ -100,11 +100,32 @@ exports.register = async (req, res) => {
         )
     ]).catch(err => console.error("Background Notification Error:", err));
 
+    // 4. NON-BLOCKING NOTIFICATIONS
+    // We use Promise.allSettled() but do NOT 'await' the result.
+    // This allows the response to be sent to the user IMMEDIATELY without waiting for emails to send.
+    Promise.allSettled([
+        notifyAdmins(
+            "New User Registration",
+            `User ${newUser.username} (${newUser.email}) just registered as a ${newUser.role}.`,
+            "info",
+            "/superAdmin/users"
+        ),
+        sendNotification(
+            newUser.id,
+            "Welcome to Aurelia!",
+            "Your account has been created. Complete your profile to get started.",
+            "success",
+            "/profile"
+        )
+    ]).catch(err => console.error("Background Notification Error:", err));
+
+    // 5. Send Success Response Immediately
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
       user: { id: newUser.id, email: newUser.email, role: newUser.role }
     });
+
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY' || err.errno === 1062) {
       return res.status(409).json({ success: false, message: 'Email or Username already exists' });

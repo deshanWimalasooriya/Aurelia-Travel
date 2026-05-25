@@ -100,7 +100,6 @@ exports.up = async function(knex) {
     
     table.timestamps(true, true);
   });
-
   // 5. Create WISHLISTS
   await knex.schema.createTable('wishlists', (table) => {
       table.increments('id').primary();

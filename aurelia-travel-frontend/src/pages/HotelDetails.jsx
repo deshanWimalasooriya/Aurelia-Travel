@@ -55,7 +55,20 @@ const HotelDetails = () => {
       return Array.isArray(data) ? data : [];
   };
 
-  // --- 1. FETCH DATA ---
+  // Room Popup & Gallery State
+  const [viewingRoom, setViewingRoom] = useState(null);
+  const [isRoomGalleryOpen, setIsRoomGalleryOpen] = useState(false);
+
+  // Selection State
+  const [selectedRoomId, setSelectedRoomId] = useState(null);
+  const [roomQty, setRoomQty] = useState(1); 
+  const [totalPrice, setTotalPrice] = useState(0);
+  
+  // Booking Data
+  const [dates, setDates] = useState({ checkIn: '', checkOut: '' });
+  const [guests, setGuests] = useState({ adults: 2, children: 0 });
+
+  // --- 1. FETCH DATA (ORIGINAL LOGIC) ---
   useEffect(() => {
     const fetchData = async () => {
       try {

@@ -212,7 +212,6 @@ exports.delete = async (req, res) => {
         }
         await hotelModel.delete(req.params.id);
 
-
         if (req.user.role === 'admin') {
             await logService.logAction(req.user.userId, 'DELETE_HOTEL', 'Hotels', hotel.name, 'Admin permanently deleted property.', 'error');
         }
