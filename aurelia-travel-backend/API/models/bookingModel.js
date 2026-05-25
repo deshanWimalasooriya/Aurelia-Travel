@@ -138,3 +138,40 @@ exports.updateStatus = async (id, status) => {
 exports.getAllBookings = () => knex('bookings').select('*');
 exports.deleteBooking = (id) => knex('bookings').where({ id }).del();
 exports.getBookingsByHotelId = (hotelId) => knex('bookings').where({ hotel_id: hotelId });
+
+// Inside bookingModel.js
+
+exports.confirmBookingPayment = async (bookingId) => {
+    // We use a transaction so if the inventory update fails, the status update rolls back safely.
+    return connection.transaction(async (trx) => {
+        
+        // 1. Fetch the draft booking to get the room_id and check its status
+        const booking = await trx('bookings').where('id', bookingId).first();
+        
+        if (!booking) {
+            throw new Error('Booking not found');
+        }
+        
+        // Prevent double-decrementing if the webhook hits twice
+        if (booking.status === 'confirmed') {
+            return { message: 'Booking already confirmed', bookingId };
+        }
+
+        // 2. Update the booking status to confirmed & paid
+        await trx('bookings')
+            .where('id', bookingId)
+            .update({
+                status: 'confirmed',
+                payment_status: 'paid',
+                updated_at: connection.fn.now()
+            });
+
+        // 3. NOW we decrement the inventory safely, because payment is complete
+        // (Assuming a standard 1 room per booking. If users can book multiple rooms, replace '1' with booking.quantity)
+        await trx('rooms')
+            .where('id', booking.room_id)
+            .decrement('available_quantity', 1); 
+
+        return { success: true, bookingId };
+    });
+};

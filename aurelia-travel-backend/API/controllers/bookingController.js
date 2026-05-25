@@ -46,6 +46,7 @@ exports.createBooking = async (req, res) => {
         const lockedCommission = totalPrice * (globalRate / 100);
 
         const requestedStatus = req.body.status === 'incomplete' ? 'pending' : (req.body.status || 'confirmed');
+        
         // C. Construct Data
         const bookingData = {
             user_id: userId,
@@ -78,12 +79,12 @@ exports.createBooking = async (req, res) => {
             provider: payment_provider || 'stripe'
         };
 
-        // D. Execute Transaction
+        // D. Execute Transaction (Now safely handles draft logic internally)
         const result = await bookingModel.createBooking(bookingData, paymentData);
 
         res.status(201).json({
             success: true,
-            message: "Booking confirmed!",
+            message: "Booking process initiated!",
             bookingId: result.bookingId,
             reference: result.reference
         });
@@ -92,8 +93,8 @@ exports.createBooking = async (req, res) => {
         if (userId) {
             await sendNotification(
                 userId,
-                "Booking Confirmed",
-                `Your stay at ${room.title || 'the hotel'} is confirmed!`,
+                "Booking Status",
+                `Your booking process for ${room.title || 'the hotel'} has started.`,
                 "success",
                 `/profile`
             );
@@ -105,7 +106,7 @@ exports.createBooking = async (req, res) => {
             await sendNotification(
                 hotel.manager_id,
                 "New Reservation",
-                `You have a new booking for ${room.title}.`,
+                `You have a new booking request for ${room.title}.`,
                 "info",
                 "/admin/bookings"
             );
@@ -132,7 +133,7 @@ exports.getMyBookings = async (req, res) => {
             totalPrice: b.total_price,
             status: b.status,
             hotel: { 
-                id: b.hotel_id,  // <--- ADD THIS LINE (This fixes the error)
+                id: b.hotel_id,  
                 name: b.hotel_name, 
                 image: b.hotel_image, 
                 city: b.hotel_city 
@@ -145,6 +146,7 @@ exports.getMyBookings = async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 };
+
 // 3. MANAGER DASHBOARD: Get Reservations
 exports.getManagerBookings = async (req, res) => {
     try {
@@ -219,9 +221,6 @@ exports.getBookingsByHotelId = async (req, res) => {
     catch (err) { res.status(500).json({ error: err.message }); }
 };
 
-// Add this at the bottom of bookingController.js
-// Ensure this code exists at the bottom of API/controllers/bookingController.js
-// Ensure confirmGuestBooking is defined and exported
 exports.confirmGuestBooking = async (req, res) => {
     try {
         const { id } = req.params;
@@ -234,7 +233,6 @@ exports.confirmGuestBooking = async (req, res) => {
     }
 };
 
-// Ensure confirmUserBooking is defined and exported
 exports.confirmUserBooking = async (req, res) => {
     try {
         const { id } = req.params;
@@ -245,5 +243,32 @@ exports.confirmUserBooking = async (req, res) => {
         res.json({ success: true, message: "Booking confirmed!", data: updated });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// 🚨 NEW: Payment Success & Inventory Deduction Handler
+// Call this endpoint from your frontend when the user successfully pays
+exports.handlePaymentSuccess = async (req, res) => {
+    const { bookingId } = req.body; 
+
+    try {
+        if (!bookingId) {
+            return res.status(400).json({ success: false, message: "Booking ID is required" });
+        }
+
+        // Call the model function that securely updates status AND decrements inventory
+        await bookingModel.confirmBookingPayment(bookingId);
+        
+        return res.status(200).json({ 
+            success: true, 
+            message: "Payment successful. Inventory updated and booking confirmed." 
+        });
+
+    } catch (error) {
+        console.error("Payment confirmation error:", error);
+        return res.status(500).json({ 
+            success: false, 
+            message: "Error confirming booking: " + error.message 
+        });
     }
 };

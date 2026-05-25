@@ -3,19 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/userContext'
 import { useAuth } from '../context/AuthContext'
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle, ShieldCheck } from 'lucide-react'
+import { GoogleLogin } from '@react-oauth/google' // ✅ IMPORTED GOOGLE LOGIN
 import './styles/LoginRegister.css'
 import axios from 'axios'
 
 // --- STANDARD MINIMAL SVGS FOR BRANDS ---
-const GoogleIcon = () => (
-  <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
-    <path fill="#4285F4" d="M23.745 12.27c0-.827-.074-1.623-.214-2.393H12v4.524h6.586a5.61 5.61 0 0 1-2.434 3.684v3.06h3.945c2.308-2.124 3.648-5.253 3.648-8.875Z"/>
-    <path fill="#34A853" d="M12 24c3.303 0 6.073-1.096 8.096-2.964l-3.945-3.06c-1.094.733-2.493 1.168-4.151 1.168-3.195 0-5.901-2.158-6.864-5.062H1.05v3.165A11.996 11.996 0 0 0 12 24Z"/>
-    <path fill="#FBBC05" d="M5.136 14.082a7.195 7.195 0 0 1-.382-2.082c0-.72.13-1.423.382-2.082V6.753H1.05A11.99 11.99 0 0 0 0 12c0 1.936.463 3.766 1.282 5.418l3.854-3.336Z"/>
-    <path fill="#EA4335" d="M12 4.835c1.796 0 3.403.618 4.67 1.826l3.504-3.504C18.068 1.196 15.298 0 12 0 7.37 0 3.196 2.68 1.05 6.753l3.854 3.336c.963-2.904 3.669-5.254 6.864-5.254Z"/>
-  </svg>
-)
-
 const FacebookIcon = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg" fill="#1877F2">
     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -64,6 +56,29 @@ export default function Auth(){
     console.log(`Initiating ${provider} login...`)
     alert(`${provider} login integration pending backend setup.`)
   }
+
+  // ==========================================
+  // HANDLER: GOOGLE OAUTH SUCCESS
+  // ==========================================
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setLoading(true);
+    setError(null);
+    try {
+        // Send the secure Google token to your Node backend
+        await axios.post('http://localhost:5000/api/auth/google', {
+            token: credentialResponse.credential
+        }, { withCredentials: true }); // Crucial for HTTP-Only cookies
+
+        await refreshUser();
+        await checkAuth();
+        navigate('/profile');
+    } catch (err) {
+        console.error("Google Login Error:", err);
+        setError(err.response?.data?.message || 'Google Login Failed. Please try again.');
+    } finally {
+        setLoading(false);
+    }
+  };
 
   // ==========================================
   // HANDLER: FORGOT PASSWORD FLOW
@@ -226,8 +241,6 @@ export default function Auth(){
                         {mode === 'forgot' && "Securely reset your password and get back to planning your next journey."}
                     </p>
                 </div>
-                
-                {/* TESTIMONIAL REMOVED HERE */}
             </div>
         </div>
 
@@ -257,12 +270,20 @@ export default function Auth(){
                 {/* Social Login (Hidden during 2FA or Forgot Password) */}
                 {!requires2FA && mode !== 'forgot' && (
                     <>
-                        <div className="social-login-group">
-                            <button type="button" className="social-btn" onClick={() => handleSocialLogin('google')}>
-                                <GoogleIcon />
-                                <span>Google</span>
-                            </button>
-                            <button type="button" className="social-btn" onClick={() => handleSocialLogin('facebook')}>
+                        <div className="social-login-group" style={{ display: 'flex', gap: '15px', alignItems: 'center', justifyContent: 'center' }}>
+                            {/* Official Google Button */}
+                            <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                                <GoogleLogin
+                                    onSuccess={handleGoogleSuccess}
+                                    onError={() => setError('Google Login Failed')}
+                                    theme="outline"
+                                    size="large"
+                                    width="100%"
+                                />
+                            </div>
+                            
+                            {/* Facebook Placeholder */}
+                            <button type="button" className="social-btn" onClick={() => handleSocialLogin('facebook')} style={{ flex: 1, padding: '10px' }}>
                                 <FacebookIcon />
                                 <span>Facebook</span>
                             </button>

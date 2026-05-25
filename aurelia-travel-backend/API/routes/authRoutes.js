@@ -6,6 +6,8 @@ const { verifyToken } = require('../middleware/authMiddleware');
 // Public Routes
 router.post('/register', authController.register);
 router.post('/login', authController.login);
+// NEW Google Auth Route
+router.post('/google', authController.googleLogin);
 router.post('/logout', authController.logout);
 
 // Protected Routes (Session Check)
