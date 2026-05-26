@@ -1,85 +1,362 @@
 import { useState, useEffect } from 'react';
 import { useUser } from '../context/userContext';
-import { useNavigate } from 'react-router-dom';
+import { useWishlist } from '../context/WishlistContext';
 import api from '../services/api'; 
 import { motion, AnimatePresence } from 'framer-motion'; 
+import HotelCard from '../components/ui/HotelCard';
+
+import { useNavigate, Link, useLocation } from 'react-router-dom'; // <-- Add useLocation// <-- Added
 import { 
-  Star, CreditCard, MapPin, Calendar, Trash2, Edit2, Save, X, 
-  ShieldCheck, Clock, Plane, Briefcase, MessageSquare, User, Mail, Loader2
+  CreditCard, Wallet, Receipt, User, Shield, Users, 
+  Sliders, Mail, Briefcase, Heart, MessageSquare, 
+  HelpCircle, ShieldCheck, Scale, FileText, Home, 
+  ChevronRight, Loader2, Camera, Check, Plus, Trash2, 
+  AlertTriangle, Download, LogOut, CheckCircle2,
+  Calendar, MapPin, Clock, Star, X, BedDouble, Ticket, Building2, CornerDownRight, Eye, EyeOff // <-- New icons added
 } from 'lucide-react'; 
 import './styles/profile.css';
+import './styles/my-bookings.css'; // <-- Retained original CSS
+import './styles/my-reviews.css';  // <-- Retained original CSS
+import './styles/wishlist.css';    // <-- Retained original CSS
+import DisputeResolution from './DisputeResolution';
 
 export default function Profile() {
   const { user, refreshUser } = useUser();
+  const { wishlist, clearWishlist } = useWishlist();
   const navigate = useNavigate();
-  
-  const [editingProfile, setEditingProfile] = useState(false);
-  const [loadingProfile, setLoadingProfile] = useState(false);
-  const [profileError, setProfileError] = useState(null);
-  const [profileSuccess, setProfileSuccess] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const location = useLocation();
 
+  // Listen for navigation state to open specific tabs directly
+  useEffect(() => {
+    if (location.state && location.state.view) {
+      setCurrentView(location.state.view);
+      
+      // Optional: Clear the router state so if they refresh the page later, 
+      // it doesn't force them back to this tab unexpectedly
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+  
+  // --- View Navigation State ---
+  const [currentView, setCurrentView] = useState('directory');
+
+  const [showPassword, setShowPassword] = useState(false);
+  
+  // Loading & Actions state
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [loadingPayment, setLoadingPayment] = useState(false);
+
+  // Email Verification States
+  const [isResending, setIsResending] = useState(false);
+  const [verifyMessage, setVerifyMessage] = useState({ text: '', type: '' });
+
+  // 2FA States
+  const [showTwoFactorModal, setShowTwoFactorModal] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState({ url: '', secret: '' });
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  // Bookings States (Merged)
+  const [bookings, setBookings] = useState([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewTarget, setReviewTarget] = useState(null); 
   const [reviewForm, setReviewForm] = useState({ rating: 5, title: '', comment: '' });
 
-  const [bookings, setBookings] = useState([]); 
-  const [loadingBookings, setLoadingBookings] = useState(true);
-  
-  const [isUpgrading, setIsUpgrading] = useState(false);
+  // Reviews States (Merged)
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
 
+  // Form & Toggle States
   const [profileData, setProfileData] = useState({
-    username: '', email: '', password: '', address_line_1: '', address_line_2: '',
-    address_line_3: '', city: '', postal_code: '', country: ''
+    username: '', email: '', password: '', phone: '', dob: '', address_line_1: '', city: '', country: ''
   });
-
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [loadingPayment, setLoadingPayment] = useState(false);
-  const [paymentError, setPaymentError] = useState(null);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
-
   const [paymentData, setPaymentData] = useState({
     card_type: '', card_number: '', cvv: '', expiry_date: ''
   });
+  
+  // Mock States for new sections
+  const [twoFactor, setTwoFactor] = useState(false);
+  const [companions, setCompanions] = useState([
+      { id: 1, name: 'Jane Doe', relation: 'Spouse', dob: '1990-05-15' }
+  ]);
+
+  // Preferences States
+  const [customizationData, setCustomizationData] = useState({ currency: 'USD', language: 'EN' });
+  const [emailPrefs, setEmailPrefs] = useState({ promos: true, bookings: true, account: true });
+  const [savingPrefs, setSavingPrefs] = useState(false);
+
+  // --- DATA FETCHING EFFECTS ---
+  
+  useEffect(() => {
+    if (user) {
+        // --- BULLETPROOF DATE PARSING ---
+        let formattedDob = '';
+        
+        if (user.dob) {
+            try {
+                // Scenario 1: The database sends a string that already starts with YYYY-MM-DD (like an ISO string or SQL timestamp)
+                if (typeof user.dob === 'string' && user.dob.match(/^\d{4}-\d{2}-\d{2}/)) {
+                    formattedDob = user.dob.substring(0, 10);
+                } 
+                // Scenario 2: The database sends an unusual format, so we force JavaScript to convert it
+                else {
+                    const d = new Date(user.dob);
+                    if (!isNaN(d.getTime())) {
+                        const year = d.getFullYear();
+                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        formattedDob = `${year}-${month}-${day}`;
+                    }
+                }
+            } catch (e) {
+                console.error("Could not parse date:", e);
+            }
+        }
+
+        // Set the state with the safely formatted date
+        setProfileData({
+            username: user.username || user.first_name || '', 
+            email: user.email || '',
+            password: '', 
+            phone: user.phone || '', 
+            dob: formattedDob, // <-- Now strictly YYYY-MM-DD
+            address_line_1: user.address_line_1 || '', 
+            city: user.city || '', 
+            country: user.country || ''
+        });
+        
+        setTwoFactor(user.is_verified === 1 || user.is_verified === true);
+        
+        setCustomizationData({
+            currency: user.currency || 'USD',
+            language: user.language || 'EN'
+        });
+        
+        if (user.email_preferences) {
+            setEmailPrefs({
+                promos: user.email_preferences.promos ?? true,
+                bookings: user.email_preferences.bookings ?? true,
+                account: true 
+            });
+        }
+    }
+  }, [user]);
+
+  // Fetch Bookings or Reviews only when their specific views are activated
+  useEffect(() => {
+    if (currentView === 'my_bookings') {
+        const fetchBookings = async () => {
+            setLoadingBookings(true);
+            try {
+                const response = await api.get('/bookings/my-bookings');
+                let data = [];
+                if (Array.isArray(response.data)) data = response.data;
+                else if (response.data && Array.isArray(response.data.data)) data = response.data.data;
+                setBookings(data);
+            } catch (err) { console.error("Failed to fetch bookings:", err); } 
+            finally { setLoadingBookings(false); }
+        };
+        fetchBookings();
+    } else if (currentView === 'my_reviews') {
+        const fetchMyReviews = async () => {
+            setLoadingReviews(true);
+            try {
+                const res = await api.get('/reviews/mine');
+                setReviews(res.data.data || []);
+            } catch (err) { console.error("Failed to fetch reviews", err); } 
+            finally { setLoadingReviews(false); }
+        };
+        fetchMyReviews();
+    }
+  }, [currentView]);
+
+  // --- PREFERENCES ACTIONS ---
+  
+  const handleSaveCustomization = async (e) => {
+      e.preventDefault();
+      setSavingPrefs(true);
+      try {
+          // Send the updated currency and language to your backend
+          await api.put(`/users/${user.id || user._id}`, customizationData);
+          await refreshUser();
+          alert("Customization preferences saved!");
+      } catch (error) {
+          alert("Failed to save preferences.");
+      } finally {
+          setSavingPrefs(false);
+      }
+  };
+
+  const handleToggleEmailPref = async (prefKey, newValue) => {
+      // 1. Optimistically update UI
+      const updatedPrefs = { ...emailPrefs, [prefKey]: newValue };
+      setEmailPrefs(updatedPrefs);
+      
+      try {
+          // 2. Auto-save to backend immediately
+          await api.put(`/users/${user.id || user._id}`, { email_preferences: updatedPrefs });
+          await refreshUser();
+      } catch (error) {
+          alert("Failed to update email settings.");
+          // 3. Revert UI if backend fails
+          setEmailPrefs({ ...emailPrefs, [prefKey]: !newValue });
+      }
+  };
+
+  // --- ACTIONS ---
+
+  const handleResendEmail = async () => {
+    setIsResending(true);
+    setVerifyMessage({ text: '', type: '' });
+    try {
+        const response = await api.post('/auth/resend-verification');
+        setVerifyMessage({ text: response.data.message, type: 'success' });
+    } catch (error) {
+        setVerifyMessage({ text: error.response?.data?.message || 'Failed to resend email.', type: 'error' });
+    } finally { setIsResending(false); }
+  };
+
+  const handleToggle2FA = async () => {
+      if (twoFactor) {
+          if(window.confirm("Are you sure you want to disable 2FA? This makes your account less secure.")) {
+              try {
+                  await api.put(`/users/${user.id || user._id}`, { is_verified: 0 });
+                  await refreshUser(); 
+                  setTwoFactor(false);
+                  alert("Two-Factor Authentication has been disabled.");
+              } catch (error) { alert("Failed to disable 2FA. Please try again."); }
+          }
+          return;
+      }
+      try {
+          const res = await api.post('/auth/2fa/generate');
+          if (res.data.success) {
+              setQrCodeData({ url: res.data.qrCodeUrl, secret: res.data.secret });
+              setShowTwoFactorModal(true); 
+          }
+      } catch (err) { alert("Could not generate 2FA code."); }
+  };
+
+  const confirmEnable2FA = async () => {
+      setIsVerifying(true);
+      try {
+          const res = await api.post('/auth/2fa/verify-enable', { secret: qrCodeData.secret, token: verificationCode });
+          if (res.data.success) {
+              await api.put(`/users/${user.id || user._id}`, { is_verified: 1 });
+              await refreshUser();
+              setTwoFactor(true);
+              setShowTwoFactorModal(false);
+              setVerificationCode('');
+              alert("Two-Factor Authentication is now enabled!");
+          }
+      } catch (err) { alert(err.response?.data?.message || "Invalid code. Try again."); } 
+      finally { setIsVerifying(false); }
+  };
+
+  
 
   useEffect(() => {
     if (user) {
         setProfileData({
-            username: user.username || user.first_name || '', email: user.email || '',
-            password: '', address_line_1: user.address_line_1 || '', address_line_2: user.address_line_2 || '',
-            address_line_3: user.address_line_3 || '', city: user.city || '', postal_code: user.postal_code || '',
+            username: user.username || user.first_name || '', 
+            email: user.email || '',
+            password: '', 
+            phone: user.phone || '',
+            // Safely format the date for the HTML <input type="date">
+            dob: user.dob ? new Date(user.dob).toISOString().split('T')[0] : '', 
+            address_line_1: user.address_line_1 || '', 
+            city: user.city || '', 
             country: user.country || ''
         });
+        
+        setTwoFactor(user.is_verified === 1 || user.is_verified === true);
+        // ... (Keep your other preferences sync logic here)
     }
   }, [user]);
 
-  useEffect(() => {
-    const fetchBookings = async () => {
-      if (!user) return;
+  // --- FIXED IMAGE UPLOAD ---
+  const handleImageUpload = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      setUploadingImage(true);
+
+      // Package the file exactly how Multer expects it ('image')
+      const formData = new FormData();
+      formData.append('image', file);
       try {
-        setLoadingBookings(true);
-        const response = await api.get('/bookings/my-bookings');
-        let data = [];
-        if (Array.isArray(response.data)) data = response.data;
-        else if (response.data && Array.isArray(response.data.data)) data = response.data.data;
-        else if (response.data && response.data.success && Array.isArray(response.data.data)) data = response.data.data;
-        setBookings(data);
-      } catch (err) {
-        console.error("Failed to fetch bookings:", err);
-        setBookings([]); 
-      } finally {
-        setLoadingBookings(false);
+          // Explicitly set the headers for multipart form data
+          const uploadRes = await api.post('/upload', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+          });
+
+          if (uploadRes.data.success && uploadRes.data.url) {
+              // Now that we have the Cloudinary URL, save it to the user's profile
+              await api.put(`/users/${user.id || user._id}`, { profile_image: uploadRes.data.url });
+              
+              // Refresh the global user context so the avatar updates instantly in the header
+              await refreshUser();
+              alert("Profile photo updated successfully!");
+          } else {
+              alert("Upload failed. Please try again.");
+          }
+      } catch (err) { 
+          console.error("Upload Error:", err);
+          alert("Failed to upload image. Make sure it's under 5MB."); 
+      } finally { 
+          setUploadingImage(false); 
       }
-    };
-    fetchBookings();
-  }, [user]);
+  };
+
+  // --- FIXED PROFILE SAVING ---
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    setLoadingProfile(true);
+    try {
+      const payload = { ...profileData };
+      
+      // Clean up empty fields so we don't break backend validation
+      if (!payload.password) delete payload.password;
+      if (!payload.dob) delete payload.dob; // Don't send empty strings for dates
+
+      await api.put(`/users/${user.id || user._id}`, payload);
+      await refreshUser(); 
+      alert("Personal details updated successfully!");
+    } catch (err) { 
+      console.error(err);
+      alert("Failed to update profile."); 
+    } finally { 
+      setLoadingProfile(false); 
+    }
+  };
+
+  const handleSavePayment = async (e) => {
+    e.preventDefault();
+    setLoadingPayment(true);
+    try {
+        const cleanNumber = paymentData.card_number.replace(/\s/g, '');
+        await api.put(`/users/${user.id || user._id}`, { 
+            card_type: paymentData.card_type, card_number: cleanNumber, cvv: paymentData.cvv, expiry_date: paymentData.expiry_date 
+        });
+        await refreshUser();
+        alert("Card saved successfully");
+    } catch (err) { alert("Failed to save card"); } 
+    finally { setLoadingPayment(false); }
+  };
+
+  // --- BOOKINGS & REVIEWS HELPER FUNCTIONS ---
+  
+  const calculateNights = (start, end) => {
+    if(!start || !end) return 1;
+    const s = new Date(start); const e = new Date(end);
+    return Math.max(1, Math.ceil(Math.abs(e-s)/(1000*60*60*24)));
+  };
 
   const handleOpenReview = (booking) => {
     const targetHotelId = booking.hotel?.id || booking.hotel_id;
     const targetHotelName = booking.hotel?.name || booking.hotel_name || "Hotel";
-    if (!targetHotelId) {
-        alert("Unable to load hotel details for this review."); return;
-    }
+    if (!targetHotelId) { alert("Unable to load hotel details for this review."); return; }
     setReviewTarget({ bookingId: booking.id, hotelId: targetHotelId, hotelName: targetHotelName });
     setReviewForm({ rating: 5, title: '', comment: '' });
     setShowReviewModal(true);
@@ -95,379 +372,1103 @@ export default function Profile() {
     } catch (err) { alert(err.response?.data?.message || "Failed to submit review."); }
   };
 
-  // --- IMAGE UPLOAD HANDLER ---
-  const handleImageUpload = async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      setUploadingImage(true);
-      const formData = new FormData();
-      formData.append('image', file);
-
-      try {
-          // 1. Send the file to Cloudinary via your backend upload route
-          const uploadRes = await api.post('/upload', formData, {
-              headers: { 'Content-Type': 'multipart/form-data' }
-          });
-
-          if (uploadRes.data.success) {
-              const newImageUrl = uploadRes.data.url;
-              const userId = user.id || user._id;
-
-              // 2. Update the user's database record with the new URL
-              await api.put(`/users/${userId}`, { profile_image: newImageUrl }, { 
-                  headers: { 'Content-Type': 'application/json' } 
-              });
-
-              // 3. Refresh global state (This instantly updates the Header and Profile page!)
-              await refreshUser();
-          }
-      } catch (err) {
-          alert("Failed to upload image. " + (err.response?.data?.message || err.message));
-      } finally {
-          setUploadingImage(false);
-      }
-  };
-
-  // --- PROFILE HANDLERS ---
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setProfileData(prev => ({ ...prev, [name]: value }));
-  }
-
-  const handleEditToggle = () => {
-    if (editingProfile) {
-        setProfileData({
-            username: user.username || user.first_name || '', email: user.email || '', password: '',
-            address_line_1: user.address_line_1 || '', address_line_2: user.address_line_2 || '',
-            address_line_3: user.address_line_3 || '', city: user.city || '', postal_code: user.postal_code || '',
-            country: user.country || ''
-        });
-        setProfileError(null);
+  const getStatusStyle = (status) => {
+    switch(status?.toLowerCase()) {
+        case 'confirmed': return 'status-confirmed';
+        case 'completed': return 'status-completed';
+        case 'cancelled': return 'status-cancelled';
+        default: return 'status-pending';
     }
-    setEditingProfile(!editingProfile);
-  }
-
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
-    setProfileError(null); setProfileSuccess(false); setLoadingProfile(true);
-
-    const userId = user.id || user._id;
-    if (!userId) { setProfileError("User ID missing."); setLoadingProfile(false); return; }
-
-    try {
-      const payload = { ...profileData };
-      if (!payload.password || payload.password.trim() === '') delete payload.password;
-      if (payload.username && !payload.first_name) payload.first_name = payload.username;
-
-      const response = await api.put(`/users/${userId}`, payload, { headers: { 'Content-Type': 'application/json' } });
-      if (response.status === 200 || response.data.success) {
-        await refreshUser(); setProfileSuccess(true); setEditingProfile(false);
-      }
-    } catch (err) { setProfileError(err.response?.data?.message || "Failed to update profile."); } 
-    finally { setLoadingProfile(false); }
   };
 
-  // --- PAYMENT HANDLERS ---
-  const handlePaymentInput = (e) => {
-    const { name, value } = e.target;
-    if (name === 'card_number') {
-        const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '')
-        const parts = [];
-        for (let i = 0; i < v.length; i += 4) parts.push(v.substr(i, 4));
-        setPaymentData(prev => ({ ...prev, [name]: parts.length > 1 ? parts.join(' ') : value }));
-    } else {
-        setPaymentData(prev => ({ ...prev, [name]: value }));
+  const renderStars = (rating) => {
+    return (
+        <div className="review-stars">
+            {[1, 2, 3, 4, 5].map((star) => (
+                <Star key={star} size={16} fill={star <= rating ? "#f59e0b" : "none"} color={star <= rating ? "#f59e0b" : "#cbd5e1"} />
+            ))}
+        </div>
+    );
+  };
+
+  if (!user) return <div className="profile-not-logged-in">Please sign in.</div>;
+
+  // --- DIRECTORY CONFIGURATION ---
+  const directory = [
+    {
+      title: "Payment info",
+      items: [
+        { icon: <Wallet size={18} strokeWidth={1.5}/>, label: "Rewards & Wallet", view: 'rewards_wallet' },
+        { icon: <CreditCard size={18} strokeWidth={1.5}/>, label: "Payment methods", view: 'payment_methods' },
+        { icon: <Receipt size={18} strokeWidth={1.5}/>, label: "Transactions", view: 'transactions' }
+      ]
+    },
+    {
+      title: "Manage account",
+      items: [
+        { icon: <User size={18} strokeWidth={1.5}/>, label: "Personal details", view: 'personal_details' },
+        { icon: <Shield size={18} strokeWidth={1.5}/>, label: "Security settings", view: 'security_settings' },
+        { icon: <Users size={18} strokeWidth={1.5}/>, label: "Other travelers", view: 'travel_companions' }
+      ]
+    },
+    {
+      title: "Preferences",
+      items: [
+        { icon: <Sliders size={18} strokeWidth={1.5}/>, label: "Customization preferences", view: 'customization' },
+        { icon: <Mail size={18} strokeWidth={1.5}/>, label: "Email preferences", view: 'email_preferences' }
+      ]
+    },
+    {
+      title: "Travel activity",
+      items: [
+        // Updated to use internal views instead of links
+        { icon: <Briefcase size={18} strokeWidth={1.5}/>, label: "Bookings & Trips", view: "my_bookings" },
+        { icon: <Heart size={18} strokeWidth={1.5}/>, label: "Saved lists", view: "saved_lists" },
+        { icon: <MessageSquare size={18} strokeWidth={1.5}/>, label: "My reviews", view: "my_reviews" }
+      ]
+    },
+    {
+      title: "Help and support",
+      items: [
+        { icon: <HelpCircle size={18} strokeWidth={1.5}/>, label: "Contact Customer Service", link: "/contact" },
+    
+    // --- UPDATED: These items are now disabled ---
+    { 
+        icon: <ShieldCheck size={18} strokeWidth={1.5}/>, 
+        label: "Safety resource center", 
+        view: 'safety_center',
+        disabled: true // Add this flag
+    },
+    { 
+        icon: <Scale size={18} strokeWidth={1.5}/>, 
+        label: "Dispute resolution", 
+        view: 'disputes',
+        disabled: true // Add this flag
     }
+      ]
+    },
+    {
+      title: "Legal and privacy",
+      items: [
+        { icon: <ShieldCheck size={18} strokeWidth={1.5}/>, label: "Privacy and data management", view: 'privacy' },
+        { icon: <FileText size={18} strokeWidth={1.5}/>, label: "Content guidelines", view: 'guidelines' }
+      ]
+    }
+  ];
+
+  if (user.role !== 'hotel_manager' && user.role !== 'admin') {
+      directory.push({
+          title: "Manage your property",
+          items: [ { icon: <Home size={18} strokeWidth={1.5}/>, label: "List your property", link: "/list-property" } ]
+      });
   }
 
-  const handleSavePayment = async (e) => {
-    e.preventDefault();
-    setLoadingPayment(true); setPaymentError(null);
-    try {
-        const cleanNumber = paymentData.card_number.replace(/\s/g, '');
-        await api.put(`/users/${user.id || user._id}`, { 
-            card_type: paymentData.card_type, card_number: cleanNumber, cvv: paymentData.cvv, expiry_date: paymentData.expiry_date 
-        });
-        setPaymentSuccess(true); await refreshUser();
-        setTimeout(() => setShowPaymentModal(false), 1500);
-    } catch (err) { setPaymentError(err.response?.data?.message || "Failed to save card"); } 
-    finally { setLoadingPayment(false); }
-  }
-
-  const handleRemovePayment = async () => {
-    if(!window.confirm("Remove this card?")) return;
-    try {
-        await api.put(`/users/${user.id || user._id}`, { card_type: null, card_number: null, cvv: null, expiry_date: null });
-        await refreshUser();
-    } catch(err) { alert("Could not remove card"); }
-  }
-
-  const calculateNights = (start, end) => {
-    if(!start || !end) return 1;
-    const s = new Date(start); const e = new Date(end);
-    return Math.max(1, Math.ceil(Math.abs(e-s)/(1000*60*60*24)));
-  }
-
-  const handleBecomeManager = async () => {
-      if(!window.confirm("Confirm registration as a Hotel Manager?")) return;
-      setIsUpgrading(true);
-      try {
-          const res = await api.put('/users/upgrade-to-manager', {});
-          if(res.data.success) {
-              await refreshUser(); 
-              alert("🎉 Congratulations! You are now a Partner.");
-              window.location.href = '/admin'; 
-          }
-      } catch (err) { alert("Failed to upgrade."); } 
-      finally { setIsUpgrading(false); }
+  const getViewTitle = () => {
+      const titles = {
+          'personal_details': 'Personal Details',
+          'payment_methods': 'Payment Methods',
+          'rewards_wallet': 'Rewards & Wallet',
+          'transactions': 'Transaction History',
+          'security_settings': 'Security Settings',
+          'travel_companions': 'Travel Companions',
+          'customization': 'Customization Preferences',
+          'email_preferences': 'Email Preferences',
+          'my_bookings': 'Bookings & Trips', // New
+          'saved_lists': 'Saved Lists (Wishlist)', // New
+          'my_reviews': 'My Reviews', // New
+          'safety_center': 'Safety Resource Center',
+          'disputes': 'Dispute Resolution',
+          'privacy': 'Privacy & Data',
+          'guidelines': 'Content Guidelines'
+      };
+      return titles[currentView] || '';
   };
 
-  if (!user) return <div className="profile-not-logged-in">Please sign in to view your profile.</div>;
+  const activeSection = currentView !== 'directory' 
+    ? directory.find(section => section.items.some(item => item.view === currentView))
+    : null;
 
   return (
     <div className="profile-page-wrapper">
-      <motion.div 
-        className="profile-container container"
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-      >
-        {/* --- LEFT SIDEBAR --- */}
-        <div className="profile-sidebar">
-          
-          {/* User Card */}
-          <div className="profile-card user-card">
-              <div 
-                  className="avatar-wrapper" 
-                  style={{ position: 'relative', cursor: uploadingImage ? 'not-allowed' : 'pointer', overflow: 'hidden' }}
-                  title="Click to change profile picture"
-              >
-                  {uploadingImage ? (
-                      <div className="profile-avatar-placeholder-pic" style={{ opacity: 0.8 }}>
-                          <Loader2 size={32} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
-                      </div>
-                  ) : user.profile_image ? (
-                      <img src={user.profile_image} className="profile-avatar-img" alt="User"/> 
-                  ) : (
-                      <div className="profile-avatar-placeholder-pic"><User size={40} /></div>
-                  )}
-
-                  {/* Hidden File Input covering the avatar */}
-                  <input 
-                      type="file" 
-                      accept="image/*"
-                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
-                      onChange={handleImageUpload}
-                      disabled={uploadingImage}
-                  />
-                  
-                  {/* Small Edit Icon Badge */}
-                  {!uploadingImage && (
-                      <div style={{ position: 'absolute', bottom: '0', right: '0', background: 'var(--color-primary)', color: 'white', borderRadius: '50%', padding: '6px', display: 'flex', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
-                          <Edit2 size={12} />
-                      </div>
-                  )}
-              </div>
-              <h2 className="profile-user-name">{user.username}</h2>
-              <p className="profile-user-email"><Mail size={14}/> {user.email}</p>
-          </div>
-
-          {/* Wallet Card */}
-          <div className="profile-card payment-card">
-              <h4 className="card-header-small"><CreditCard size={18}/> Digital Wallet</h4>
-              {user.card_type ? (
-                  <div className="payment-mini-card">
-                    <div className="card-text-group">
-                        <div className="brand">{user.card_type}</div>
-                        <div className="digits">•••• {user.card_number?.slice(-4) || "0000"}</div>
-                    </div>
-                    <button className="icon-btn danger" onClick={handleRemovePayment} title="Remove Card">
-                        <Trash2 size={16}/>
-                    </button>
-                  </div>
-              ) : (
-                  <div className="empty-state-small">No payment method saved.</div>
-              )}
-              <button className="btn-outline full-width" onClick={() => setShowPaymentModal(true)}>
-                  {user.card_type ? 'Update Card' : 'Add New Card'}
-              </button>
-          </div>
-
-          {/* Partner Card */}
-          {user.role !== 'HotelManager' && user.role !== 'admin' && (
-              <div className="profile-card partner-card">
-                  <div className="partner-content">
-                      <div className="partner-icon-bg"><Briefcase size={24} /></div>
-                      <h4>Become a Partner</h4>
-                      <p>List your property and reach global travelers.</p>
-                      <button className="btn-partner full-width" onClick={handleBecomeManager} disabled={isUpgrading}>
-                          {isUpgrading ? 'Registering...' : 'Register Property'}
-                      </button>
-                  </div>
-              </div>
-          )}
-        </div>
-
-        {/* --- MAIN CONTENT --- */}
-        <div className="profile-main">
-          
-          {/* Account Details */}
-          <div className="profile-card details-card">
-              <div className="card-header-main">
-                  <h3><ShieldCheck size={22} className="icon-primary"/> Account Details</h3>
-                  <button className={`btn-edit-toggle ${editingProfile ? 'active' : ''}`} onClick={handleEditToggle}>
-                      {editingProfile ? 'Cancel' : <><Edit2 size={16}/> Edit Profile</>}
-                  </button>
-              </div>
-              
-              {profileError && <div className="message error-message">{profileError}</div>}
-              {profileSuccess && <div className="message success-message">Profile updated successfully!</div>}
-
-              <form onSubmit={handleSaveProfile} className={editingProfile ? 'form-grid' : 'details-grid'}>
-                  {editingProfile ? (
-                      <>
-                          <div className="form-group"><label>Full Name</label><input name="username" value={profileData.username} onChange={handleInputChange} className="form-input"/></div>
-                          <div className="form-group"><label>Email Address</label><input name="email" value={profileData.email} onChange={handleInputChange} className="form-input"/></div>
-                          <div className="form-group span-2"><label>New Password (Optional)</label><input name="password" type="password" value={profileData.password} onChange={handleInputChange} className="form-input" placeholder="••••••••" /></div>
-                          <div className="form-group span-2"><label>Address Line 1</label><input name="address_line_1" value={profileData.address_line_1} onChange={handleInputChange} className="form-input"/></div>
-                          <div className="form-group"><label>City</label><input name="city" value={profileData.city} onChange={handleInputChange} className="form-input"/></div>
-                          <div className="form-group"><label>Country</label><input name="country" value={profileData.country} onChange={handleInputChange} className="form-input"/></div>
-                          <div className="form-group span-2"><button type="submit" className="btn-primary full-width" disabled={loadingProfile}>Save Changes</button></div>
-                      </>
-                  ) : (
-                      <>
-                          <div className="detail-item"><span className="label">Full Name</span><span className="value">{user.username}</span></div>
-                          <div className="detail-item"><span className="label">Email Address</span><span className="value">{user.email}</span></div>
-                          <div className="detail-item span-2">
-                              <span className="label">Address</span>
-                              <span className="value flex-align">
-                                  <MapPin size={16} className="icon-muted"/>
-                                  {[user.address_line_1, user.city, user.country].filter(Boolean).join(', ') || 'No address provided'}
-                              </span>
-                          </div>
-                      </>
-                  )}
-              </form>
-          </div>
-
-          {/* Bookings Section */}
-          <div className="bookings-section">
-              <h3 className="section-title"><Plane size={24} className="icon-primary"/> Your Journeys</h3>
-              <div className="orders-list">
-                  {loadingBookings ? (
-                      <div className="empty-state">Loading your trips...</div>
-                  ) : (!bookings || bookings.length === 0) ? (
-                      <div className="empty-state">
-                          <Calendar size={40} className="icon-muted"/>
-                          <p>No bookings yet. Time to plan your next escape!</p>
-                          <button className="btn-primary" onClick={() => navigate('/travel-plan')} style={{marginTop: '15px'}}>Plan a Trip</button>
-                      </div>
-                  ) : (
-                      bookings.map(booking => {
-                          const dateObj = new Date(booking.checkIn || booking.check_in);
-                          const totalPrice = Number(booking.totalPrice || booking.total_price || 0);
-                          
-                          return (
-                            <div key={booking._id || booking.id} className="booking-ticket">
-                                <div className="ticket-date-box">
-                                    <span className="month">{dateObj ? dateObj.toLocaleString('default', { month: 'short' }) : '--'}</span>
-                                    <span className="day">{dateObj ? dateObj.getDate() : '--'}</span>
-                                </div>
-                                <div className="ticket-center">
-                                    <h4 className="booking-hotel-name">{booking.hotel?.name || booking.hotel_name || "Hotel Reservation"}</h4>
-                                    <div className="booking-meta">
-                                        <span><Clock size={14}/> {calculateNights(booking.checkIn || booking.check_in, booking.checkOut || booking.check_out)} Nights</span>
-                                    </div>
-                                </div>
-                                <div className="ticket-right">
-                                    <span className={`ticket-status ${booking.status?.toLowerCase()}`}>{booking.status}</span>
-                                    <div className="ticket-price">${totalPrice.toFixed(0)}</div>
-                                    {(booking.status === 'completed' || booking.status === 'confirmed') && (
-                                        <button className="btn-review-link" onClick={() => handleOpenReview(booking)}>
-                                            <MessageSquare size={14} /> Write a Review
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                          );
-                      })
-                  )}
-              </div>
-          </div>
-        </div>
-
-        {/* PAYMENT MODAL */}
-        <AnimatePresence>
-          {showPaymentModal && (
-            <div className="modal-overlay" onClick={() => setShowPaymentModal(false)}>
-              <motion.div className="modal-content" onClick={e => e.stopPropagation()} initial={{ scale: 0.95 }} animate={{ scale: 1 }}>
-                <button className="modal-close" onClick={() => setShowPaymentModal(false)}><X /></button>
-                <h2 className="modal-title">Add Payment Method</h2>
-                {paymentSuccess ? (
-                  <div className="message success-message">Card Saved Successfully!</div>
+      <div className="container profile-hub-container">
+        
+        {/* --- USER HEADER --- */}
+        <div className="profile-hub-header">
+            <div className="hub-avatar-wrapper">
+                {uploadingImage ? (
+                    <div className="hub-avatar loading"><Loader2 className="animate-spin" /></div>
+                ) : user.profile_image ? (
+                    <img src={user.profile_image} className="hub-avatar" alt="Profile" />
                 ) : (
-                  <form onSubmit={handleSavePayment} className="payment-modal-form">
-                      <div className="form-group">
-                          <label>Card Type</label>
-                          <select name="card_type" value={paymentData.card_type} onChange={handlePaymentInput} className="form-input" required>
-                              <option value="">Select Brand</option><option value="Visa">Visa</option><option value="MasterCard">MasterCard</option>
-                          </select>
-                      </div>
-                      <div className="form-group">
-                          <label>Card Number</label>
-                          <input name="card_number" value={paymentData.card_number} onChange={handlePaymentInput} placeholder="0000 0000 0000 0000" className="form-input" required maxLength={19}/>
-                      </div>
-                      <div className="form-row" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'15px'}}>
-                          <div className="form-group"><label>Expiry</label><input name="expiry_date" value={paymentData.expiry_date} onChange={handlePaymentInput} placeholder="MM/YY" className="form-input" required maxLength={5}/></div>
-                          <div className="form-group"><label>CVV</label><input name="cvv" type="password" value={paymentData.cvv} onChange={handlePaymentInput} placeholder="123" className="form-input" required maxLength={4}/></div>
-                      </div>
-                      <button type="submit" className="btn-primary full-width" style={{marginTop:'15px'}} disabled={loadingPayment}>Save Securely</button>
-                  </form>
+                    <div className="hub-avatar text">{user.username.charAt(0).toUpperCase()}</div>
                 )}
-              </motion.div>
+                <label className="avatar-upload-btn" title="Change Avatar">
+                    <Camera size={14} />
+                    <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage} hidden/>
+                </label>
             </div>
-          )}
-        </AnimatePresence>
+            <div className="hub-user-info">
+                <h1>{user.username}</h1>
+                <p>{user.email} • {user.country || 'Add your location'}</p>
+            </div>
+        </div>
 
-        {/* REVIEW MODAL */}
-        <AnimatePresence>
-            {showReviewModal && (
-                <div className="modal-overlay" onClick={() => setShowReviewModal(false)}>
-                    <motion.div className="modal-content" onClick={e => e.stopPropagation()} initial={{ scale: 0.95 }} animate={{ scale: 1 }}>
-                        <div className="modal-header-row">
-                            <h3>Review: {reviewTarget?.hotelName}</h3>
-                            <button className="modal-close-icon" onClick={() => setShowReviewModal(false)}><X size={20}/></button>
+        {/* --- DYNAMIC BREADCRUMB NAVIGATION --- */}
+        <div className="breadcrumb-nav">
+            <span className={`crumb-link ${currentView === 'directory' ? 'active' : ''}`} onClick={() => setCurrentView('directory')} style={{cursor: 'pointer'}}>
+                My Account
+            </span>
+            {currentView !== 'directory' && (
+                <>
+                    <ChevronRight size={16} className="crumb-separator" />
+                    <span className="crumb-current">{getViewTitle()}</span>
+                </>
+            )}
+        </div>
+
+        <AnimatePresence mode="wait">
+            
+            {/* VIEW 0: MAIN DIRECTORY GRID */}
+            {currentView === 'directory' ? (
+
+                
+                <motion.div key="directory" className="profile-hub-grid"
+                    initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}
+                >
+                    {directory.map((section, index) => (
+                        <div key={index} className="hub-card">
+                            <h3>{section.title}</h3>
+                            <div className="hub-list">
+                                {section.items.map((item, i) => (
+                                    item.link ? (
+                                        <Link to={item.link} key={i} className="hub-item">
+                                            <div className="hub-item-left"><span className="hub-icon">{item.icon}</span><span className="hub-label">{item.label}</span></div>
+                                            <ChevronRight size={18} className="hub-chevron" strokeWidth={1.5} />
+                                        </Link>
+                                    ) : (
+                                        <button 
+                                            key={i} 
+                                            className={`hub-item ${item.disabled ? 'disabled' : ''}`} 
+                                            onClick={() => {
+                                                if (item.disabled) {
+                                                    alert("This feature is coming soon!");
+                                                } else {
+                                                    setCurrentView(item.view);
+                                                }
+                                            }}
+                                        >
+                                            <div className="hub-item-left">
+                                                <span className="hub-icon">{item.icon}</span>
+                                                <span className="hub-label">{item.label}</span>
+                                            </div>
+                                            {!item.disabled && <ChevronRight size={18} className="hub-chevron" strokeWidth={1.5} />}
+                                        </button>
+                                    )
+                                ))}
+                            </div>
                         </div>
-                        <form onSubmit={handleSubmitReview} className="payment-modal-form">
-                            <div className="form-group">
-                                <label>Your Rating</label>
-                                <div style={{display:'flex', gap:'5px', marginTop:'5px'}}>
-                                    {[1,2,3,4,5].map(star => (
-                                        <Star 
-                                            key={star} size={28} 
-                                            fill={star <= reviewForm.rating ? "#d97706" : "none"} 
-                                            color={star <= reviewForm.rating ? "#d97706" : "#cbd5e1"}
-                                            style={{cursor:'pointer', transition:'all 0.2s'}}
-                                            onClick={() => setReviewForm({...reviewForm, rating: star})}
-                                        />
-                                    ))}
-                                </div>
+                    ))}
+                </motion.div>
+            ) : (
+                /* --- TWO-COLUMN LAYOUT FOR SUB-PAGES --- */
+                <motion.div key="sub-page-layout" className="profile-sub-page-layout" style={{ display: 'flex', gap: '32px', alignItems: 'flex-start', marginTop: '20px' }}
+                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.2 }}>
+                    
+                    {/* SIDEBAR NAVIGATION */}
+                    {activeSection && (
+                        <div className="profile-sidebar" style={{ flex: '0 0 280px', backgroundColor: '#fff', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0', position: 'sticky', top: '20px' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '8px 8px 16px 8px', color: '#0f172a' }}>{activeSection.title}</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {activeSection.items.map((item, idx) => (
+                                    item.view ? (
+                                        <button 
+                                            key={idx}
+                                            onClick={() => setCurrentView(item.view)}
+                                            style={{ 
+                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', 
+                                                borderRadius: '8px', border: 'none', 
+                                                background: currentView === item.view ? '#f8fafc' : 'transparent',
+                                                color: currentView === item.view ? '#0f172a' : '#64748b', 
+                                                fontWeight: currentView === item.view ? '600' : '400',
+                                                cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.2s',
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <span style={{ color: currentView === item.view ? '#0f172a' : '#94a3b8', display: 'flex' }}>{item.icon}</span>
+                                                {item.label}
+                                            </div>
+                                            <ChevronRight size={16} style={{ color: currentView === item.view ? '#0f172a' : '#cbd5e1' }} />
+                                        </button>
+                                    ) : null
+                                ))}
                             </div>
-                            <div className="form-group">
-                                <label>Summary</label>
-                                <input className="form-input" placeholder="e.g., Amazing stay!" value={reviewForm.title} onChange={e => setReviewForm({...reviewForm, title: e.target.value})} required />
-                            </div>
-                            <div className="form-group">
-                                <label>Details</label>
-                                <textarea className="form-input" placeholder="Tell others about your experience..." rows="4" value={reviewForm.comment} onChange={e => setReviewForm({...reviewForm, comment: e.target.value})} required />
-                            </div>
-                            <button type="submit" className="btn-primary full-width" style={{marginTop:'15px'}}>Submit Review</button>
-                        </form>
-                    </motion.div>
+                        </div>
+                    )}
+
+                    {/* MAIN CONTENT AREA */}
+                    <div className="profile-main-content" style={{ flex: '1', minWidth: 0 }}>
+                        <AnimatePresence mode="wait">
+                            
+                            {/* ... EXISTING SETTINGS VIEWS ... */}
+                            {/* VIEW 1: PERSONAL DETAILS */}
+                            {currentView === 'personal_details' && (
+                                <motion.div key="personal_details" className="profile-sub-page"
+                                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                                    <div className="sub-page-header">
+                                        <h2>Personal Details</h2>
+                                        <p>Update your information and how we can reach you.</p>
+                                    </div>
+                                    <div className="sub-page-card">
+                                        
+                                        {/* --- PROFILE PHOTO UPLOAD SECTION --- */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '32px', paddingBottom: '32px', borderBottom: '1px solid #e2e8f0' }}>
+                                            <div className="hub-avatar-wrapper" style={{ width: '84px', height: '84px', flexShrink: 0 }}>
+                                                {uploadingImage ? (
+                                                    <div className="hub-avatar loading" style={{ width: '100%', height: '100%' }}><Loader2 className="animate-spin" /></div>
+                                                ) : user.profile_image ? (
+                                                    <img src={user.profile_image} className="hub-avatar" alt="Profile" style={{ width: '100%', height: '100%' }} />
+                                                ) : (
+                                                    <div className="hub-avatar text" style={{ width: '100%', height: '100%', fontSize: '2.5rem' }}>{user.username.charAt(0).toUpperCase()}</div>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <h4 style={{ margin: '0 0 6px 0', color: '#0f172a', fontSize: '1.1rem', fontWeight: '700' }}>Profile Photo</h4>
+                                                <p style={{ margin: '0 0 12px 0', color: '#64748b', fontSize: '0.9rem' }}>PNG or JPG no larger than 5MB.</p>
+                                                <label className="btn-outline" style={{ padding: '8px 16px', fontSize: '0.9rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                                                    <Camera size={16} /> {uploadingImage ? 'Uploading...' : 'Change Photo'}
+                                                    {/* This hidden input triggers the file selector */}
+                                                    <input type="file" accept="image/png, image/jpeg, image/jpg" onChange={handleImageUpload} disabled={uploadingImage} hidden/>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        {/* --- EXPANDED DETAILS FORM --- */}
+                                        <form onSubmit={handleSaveProfile} className="hub-page-form">
+                                            <div className="form-group">
+                                                <label>Full Name</label>
+                                                <input value={profileData.username} onChange={e => setProfileData({...profileData, username: e.target.value})} className="form-input" placeholder="e.g. Jane Doe" required/>
+                                            </div>
+
+                                            <div className="form-row">
+                                                <div className="form-group">
+                                                    <label>Email Address</label>
+                                                    <input type="email" value={profileData.email} onChange={e => setProfileData({...profileData, email: e.target.value})} className="form-input" required/>
+                                                </div>
+                                                <div className="form-group">
+                                                    <label>Phone Number</label>
+                                                    <input type="tel" value={profileData.phone} onChange={e => setProfileData({...profileData, phone: e.target.value})} className="form-input" placeholder="+1 (555) 000-0000"/>
+                                                </div>
+                                            </div>
+
+                                            <div className="form-row">
+                                                <div className="form-group">
+                                                <label>Date of Birth</label>
+                                                <input 
+                                                    type="date" 
+                                                    value={profileData.dob || ''} 
+                                                    onChange={e => setProfileData({...profileData, dob: e.target.value})} 
+                                                    className="form-input"
+                                                />
+                                            </div>
+                                                <div className="form-group">
+                                                <label>New Password (Optional)</label>
+                                                <div className="password-input-wrapper">
+                                                    <input 
+                                                        type={showPassword ? "text" : "password"} 
+                                                        placeholder="••••••••" 
+                                                        value={profileData.password} 
+                                                        onChange={e => setProfileData({...profileData, password: e.target.value})} 
+                                                        className="form-input" 
+                                                        minLength={6}
+                                                    />
+                                                    <button 
+                                                        type="button" 
+                                                        className="password-toggle-btn"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                        title={showPassword ? "Hide password" : "Show password"}
+                                                    >
+                                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label>Address Line 1</label>
+                                                <input value={profileData.address_line_1} onChange={e => setProfileData({...profileData, address_line_1: e.target.value})} className="form-input" placeholder="123 Travel Street"/>
+                                            </div>
+
+                                            <div className="form-row">
+                                                <div className="form-group">
+                                                    <label>City</label>
+                                                    <input value={profileData.city} onChange={e => setProfileData({...profileData, city: e.target.value})} className="form-input" placeholder="New York"/>
+                                                </div>
+                                                <div className="form-group">
+                                                    <label>Country</label>
+                                                    <input value={profileData.country} onChange={e => setProfileData({...profileData, country: e.target.value})} className="form-input" placeholder="United States"/>
+                                                </div>
+                                            </div>
+
+                                            <div className="form-actions-row">
+                                                <button type="submit" className="btn-primary" disabled={loadingProfile}>
+                                                    {loadingProfile ? <Loader2 className="animate-spin" size={18}/> : 'Save Changes'}
+                                                </button>
+                                            </div>
+                                        </form>
+
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {currentView === 'security_settings' && (
+                                <motion.div key="security_settings" className="profile-sub-page"
+                                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                                    <div className="sub-page-header">
+                                        <h2>Security Settings</h2>
+                                        <p>Protect your account with additional security measures and manage your devices.</p>
+                                    </div>
+                                    
+                                    <div className="sub-page-card" style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '24px', backgroundColor: '#f8fafc', border: 'none' }}>
+                                        {/* EMAIL VERIFICATION CARD */}
+                                        <div style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                                <div style={{ padding: '12px', backgroundColor: '#eff6ff', borderRadius: '50%', color: '#3b82f6', display: 'flex' }}>
+                                                    <Mail size={24} strokeWidth={1.5} />
+                                                </div>
+                                                <div>
+                                                    <strong style={{ fontSize: '1.1rem', color: '#1e293b', display: 'block', marginBottom: '4px' }}>Email Verification</strong>
+                                                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
+                                                        Status:{' '}
+                                                        {user.is_verified ? (
+                                                            <span style={{ color: '#10b981', fontWeight: '600' }}>Verified</span>
+                                                        ) : (
+                                                            <span style={{ color: '#ef4444', fontWeight: '600' }}>Unverified</span>
+                                                        )}
+                                                    </p>
+                                                    {verifyMessage.text && <p style={{ marginTop: '8px', fontSize: '0.85rem', color: verifyMessage.type === 'success' ? '#10b981' : '#ef4444' }}>{verifyMessage.text}</p>}
+                                                </div>
+                                            </div>
+                                            {!user.is_verified && <button className="btn-outline" onClick={handleResendEmail} disabled={isResending} style={{ whiteSpace: 'nowrap' }}>{isResending ? 'Sending...' : 'Resend Email'}</button>}
+                                        </div>
+
+                                        {/* 2FA CARD */}
+                                        <div style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                                <div style={{ padding: '12px', backgroundColor: '#f0fdf4', borderRadius: '50%', color: '#10b981', display: 'flex' }}>
+                                                    <ShieldCheck size={24} strokeWidth={1.5} />
+                                                </div>
+                                                <div>
+                                                    <strong style={{ fontSize: '1.1rem', color: '#1e293b', display: 'block', marginBottom: '4px' }}>Two-Factor Authentication (2FA)</strong>
+                                                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Require a code sent to your email when logging in from unrecognized devices.</p>
+                                                </div>
+                                            </div>
+                                            <label className="toggle-switch">
+                                                <input type="checkbox" checked={twoFactor} onChange={handleToggle2FA} />
+                                                <span className="slider round"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* VIEW 2: PAYMENT METHODS */}
+                            {currentView === 'payment_methods' && (
+                                <motion.div key="payment_methods" className="profile-sub-page"
+                                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                                    <div className="sub-page-header">
+                                        <h2>Payment Methods</h2>
+                                        <p>Securely manage your saved cards for faster checkouts.</p>
+                                    </div>
+                                    
+                                    {/* Saved Card Display */}
+                                    {user.card_type && (
+                                        <div className="saved-card-premium">
+                                            <div className="card-chip-row">
+                                                <div className="chip"></div>
+                                                <CheckCircle2 size={24} color="#10b981" />
+                                            </div>
+                                            <div className="card-number-row">
+                                                <span>••••</span><span>••••</span><span>••••</span>
+                                                <span className="last-four">{user.card_number?.slice(-4) || "0000"}</span>
+                                            </div>
+                                            <div className="card-footer-row">
+                                                <div className="card-holder">
+                                                    <span className="card-label">Card Holder</span>
+                                                    <span className="card-value">{user.username}</span>
+                                                </div>
+                                                <div className="card-brand">
+                                                    <strong style={{ fontSize: '1.2rem', fontStyle: 'italic' }}>{user.card_type}</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Add New Card Form */}
+                                    <div className="sub-page-card" style={{ marginTop: '24px' }}>
+                                        <h4 style={{ fontSize: '1.1rem', marginBottom: '16px', color: '#0f172a' }}>Add New Card</h4>
+                                        <form onSubmit={handleSavePayment} className="hub-page-form">
+                                            <div className="form-group" style={{ marginBottom: '16px' }}>
+                                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: '600', color: '#475569', textTransform: 'uppercase' }}>Card Type</label>
+                                                <select value={paymentData.card_type} onChange={e => setPaymentData({...paymentData, card_type: e.target.value})} className="form-input" required style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                                                    <option value="">Select Brand</option><option value="Visa">Visa</option><option value="MasterCard">MasterCard</option><option value="Amex">American Express</option>
+                                                </select>
+                                            </div>
+                                            <div className="form-group" style={{ marginBottom: '16px' }}>
+                                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: '600', color: '#475569', textTransform: 'uppercase' }}>Card Number</label>
+                                                <input value={paymentData.card_number} onChange={e => setPaymentData({...paymentData, card_number: e.target.value})} placeholder="0000 0000 0000 0000" className="form-input" required maxLength={19} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', letterSpacing: '2px' }}/>
+                                            </div>
+                                            <div className="form-row" style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+                                                <div className="form-group" style={{ flex: 1 }}><label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: '600', color: '#475569', textTransform: 'uppercase' }}>Expiry Date</label><input value={paymentData.expiry_date} onChange={e => setPaymentData({...paymentData, expiry_date: e.target.value})} placeholder="MM/YY" className="form-input" required maxLength={5} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}/></div>
+                                                <div className="form-group" style={{ flex: 1 }}><label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: '600', color: '#475569', textTransform: 'uppercase' }}>CVV</label><input type="password" value={paymentData.cvv} onChange={e => setPaymentData({...paymentData, cvv: e.target.value})} placeholder="123" className="form-input" required maxLength={4} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}/></div>
+                                            </div>
+                                            <div className="form-actions-row">
+                                                <button type="submit" className="btn-primary" disabled={loadingPayment} style={{ width: '100%', padding: '12px', borderRadius: '6px', fontWeight: '600' }}>
+                                                    {loadingPayment ? <Loader2 className="animate-spin" size={18} style={{ margin: '0 auto' }}/> : 'Save Card Securely'}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* VIEW 3: REWARDS & WALLET */}
+                            {currentView === 'rewards_wallet' && (
+                                <motion.div key="rewards_wallet" className="profile-sub-page"
+                                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                                    <div className="sub-page-header">
+                                        <h2>Rewards & Wallet</h2>
+                                        <p>Manage your Aurelia Points and platform credit.</p>
+                                    </div>
+                                    <div className="wallet-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '20px' }}>
+                                        
+                                        {/* Balance Card */}
+                                        <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', borderRadius: '12px', padding: '24px', color: '#fff', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '160px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Aurelia Credit</p>
+                                                <Wallet size={24} color="#3b82f6" />
+                                            </div>
+                                            <div>
+                                                <h2 style={{ margin: '0 0 12px 0', fontSize: '2.5rem', fontWeight: '800' }}>$145.00</h2>
+                                                <button style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '6px 16px', borderRadius: '6px', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s' }} onMouseOver={e => e.target.style.background='rgba(255,255,255,0.2)'} onMouseOut={e => e.target.style.background='rgba(255,255,255,0.1)'}>
+                                                    + Top Up Balance
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Points Card */}
+                                        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '160px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '600' }}>Aurelia Points</p>
+                                                <Star size={24} color="#f59e0b" fill="#f59e0b" />
+                                            </div>
+                                            <div>
+                                                <h2 style={{ margin: '0 0 4px 0', fontSize: '2.5rem', fontWeight: '800', color: '#0f172a' }}>2,450 <span style={{ fontSize: '1rem', color: '#64748b', fontWeight: '600' }}>pts</span></h2>
+                                                <p style={{ margin: 0, color: '#10b981', fontSize: '0.85rem', fontWeight: '600' }}>≈ $24.50 off your next booking</p>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* VIEW 4: TRANSACTIONS */}
+                            {currentView === 'transactions' && (
+                                <motion.div key="transactions" className="profile-sub-page"
+                                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                                    <div className="sub-page-header">
+                                        <h2>Transaction History</h2>
+                                        <p>Review your past payments, refunds, and wallet top-ups.</p>
+                                    </div>
+                                    <div className="sub-page-card" style={{ padding: 0, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            
+                                            {/* Transaction 1 */}
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #f1f5f9' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                                    <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569' }}>
+                                                        <Briefcase size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <strong style={{ display: 'block', color: '#0f172a', fontSize: '0.95rem', marginBottom: '2px' }}>Ocean View Resort Booking</strong>
+                                                        <span style={{ color: '#64748b', fontSize: '0.8rem' }}>Oct 12, 2025 • Visa ending in 4242</span>
+                                                    </div>
+                                                </div>
+                                                <span style={{ fontWeight: '700', color: '#0f172a' }}>-$340.00</span>
+                                            </div>
+
+                                            {/* Transaction 2 */}
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #f1f5f9' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                                    <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+                                                        <Wallet size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <strong style={{ display: 'block', color: '#0f172a', fontSize: '0.95rem', marginBottom: '2px' }}>Wallet Top-up</strong>
+                                                        <span style={{ color: '#64748b', fontSize: '0.8rem' }}>Sep 05, 2025 • MasterCard ending in 8853</span>
+                                                    </div>
+                                                </div>
+                                                <span style={{ fontWeight: '700', color: '#10b981' }}>+$100.00</span>
+                                            </div>
+
+                                            {/* Transaction 3 */}
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                                    <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                                                        <Receipt size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <strong style={{ display: 'block', color: '#0f172a', fontSize: '0.95rem', marginBottom: '2px' }}>City Center Hotel Refund</strong>
+                                                        <span style={{ color: '#64748b', fontSize: '0.8rem' }}>Aug 22, 2025 • Processed to Wallet</span>
+                                                    </div>
+                                                </div>
+                                                <span style={{ fontWeight: '700', color: '#10b981' }}>+$45.00</span>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* --- NEW INTEGRATED VIEWS: TRAVEL ACTIVITY --- */}
+                            
+                            {/* VIEW: MY BOOKINGS */}
+                            {currentView === 'my_bookings' && (
+                                <motion.div key="my_bookings" className="profile-sub-page"
+                                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                                    <div className="sub-page-header">
+                                        <h2>Bookings & Trips</h2>
+                                        <p>View and manage your upcoming and past reservations.</p>
+                                    </div>
+                                    
+                                    <div className="bookings-feed" style={{ marginTop: '20px' }}>
+                                        {loadingBookings ? (
+                                            <div className="loading-state">Loading your itineraries...</div>
+                                        ) : bookings.length === 0 ? (
+                                            <div className="empty-state-card sub-page-card" style={{textAlign: 'center', padding: '40px'}}>
+                                                <div className="empty-icon-bg"><Calendar size={40} className="icon-muted" style={{ margin: '0 auto' }}/></div>
+                                                <h3>No upcoming trips</h3>
+                                                <p>You don't have any bookings yet. Start planning your next escape!</p>
+                                                <button className="btn-primary" onClick={() => navigate('/hotel-showcase')} style={{marginTop: '20px'}}>Explore Hotels</button>
+                                            </div>
+                                        ) : (
+                                            bookings.map(booking => {
+                                                const hotelImage = booking.hotel?.image || booking.hotel_image || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=80';
+                                                const hotelName = booking.hotel?.name || booking.hotel_name || "Hotel Reservation";
+                                                const roomTitle = booking.room?.title || booking.room_title || "Standard Room";
+                                                const location = booking.hotel?.city || booking.hotel_city || "Destination";
+                                                const checkIn = new Date(booking.checkIn || booking.check_in);
+                                                const checkOut = new Date(booking.checkOut || booking.check_out);
+                                                const nights = calculateNights(checkIn, checkOut);
+                                                const totalPrice = Number(booking.totalPrice || booking.total_price || 0);
+
+                                                return (
+                                                    <motion.div key={booking.id} className="booking-ticket-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                                                        <div className="btc-image">
+                                                            <img src={hotelImage} alt={hotelName} />
+                                                            <div className={`btc-status-badge ${getStatusStyle(booking.status)}`}>{booking.status}</div>
+                                                        </div>
+                                                        
+                                                        <div className="btc-content">
+                                                            <div className="btc-header">
+                                                                <div>
+                                                                    <h3 className="btc-hotel-name">{hotelName}</h3>
+                                                                    <span className="btc-location"><MapPin size={14}/> {location}</span>
+                                                                </div>
+                                                                <div className="btc-price-block">
+                                                                    <span className="price-label">Total Amount</span>
+                                                                    <span className="price-value">${totalPrice.toLocaleString()}</span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="btc-room-info">
+                                                                <span className="room-badge"><BedDouble size={14}/> {roomTitle}</span>
+                                                                <span className="guest-badge"><Users size={14}/> {booking.adults || 1} Adults {booking.children > 0 ? `, ${booking.children} Kids` : ''}</span>
+                                                            </div>
+
+                                                            <div className="btc-dates-row">
+                                                                <div className="date-box">
+                                                                    <span className="date-label">Check-In</span>
+                                                                    <span className="date-value">{checkIn.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                                                                </div>
+                                                                <div className="date-divider">
+                                                                    <div className="line"></div>
+                                                                    <span className="nights-pill"><Clock size={12}/> {nights} Nights</span>
+                                                                    <div className="line"></div>
+                                                                </div>
+                                                                <div className="date-box right">
+                                                                    <span className="date-label">Check-Out</span>
+                                                                    <span className="date-value">{checkOut.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="btc-footer">
+                                                                <div className="payment-info">
+                                                                    <CreditCard size={14}/> Payment: <strong>{booking.payment_status || 'Paid'}</strong>
+                                                                </div>
+                                                                <div className="btc-actions">
+                                                                    <button className="btn-ghost-small" onClick={() => navigate(`/hotel/${booking.hotel_id || booking.hotel?.id}`)}>View Hotel</button>
+                                                                    {(booking.status === 'completed' || booking.status === 'confirmed') && (
+                                                                        <button className="btn-primary-small" onClick={() => handleOpenReview(booking)}>
+                                                                            <MessageSquare size={14} /> Review
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* VIEW: SAVED LISTS / WISHLIST */}
+                            {currentView === 'saved_lists' && (
+                                <motion.div key="saved_lists" className="profile-sub-page"
+                                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                                    
+                                    <div className="sub-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div>
+                                            <h2>Saved Lists</h2>
+                                            <p>{wishlist.length} {wishlist.length === 1 ? 'property' : 'properties'} saved for later.</p>
+                                        </div>
+                                        {wishlist.length > 0 && (
+                                            <button className="btn-outline-danger" onClick={() => { if(window.confirm('Are you sure you want to clear your wishlist?')) clearWishlist(); }}>
+                                                <Trash2 size={16} /> Clear All
+                                            </button>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="sub-page-card" style={{ background: 'transparent', padding: 0, boxShadow: 'none' }}>
+                                        {wishlist.length > 0 ? (
+                                            <div className="hotel-grid-modern"> 
+                                                {wishlist.map(hotel => (
+                                                    <div className="hotel-card-wrapper" key={hotel.id}>
+                                                        <HotelCard hotel={hotel} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="empty-state-card" style={{textAlign: 'center', padding: '40px', backgroundColor: '#fff', borderRadius: '12px'}}>
+                                                <Heart size={48} color="#cbd5e1" style={{ margin: '0 auto', marginBottom: '16px' }} />
+                                                <h3>Your wishlist is empty</h3>
+                                                <p>Save properties you love to view them here.</p>
+                                                <button className="btn-primary" onClick={() => navigate('/hotel-showcase')} style={{marginTop: '20px'}}>Explore Hotels</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* VIEW 7: CUSTOMIZATION */}
+                            {currentView === 'customization' && (
+                                <motion.div key="customization" className="profile-sub-page"
+                                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                                    <div className="sub-page-header">
+                                        <h2>Customization Preferences</h2>
+                                        <p>Set your regional display settings for pricing and formatting.</p>
+                                    </div>
+                                    <div className="sub-page-card">
+                                        <form onSubmit={handleSaveCustomization}>
+                                            <div className="form-group" style={{ marginBottom: '20px' }}>
+                                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b' }}>Preferred Currency</label>
+                                                <select 
+                                                    className="form-input" 
+                                                    value={customizationData.currency}
+                                                    onChange={(e) => setCustomizationData({...customizationData, currency: e.target.value})}
+                                                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }}
+                                                >
+                                                    <option value="USD">USD ($) - US Dollar</option>
+                                                    <option value="EUR">EUR (€) - Euro</option>
+                                                    <option value="GBP">GBP (£) - British Pound</option>
+                                                    <option value="LKR">LKR (Rs) - Sri Lankan Rupee</option>
+                                                    <option value="AUD">AUD ($) - Australian Dollar</option>
+                                                </select>
+                                            </div>
+                                            <div className="form-group" style={{ marginBottom: '24px' }}>
+                                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b' }}>Preferred Language</label>
+                                                <select 
+                                                    className="form-input" 
+                                                    value={customizationData.language}
+                                                    onChange={(e) => setCustomizationData({...customizationData, language: e.target.value})}
+                                                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }}
+                                                >
+                                                    <option value="EN">English (US)</option>
+                                                    <option value="EN-GB">English (UK)</option>
+                                                    <option value="FR">Français (France)</option>
+                                                    <option value="ES">Español (Spain)</option>
+                                                    <option value="DE">Deutsch (Germany)</option>
+                                                </select>
+                                            </div>
+                                            <button type="submit" className="btn-primary" disabled={savingPrefs}>
+                                                {savingPrefs ? <Loader2 className="animate-spin" size={18}/> : 'Save Preferences'}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* VIEW 8: EMAIL PREFERENCES */}
+                            {currentView === 'email_preferences' && (
+                                <motion.div key="email_preferences" className="profile-sub-page"
+                                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                                    <div className="sub-page-header">
+                                        <h2>Email Preferences</h2>
+                                        <p>Control what emails you receive from Aurelia Travel. Changes save automatically.</p>
+                                    </div>
+                                    <div className="sub-page-card" style={{ padding: 0, overflow: 'hidden' }}>
+                                        
+                                        <div className="settings-row" style={{ padding: '24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
+                                            <div className="settings-info">
+                                                <strong style={{ fontSize: '1.05rem', color: '#0f172a', display: 'block', marginBottom: '4px' }}>Promotions & Deals</strong>
+                                                <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem', lineHeight: '1.5' }}>Get exclusive offers, travel inspiration, and personalized property recommendations.</p>
+                                            </div>
+                                            <label className="toggle-switch">
+                                                <input type="checkbox" checked={emailPrefs.promos} onChange={(e) => handleToggleEmailPref('promos', e.target.checked)} />
+                                                <span className="slider round"></span>
+                                            </label>
+                                        </div>
+                                        
+                                        <div className="settings-row" style={{ padding: '24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
+                                            <div className="settings-info">
+                                                <strong style={{ fontSize: '1.05rem', color: '#0f172a', display: 'block', marginBottom: '4px' }}>Booking Updates</strong>
+                                                <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem', lineHeight: '1.5' }}>Essential reminders, itinerary changes, and updates about your upcoming trips.</p>
+                                            </div>
+                                            <label className="toggle-switch">
+                                                <input type="checkbox" checked={emailPrefs.bookings} onChange={(e) => handleToggleEmailPref('bookings', e.target.checked)} />
+                                                <span className="slider round"></span>
+                                            </label>
+                                        </div>
+                                        
+                                        <div className="settings-row" style={{ padding: '24px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
+                                            <div className="settings-info">
+                                                <strong style={{ fontSize: '1.05rem', color: '#475569', display: 'block', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    Account Security 
+                                                    <span style={{ fontSize: '0.65rem', backgroundColor: '#cbd5e1', color: '#0f172a', padding: '2px 6px', borderRadius: '4px', fontWeight: '800', letterSpacing: '0.5px' }}>REQUIRED</span>
+                                                </strong>
+                                                <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem', lineHeight: '1.5' }}>Alerts about logins, password changes, and security notices. This cannot be disabled.</p>
+                                            </div>
+                                            <label className="toggle-switch" style={{ opacity: 0.6, cursor: 'not-allowed' }}>
+                                                <input type="checkbox" checked={true} disabled />
+                                                <span className="slider round"></span>
+                                            </label>
+                                        </div>
+
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* VIEW 9: SAFETY RESOURCE CENTER */}
+                            {currentView === 'safety_center' && (
+                                <motion.div key="safety_center" className="profile-sub-page"
+                                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                                    <div className="sub-page-header">
+                                        <h2>Safety Resource Center</h2>
+                                        <p>Your safety is our top priority. Access emergency resources and safety guidelines.</p>
+                                    </div>
+                                    
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                        {/* Emergency Contact Card */}
+                                        <div className="sub-page-card" style={{ borderLeft: '4px solid #ef4444', backgroundColor: '#fef2f2', borderTop: 'none', borderRight: 'none', borderBottom: 'none' }}>
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                                                <div style={{ padding: '12px', backgroundColor: '#fee2e2', borderRadius: '50%', color: '#ef4444' }}>
+                                                    <AlertTriangle size={24} />
+                                                </div>
+                                                <div>
+                                                    <h3 style={{ margin: '0 0 8px 0', color: '#7f1d1d', fontSize: '1.15rem', fontWeight: '700' }}>In an Emergency</h3>
+                                                    <p style={{ margin: '0 0 16px 0', color: '#991b1b', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                                                        If you or someone else is in immediate physical danger, or if there is a medical emergency, please contact local emergency services (police, fire, or ambulance) immediately.
+                                                    </p>
+                                                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                                                        <button className="btn-primary" style={{ backgroundColor: '#ef4444', borderColor: '#ef4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            Call Local Authorities
+                                                        </button>
+                                                        <button className="btn-outline" style={{ borderColor: '#fca5a5', color: '#b91c1c', backgroundColor: 'transparent' }}>
+                                                            Aurelia Trust & Safety Line
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Safety Tips Card */}
+                                        <div className="sub-page-card">
+                                            <h3 style={{ fontSize: '1.1rem', marginBottom: '16px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <ShieldCheck size={20} color="#3b82f6"/> Travel Safety Guidelines
+                                            </h3>
+                                            <ul style={{ paddingLeft: '20px', margin: 0, color: '#475569', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                                                <li><strong>Verify your communications:</strong> Always communicate and pay directly through the Aurelia platform. Never wire money or pay outside the app.</li>
+                                                <li><strong>Share your itinerary:</strong> Let a trusted friend or family member know your travel plans, accommodation details, and contact numbers.</li>
+                                                <li><strong>Research your destination:</strong> Familiarize yourself with the neighborhood and local emergency numbers before you arrive.</li>
+                                                <li><strong>Trust your instincts:</strong> If a situation feels unsafe, leave immediately and contact our 24/7 support team.</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* VIEW: DISPUTE RESOLUTION */}
+                            {currentView === 'disputes' && (
+                                <motion.div key="disputes" className="profile-sub-page"
+                                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                                    
+                                    {/* We reuse the component we built earlier */}
+                                    <DisputeResolution />
+                                    
+                                </motion.div>
+                            )}
+
+                            {/* VIEW 11: PRIVACY AND DATA MANAGEMENT */}
+                            {currentView === 'privacy' && (
+                                <motion.div key="privacy" className="profile-sub-page"
+                                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                                    
+                                    <div className="sub-page-header">
+                                        <h2>Privacy & Data Management</h2>
+                                        <p>Control how your data is used, download your information, or manage your account status.</p>
+                                    </div>
+                                    
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                        
+                                        {/* Data Export Card */}
+                                        <div className="sub-page-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', flex: 1, minWidth: '250px' }}>
+                                                <div style={{ padding: '12px', backgroundColor: '#f1f5f9', borderRadius: '50%', color: '#475569' }}>
+                                                    <Download size={24} />
+                                                </div>
+                                                <div>
+                                                    <h3 style={{ margin: '0 0 4px 0', color: '#0f172a', fontSize: '1.05rem', fontWeight: '600' }}>Download Your Data</h3>
+                                                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                                                        Request a copy of your personal data, including your profile information, booking history, and reviews. The file will be emailed to you in JSON format.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button className="btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
+                                                <Download size={16} /> Request Data Archive
+                                            </button>
+                                        </div>
+
+                                        {/* Danger Zone: Account Deletion */}
+                                        <div className="sub-page-card" style={{ border: '1px solid #fca5a5', backgroundColor: '#fff', position: 'relative', overflow: 'hidden' }}>
+                                            <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', backgroundColor: '#ef4444' }}></div>
+                                            <div style={{ paddingLeft: '8px' }}>
+                                                <h3 style={{ margin: '0 0 4px 0', color: '#b91c1c', fontSize: '1.05rem', fontWeight: '600' }}>Danger Zone</h3>
+                                                <p style={{ margin: '0 0 16px 0', color: '#475569', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                                                    Permanently delete your Aurelia Travel account and all associated data. This action cannot be undone, and you will lose access to all your bookings and rewards.
+                                                </p>
+                                                <button className="btn-outline-danger" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px' }}>
+                                                    <Trash2 size={16} /> Delete Account
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* VIEW 12: CONTENT GUIDELINES */}
+                            {currentView === 'guidelines' && (
+                                <motion.div key="guidelines" className="profile-sub-page"
+                                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                                    
+                                    <div className="sub-page-header">
+                                        <h2>Content & Community Guidelines</h2>
+                                        <p>Our standards for keeping Aurelia a safe, helpful, and respectful community for travelers and hosts alike.</p>
+                                    </div>
+                                    
+                                    <div className="sub-page-card" style={{ padding: '0', overflow: 'hidden' }}>
+                                        
+                                        <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                                                <div style={{ padding: '8px', backgroundColor: '#f0fdf4', color: '#10b981', borderRadius: '8px' }}>
+                                                    <Check size={20} strokeWidth={2.5}/>
+                                                </div>
+                                                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>Be Honest & Accurate</h3>
+                                            </div>
+                                            <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem', lineHeight: '1.5', paddingLeft: '44px' }}>
+                                                Reviews should represent your genuine experience. Do not post fake reviews, exaggerate claims, or attempt to manipulate a property's rating.
+                                            </p>
+                                        </div>
+
+                                        <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                                                <div style={{ padding: '8px', backgroundColor: '#eff6ff', color: '#3b82f6', borderRadius: '8px' }}>
+                                                    <Shield size={20} strokeWidth={2}/>
+                                                </div>
+                                                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>Respect Privacy & Safety</h3>
+                                            </div>
+                                            <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem', lineHeight: '1.5', paddingLeft: '44px' }}>
+                                                Never share personally identifiable information (PII) such as full names, phone numbers, or exact addresses of other guests or staff members in your public reviews.
+                                            </p>
+                                        </div>
+
+                                        <div style={{ padding: '24px', backgroundColor: '#f8fafc' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                                                <div style={{ padding: '8px', backgroundColor: '#fef2f2', color: '#ef4444', borderRadius: '8px' }}>
+                                                    <AlertTriangle size={20} strokeWidth={2}/>
+                                                </div>
+                                                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>Zero Tolerance Policy</h3>
+                                            </div>
+                                            <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem', lineHeight: '1.5', paddingLeft: '44px' }}>
+                                                Hate speech, discriminatory language, threats, and explicit content are strictly prohibited. Violating this policy will result in immediate account termination.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                                            For a complete legal overview, please read our full <Link to="/terms" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: '500' }}>Terms of Service</Link> and <Link to="/privacy-policy" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: '500' }}>Privacy Policy</Link>.
+                                        </p>
+                                    </div>
+
+                                </motion.div>
+                            )}
+
+                            {/* VIEW: MY REVIEWS */}
+                            {currentView === 'my_reviews' && (
+                                <motion.div key="my_reviews" className="profile-sub-page"
+                                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                                    <div className="sub-page-header">
+                                        <h2>My Reviews</h2>
+                                        <p>Manage your feedback and see property responses.</p>
+                                    </div>
+                                    
+                                    <div className="sub-page-card no-pad" style={{ background: 'transparent', boxShadow: 'none' }}>
+                                        {loadingReviews ? (
+                                            <div className="loading-state">Loading your reviews...</div>
+                                        ) : reviews.length === 0 ? (
+                                            <div className="empty-state-card" style={{textAlign: 'center', padding: '40px', backgroundColor: '#fff', borderRadius: '12px'}}>
+                                                <MessageSquare size={48} color="#cbd5e1" style={{ margin: '0 auto', marginBottom: '16px' }} />
+                                                <h3>No reviews yet</h3>
+                                                <p>You haven't written any reviews for your past stays.</p>
+                                                <button className="btn-primary" onClick={() => setCurrentView('my_bookings')} style={{marginTop: '20px'}}>View Past Bookings</button>
+                                            </div>
+                                        ) : (
+                                            <div className="reviews-list">
+                                                {reviews.map((review) => (
+                                                    <div key={review.id} className="user-review-card" style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '12px', marginBottom: '16px', border: '1px solid #e2e8f0' }}>
+                                                        <div className="ur-hotel-info" style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '16px' }}>
+                                                            <div className="ur-hotel-thumb" style={{ width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                {review.hotel_image ? (
+                                                                    <img src={review.hotel_image} alt={review.hotel_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                ) : (
+                                                                    <Building2 size={24} color="#94a3b8" />
+                                                                )}
+                                                            </div>
+                                                            <div className="ur-hotel-details">
+                                                                <h4 style={{ margin: '0 0 4px 0', fontSize: '1.1rem' }}><Link to={`/hotel/${review.hotel_id}`} style={{ color: '#0f172a', textDecoration: 'none' }}>{review.hotel_name}</Link></h4>
+                                                                <span className="ur-date" style={{ color: '#64748b', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                    <Calendar size={14} /> 
+                                                                    {new Date(review.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="ur-content">
+                                                            {renderStars(review.rating)}
+                                                            <h5 className="ur-title" style={{ margin: '10px 0 6px 0', fontSize: '1.05rem' }}>{review.title}</h5>
+                                                            <p className="ur-comment" style={{ margin: 0, color: '#475569', lineHeight: '1.5' }}>{review.comment}</p>
+                                                        </div>
+
+                                                        {review.hotel_response && (
+                                                            <div className="ur-manager-reply" style={{ marginTop: '16px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '8px', borderLeft: '4px solid #3b82f6' }}>
+                                                                <div className="reply-header" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#1e293b' }}>
+                                                                    <CornerDownRight size={16} />
+                                                                    <strong>Response from Property Manager</strong>
+                                                                </div>
+                                                                <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem' }}>{review.hotel_response}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
+                            {/* ... End of Travel Activity Views ... */}
+
+                        </AnimatePresence>
+                    </div>
+
+                </motion.div>
+            )}
+
+            {/* --- MODALS --- */}
+            
+            {/* 2FA SETUP MODAL */}
+            {showTwoFactorModal && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000}}>
+                    <div className="bg-white rounded-xl p-8 max-w-md w-full shadow-2xl">
+                        <h3 style={{fontSize: '1.4rem', fontWeight: 800, marginBottom: '10px'}}>Protect Your Account</h3>
+                        <p style={{color: '#64748b', marginBottom: '20px'}}>1. Scan this QR code using Google Authenticator or Authy.</p>
+                        
+                        <div style={{display: 'flex', justifyContent: 'center', marginBottom: '20px'}}>
+                            <img src={qrCodeData.url} alt="2FA QR Code" style={{border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px'}}/>
+                        </div>
+
+                        <p style={{color: '#64748b', marginBottom: '10px'}}>2. Enter the 6-digit code from the app to verify.</p>
+                        <input 
+                            type="text" 
+                            placeholder="000000" 
+                            maxLength={6}
+                            value={verificationCode}
+                            onChange={(e) => setVerificationCode(e.target.value)}
+                            style={{width: '100%', padding: '12px', fontSize: '1.2rem', textAlign: 'center', letterSpacing: '4px', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '20px'}}
+                        />
+
+                        <div style={{display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
+                            <button className="btn-ghost" onClick={() => setShowTwoFactorModal(false)}>Cancel</button>
+                            <button className="btn-primary" onClick={confirmEnable2FA} disabled={isVerifying || verificationCode.length < 6}>
+                                {isVerifying ? 'Verifying...' : 'Enable 2FA'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
-        </AnimatePresence>
 
-      </motion.div>
+            {/* REVIEW SUBMISSION MODAL */}
+            <AnimatePresence>
+                {showReviewModal && (
+                    <div className="modal-overlay" onClick={() => setShowReviewModal(false)} style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000}}>
+                        <motion.div className="modal-content" onClick={e => e.stopPropagation()} initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} style={{backgroundColor: '#fff', padding: '30px', borderRadius: '16px', maxWidth: '500px', width: '100%'}}>
+                            <div className="modal-header-row" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+                                <h3 style={{margin: 0, fontSize: '1.3rem'}}>Review: {reviewTarget?.hotelName}</h3>
+                                <button className="modal-close-icon" onClick={() => setShowReviewModal(false)} style={{background: 'transparent', border: 'none', cursor: 'pointer'}}><X size={20}/></button>
+                            </div>
+                            <form onSubmit={handleSubmitReview} className="payment-modal-form">
+                                <div className="form-group" style={{marginBottom: '16px'}}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 'bold'}}>Your Rating</label>
+                                    <div style={{display:'flex', gap:'5px'}}>
+                                        {[1,2,3,4,5].map(star => (
+                                            <Star 
+                                                key={star} size={32} 
+                                                fill={star <= reviewForm.rating ? "#f59e0b" : "none"} 
+                                                color={star <= reviewForm.rating ? "#f59e0b" : "#cbd5e1"}
+                                                style={{cursor:'pointer', transition:'all 0.2s'}}
+                                                onClick={() => setReviewForm({...reviewForm, rating: star})}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="form-group" style={{marginBottom: '16px'}}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 'bold'}}>Summary</label>
+                                    <input className="form-input" style={{width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1'}} placeholder="e.g., Amazing stay!" value={reviewForm.title} onChange={e => setReviewForm({...reviewForm, title: e.target.value})} required />
+                                </div>
+                                <div className="form-group" style={{marginBottom: '16px'}}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 'bold'}}>Details</label>
+                                    <textarea className="form-input" style={{width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1'}} placeholder="Tell others about your experience..." rows="4" value={reviewForm.comment} onChange={e => setReviewForm({...reviewForm, comment: e.target.value})} required />
+                                </div>
+                                <button type="submit" className="btn-primary full-width" style={{marginTop:'20px', width: '100%', padding: '12px'}}>Submit Review</button>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

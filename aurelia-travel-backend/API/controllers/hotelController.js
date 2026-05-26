@@ -14,15 +14,17 @@ const parseHotelData = (hotel) => {
 exports.getAllHotels = async (req, res) => {
     try {
         const hotels = await hotelModel.getAll();
-        res.json({ success: true, data: hotels.map(parseHotelData) });
-    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+        const parsedHotels = hotels.map(parseHotelData);
+        res.json({ success: true, data: parsedHotels });
+    } catch (err) { 
+        res.status(500).json({ success: false, error: err.message }); 
+    }
 };
 
 // --- NEW FUNCTION: ADMIN GET HOTELS BY MANAGER ID ---
 exports.getHotelsByManagerId = async (req, res) => {
     try {
         const { managerId } = req.params;
-        // Re-use existing model function 'getByManagerId' which returns ALL hotels (active & inactive)
         const hotels = await hotelModel.getByManagerId(managerId);
         res.json({ success: true, data: hotels.map(parseHotelData) });
     } catch (err) {
@@ -81,16 +83,16 @@ exports.getMyHotels = async (req, res) => {
 // --- CRUD ---
 exports.create = async (req, res) => {
     try {
-        console.log("Received Hotel Payload:", req.body);
-
         const { 
             name, description, address_line_1, city, state, postal_code, country, 
             latitude, longitude, email, phone, website, 
             check_in_time, check_out_time, cancellation_policy_hours, 
-            images, amenities 
+            images, amenities,
+            // --- NEW FIELDS ADDED HERE ---
+            property_type, star_rating, pets_allowed, smoking_allowed, parties_allowed, 
+            min_age, damage_deposit, custom_rules, services, languages, accepted_payments
         } = req.body;
 
-        // Determine Primary Image URL for the main table
         let primaryUrl = null;
         if (images && images.length > 0) {
             const primaryObj = images.find(img => img.isPrimary);
@@ -115,18 +117,33 @@ exports.create = async (req, res) => {
             cancellation_policy_hours: cancellation_policy_hours ? parseInt(cancellation_policy_hours) : 24,
             main_image: primaryUrl,
             manager_id: req.user.userId,
-            is_featured: 0
+            is_featured: 0,
+            
+            // --- MAP NEW FIELDS TO DATABASE ---
+            property_type: property_type || 'Hotel',
+            star_rating: star_rating || 3,
+            pets_allowed: pets_allowed ? 1 : 0,
+            smoking_allowed: smoking_allowed ? 1 : 0,
+            parties_allowed: parties_allowed ? 1 : 0,
+            min_age: min_age ? parseInt(min_age) : 18,
+            damage_deposit: damage_deposit ? parseFloat(damage_deposit) : 0.00,
+            custom_rules: custom_rules || null,
+            // Convert arrays to JSON strings for SQL storage
+            services: services ? JSON.stringify(services) : JSON.stringify([]),
+            languages: languages ? JSON.stringify(languages) : JSON.stringify([]),
+            accepted_payments: accepted_payments ? JSON.stringify(accepted_payments) : JSON.stringify([])
         };
 
-        // NEW: Notify Admins
+        // Notify Admins
         await notifyAdmins(
             "New Property Added",
             `A new hotel "${hotelData.name}" has been listed and requires review.`,
-            "warning", // 'warning' uses yellow color (good for pending reviews)
-            `/superAdmin/hotels` // Link to Admin Hotels Page
+            "warning", 
+            `/superAdmin/hotels`
         );
 
         const newHotelId = await hotelModel.create(hotelData, images, amenities);
+
         res.status(201).json({ success: true, message: "Hotel created", hotelId: newHotelId });
 
     } catch (err) {
@@ -139,6 +156,8 @@ exports.update = async (req, res) => {
     try {
         const hotelId = req.params.id;
         const { images, amenities, ...rest } = req.body;
+        
+        const oldHotel = await hotelModel.getById(hotelId);
         
         const updateData = {};
         const validColumns = [
@@ -159,11 +178,11 @@ exports.update = async (req, res) => {
 
         await hotelModel.update(hotelId, updateData, images, amenities);
 
-        // ✅ LOGGING EXACT CHANGES
+
         if (req.user.role === 'admin') {
             let changes = [];
             for (const key in updateData) {
-                if (key === 'main_image') continue; // Don't log messy image URLs
+                if (key === 'main_image') continue; 
                 if (oldHotel[key] != updateData[key]) {
                     changes.push(`${key}: '${oldHotel[key] || ''}' -> '${updateData[key]}'`);
                 }
@@ -193,7 +212,7 @@ exports.delete = async (req, res) => {
         }
         await hotelModel.delete(req.params.id);
 
-        // ✅ LOGGING
+
         if (req.user.role === 'admin') {
             await logService.logAction(req.user.userId, 'DELETE_HOTEL', 'Hotels', hotel.name, 'Admin permanently deleted property.', 'error');
         }

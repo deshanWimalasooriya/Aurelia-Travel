@@ -27,22 +27,39 @@ exports.getRoomsByHotelId = async (req, res) => {
 // 2. MANAGER: Create Room (Auto-Inventory)
 exports.createRoom = async (req, res) => {
     try {
+        const initializeRoomAvailability = async (trx, roomId, startDate) => {
+            const availabilityRows = [];
+            const start = new Date(startDate);
+
+            for (let i = 0; i < 365; i++) {
+                let date = new Date(start);
+                date.setDate(start.getDate() + i);
+                
+                availabilityRows.push({
+                    room_id: roomId,
+                    date: date.toISOString().split('T')[0], // YYYY-MM-DD
+                    available_quantity: 1, // Default to 1, or your room's total capacity
+                    is_blocked: false
+                });
+            }
+
+            await trx('room_availability').insert(availabilityRows);
+        };
         const { 
             hotel_id, title, room_type, base_price_per_night, 
             total_quantity, images, description,
             max_adults, max_children, size_sqm, view_type, bed_type,
-            has_breakfast, is_refundable, smoking_allowed
+            has_breakfast, is_refundable, smoking_allowed,
+            // --- NEW FIELDS ADDED HERE ---
+            bathroom_type, custom_features, room_amenities, bathroom_amenities
         } = req.body;
 
-        // Verify Ownership
         const hotel = await hotelModel.getById(hotel_id);
         if (!hotel) return res.status(404).json({ message: "Hotel not found" });
-        
         if (req.user.role !== 'admin' && String(hotel.manager_id) !== String(req.user.userId)) {
-            return res.status(403).json({ message: "Access denied. You do not own this hotel." });
+            return res.status(403).json({ message: "Access denied." });
         }
 
-        // Determine Primary Image
         let primaryUrl = null;
         if (images && images.length > 0) {
             const primaryObj = images.find(img => img.isPrimary);
@@ -57,12 +74,18 @@ exports.createRoom = async (req, res) => {
             max_children: max_children || 0,
             capacity: (Number(max_adults)||2) + (Number(max_children)||0),
             size_sqm, 
-            view_type, 
             bed_type,
             has_breakfast: has_breakfast ? 1 : 0,
             is_refundable: is_refundable ? 1 : 0,
             smoking_allowed: smoking_allowed ? 1 : 0,
-            main_image: primaryUrl // Use resolved primary URL
+            main_image: primaryUrl,
+            
+            // --- MAP NEW FIELDS TO DATABASE ---
+            view_type: view_type || 'none',
+            bathroom_type: bathroom_type || 'Private En-suite',
+            custom_features: custom_features || null,
+            room_amenities: room_amenities ? JSON.stringify(room_amenities) : JSON.stringify([]),
+            bathroom_amenities: bathroom_amenities ? JSON.stringify(bathroom_amenities) : JSON.stringify([])
         };
 
         const newRoomId = await roomModel.createRoom(roomData, images); 
@@ -140,3 +163,4 @@ exports.deleteRoom = async (req, res) => {
         res.json({ success: true, message: "Deleted" });
     } catch (err) { res.status(500).json({ error: err.message }); }
 };
+

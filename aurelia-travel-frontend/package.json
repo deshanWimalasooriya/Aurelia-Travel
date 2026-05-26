@@ -12,6 +12,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
+    "@react-oauth/google": "^0.13.5",
     "@tanstack/react-router": "^1.142.8",
     "axios": "^1.13.2",
     "date-fns": "^4.1.0",

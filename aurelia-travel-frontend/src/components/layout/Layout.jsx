@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import Header from '../common/Header';
 import Footer from '../common/Footer';
+import IncompleteBookingTag from '../common/IncompleteBookingTag';
 
 const Layout = ({ children }) => {
   const location = useLocation();
@@ -31,6 +32,8 @@ const Layout = ({ children }) => {
   return (
     <div style={{ minHeight: '100%', width: '100%',display: 'flex', flexDirection: 'column', backgroundColor: 'var(--color-background)' }}>
       <Header />
+      {/* 2. Place it outside the main routing block so it is always active */}
+      <IncompleteBookingTag />
       <main style={{ flex: 1 }}>
         {children}
       </main>

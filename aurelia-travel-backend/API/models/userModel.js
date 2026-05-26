@@ -6,6 +6,11 @@ exports.getAllUsers = () => knex('users').where('is_active', true).select('id', 
 exports.findById = (id) => knex('users').where({ id }).first();
 exports.findByEmail = (email) => knex('users').where({ email }).first();
 
+// Add this to the bottom of API/models/userModel.js
+exports.findByVerificationToken = (token) => {
+    return knex('users').where({ verification_token: token }).first();
+};
+
 // Alias for backward compatibility
 exports.getUserById = exports.findById;
 exports.getUserByEmail = exports.findByEmail;

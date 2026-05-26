@@ -85,3 +85,18 @@ exports.updateHotelRating = async (hotelId) => {
         
     return { total, average };
 };
+
+// Add this to API/models/reviewModel.js
+
+exports.findByUserId = (userId) => {
+    // Join with hotels table to get the hotel name and image for the UI
+    return knex('reviews')
+        .join('hotels', 'reviews.hotel_id', 'hotels.id')
+        .select(
+            'reviews.*', 
+            'hotels.name as hotel_name', 
+            'hotels.main_image as hotel_image'
+        )
+        .where('reviews.user_id', userId)
+        .orderBy('reviews.created_at', 'desc');
+};

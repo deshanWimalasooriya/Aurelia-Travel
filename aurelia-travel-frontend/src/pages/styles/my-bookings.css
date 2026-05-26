@@ -1,0 +1,244 @@
+/* --- ULTRA-COMPACT PROFESSIONAL BOOKING CARDS --- */
+
+.booking-ticket-card {
+    display: flex;
+    flex-direction: row;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px; /* Sharper, more corporate corners */
+    overflow: hidden;
+    margin-bottom: 12px; /* Very tight spacing */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    align-items: stretch;
+}
+
+.booking-ticket-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    border-color: #cbd5e1;
+}
+
+/* 1. Square Thumbnail Image */
+.btc-image {
+    width: 120px; /* Drastically reduced */
+    min-width: 120px;
+    position: relative;
+    background: #f8fafc;
+    border-right: 1px solid #f1f5f9;
+}
+
+.btc-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Tiny floating status indicator */
+.btc-status-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(2px);
+    color: #0f172a;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* 2. Hyper-condensed Padding */
+.btc-content {
+    padding: 12px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px; /* Super tight gap */
+}
+
+/* 3. Header formatting */
+.btc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2px;
+}
+
+.btc-hotel-name {
+    font-size: 0.95rem; /* Professional, smaller size */
+    font-weight: 600;
+    margin: 0 0 2px 0;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.btc-location {
+    font-size: 0.75rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btc-price-block {
+    text-align: right;
+    line-height: 1;
+}
+
+.price-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.price-label {
+    display: block;
+    font-size: 0.65rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+/* 4. Strip away bulky badges, make room info inline */
+.btc-room-info {
+    font-size: 0.8rem;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.room-badge, .guest-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent; /* Removed grey background */
+    padding: 0; 
+    border: none;
+}
+
+.room-badge svg, .guest-badge svg {
+    opacity: 0.6;
+    width: 14px;
+    height: 14px;
+}
+
+/* 5. Minimalist Inline Dates (Hiding the grey boxes & lines) */
+.btc-dates-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    background: transparent; /* Removed grey background */
+    padding: 0;
+    margin: 4px 0;
+    gap: 12px;
+}
+
+/* Hide the bulky words "Check-In" and "Check-Out" */
+.date-label { display: none; } 
+
+.date-box {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.date-value {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #1e293b;
+}
+
+/* Turn the old divider into a minimal arrow/pill */
+.date-divider {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    gap: 0;
+}
+
+.date-divider .line { display: none; } /* Hide the long lines */
+
+.nights-pill {
+    font-size: 0.7rem;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px; /* Sharper pill */
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* 6. Footer & Micro-Buttons */
+.btc-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid #f1f5f9; /* Extremely subtle line */
+}
+
+.payment-info {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.payment-info strong {
+    color: #475569;
+    font-weight: 500;
+}
+
+.btc-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Very sleek, minimal buttons */
+.btc-actions button {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-ghost-small {
+    background: transparent;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+}
+
+.btn-ghost-small:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.btn-primary-small {
+    background: #0f172a; /* Dark premium corporate color */
+    color: #ffffff;
+    border: 1px solid #0f172a;
+}
+
+.btn-primary-small:hover {
+    background: #1e293b;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .booking-ticket-card { flex-direction: column; }
+    .btc-image { width: 100%; height: 100px; border-right: none; border-bottom: 1px solid #f1f5f9; }
+    .btc-dates-row { flex-wrap: wrap; gap: 8px; }
+}

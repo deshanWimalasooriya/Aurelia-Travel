@@ -7,9 +7,11 @@ import {
   MapPin, Clock, Phone, Search, X,
   Building, Star, CheckCircle2,
   Bold, Italic, List,
-  Power, Mail, UploadCloud
+  Power, Mail, UploadCloud,
+  ShieldCheck, Globe, Ban, CreditCard // New icons for added sections
 } from 'lucide-react';
 import './styles/dashboard-hotels.css';
+import { uploadImageDirectly } from '../../services/cloudinaryUpload';
 
 // --- LEAFLET IMPORTS & SETUP ---
 import 'leaflet/dist/leaflet.css';
@@ -88,15 +90,28 @@ const DashboardHotels = () => {
   
   const [dbAmenities, setDbAmenities] = useState([]); 
   const [newAmenityText, setNewAmenityText] = useState('');
-  const [manualUrl, setManualUrl] = useState(''); // State for manual URL input
+  const [manualUrl, setManualUrl] = useState('');
 
+  // --- EXPANDED FORM DATA ---
   const [formData, setFormData] = useState({
     name: '', description: '', address: '', city: '', province: '', 
     postalCode: '', country: '', latitude: '', longitude: '',
     email: '', phone: '', website: '',
     checkIn: '14:00', checkOut: '11:00', cancellationPolicy: '24', 
-    images: [], // Unified array: { url: string, isPrimary: boolean, file: File | null }
-    amenities: [] 
+    images: [], amenities: [],
+    
+    // New Structured Fields integrated from Onboarding
+    type: 'Hotel', 
+    starRating: 3,
+    services: [], 
+    languages: [], 
+    payments: [],
+    petsAllowed: false, 
+    smokingAllowed: false, 
+    partiesAllowed: false,
+    damageDeposit: 0,
+    minAge: 18,
+    rules: ''
   });
 
   useEffect(() => {
@@ -138,6 +153,14 @@ const DashboardHotels = () => {
     }
   }, [editingHotel, view]);
 
+  // Helper to toggle array items (services, languages, payments)
+  const toggleArrayItem = (field, item) => {
+      setFormData(prev => ({
+          ...prev,
+          [field]: prev[field].includes(item) ? prev[field].filter(i => i !== item) : [...prev[field], item]
+      }));
+  };
+
   const handleSwitchToForm = (hotel = null) => {
     setEditingHotel(hotel);
     
@@ -165,14 +188,32 @@ const DashboardHotels = () => {
             email: hotel.email || '', phone: hotel.phone || '', website: hotel.website || '',
             checkIn: hotel.check_in_time || '14:00', checkOut: hotel.check_out_time || '11:00',
             cancellationPolicy: hotel.cancellation_policy_hours || '24',
-            images: processedImages, amenities: [] 
+            images: processedImages, amenities: [],
+            
+            // Map existing structured fields
+            type: hotel.property_type || 'Hotel',
+            starRating: hotel.star_rating || 3,
+            services: hotel.services || [],
+            languages: hotel.languages || [],
+            payments: hotel.accepted_payments || [],
+            petsAllowed: hotel.pets_allowed || false,
+            smokingAllowed: hotel.smoking_allowed || false,
+            partiesAllowed: hotel.parties_allowed || false,
+            damageDeposit: hotel.damage_deposit || 0,
+            minAge: hotel.min_age || 18,
+            rules: hotel.custom_rules || ''
         });
     } else {
         setFormData({ 
             name: '', description: '', address: '', city: '', province: '', postalCode: '', country: '', 
             latitude: '', longitude: '', email: '', phone: '', website: '', 
             checkIn: '14:00', checkOut: '11:00', cancellationPolicy: '24', 
-            images: [], amenities: [] 
+            images: [], amenities: [],
+            
+            // Reset to defaults
+            type: 'Hotel', starRating: 3, services: [], languages: [], payments: [],
+            petsAllowed: false, smokingAllowed: false, partiesAllowed: false,
+            damageDeposit: 0, minAge: 18, rules: ''
         });
     }
     setView('form');
@@ -182,13 +223,10 @@ const DashboardHotels = () => {
       setFormData(prev => ({ ...prev, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }));
   };
 
-  // --- UNIFIED IMAGE MANAGEMENT LOGIC ---
   const handleFileSelect = (e) => {
       const files = Array.from(e.target.files);
       const newImages = files.map(file => ({
-          url: URL.createObjectURL(file), // Creates a temporary local preview URL
-          file: file,
-          isPrimary: false
+          url: URL.createObjectURL(file), file: file, isPrimary: false
       }));
 
       setFormData(prev => {
@@ -196,7 +234,7 @@ const DashboardHotels = () => {
           if (updated.length > 0 && !updated.some(i => i.isPrimary)) updated[0].isPrimary = true;
           return { ...prev, images: updated };
       });
-      e.target.value = null; // Reset input so you can select the same file again if needed
+      e.target.value = null; 
   };
 
   const addManualUrl = () => {
@@ -212,9 +250,7 @@ const DashboardHotels = () => {
   const removeImageField = (index) => {
       setFormData(prev => {
           const imgToRemove = prev.images[index];
-          // Free memory if it was a local file preview
           if (imgToRemove.file) URL.revokeObjectURL(imgToRemove.url); 
-
           const updated = prev.images.filter((_, i) => i !== index);
           if (updated.length > 0 && !updated.some(i => i.isPrimary)) updated[0].isPrimary = true;
           return { ...prev, images: updated };
@@ -223,11 +259,9 @@ const DashboardHotels = () => {
 
   const setPrimaryImage = (index) => {
       setFormData(prev => ({
-          ...prev,
-          images: prev.images.map((img, i) => ({ ...img, isPrimary: i === index }))
+          ...prev, images: prev.images.map((img, i) => ({ ...img, isPrimary: i === index }))
       }));
   };
-  // ----------------------------------------
 
   const moveToSelected = (id) => {
       if (!formData.amenities.some(a => String(a) === String(id))) {
@@ -265,34 +299,24 @@ const DashboardHotels = () => {
       const existingImages = formData.images.filter(img => !img.file);
       let uploadedImagesArray = [];
 
-      // 1. Upload Local Files to Cloudinary
       if (localImages.length > 0) {
         const uploadData = new FormData();
         localImages.forEach(img => { uploadData.append('images', img.file); });
-
-        const uploadRes = await api.post('/upload/bulk', uploadData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-
-        // Re-attach the user's primary selection to the newly created Cloudinary URLs
+        const uploadRes = await api.post('/upload/bulk', uploadData, { headers: { 'Content-Type': 'multipart/form-data' } });
         uploadedImagesArray = uploadRes.data.images.map((backendImg, index) => ({
-            url: backendImg.url,
-            isPrimary: localImages[index].isPrimary 
+            url: backendImg.url, isPrimary: localImages[index].isPrimary 
         }));
       }
 
-      // 2. Combine all images for the database
       const finalImages = [
           ...existingImages.map(img => ({ url: img.url, isPrimary: img.isPrimary })),
           ...uploadedImagesArray
       ];
 
-      // Ensure at least one primary image exists in the final payload
       if (finalImages.length > 0 && !finalImages.some(img => img.isPrimary)) {
           finalImages[0].isPrimary = true;
       }
 
-      // 3. Assemble Payload
       const payload = {
         name: formData.name, description: formData.description, address_line_1: formData.address,
         city: formData.city, state: formData.province, postal_code: formData.postalCode || '00000',
@@ -303,7 +327,20 @@ const DashboardHotels = () => {
         check_in_time: formData.checkIn, check_out_time: formData.checkOut,
         cancellation_policy_hours: parseInt(formData.cancellationPolicy) || 24,
         images: finalImages, 
-        amenities: formData.amenities 
+        amenities: formData.amenities,
+        
+        // Include new structured fields in payload
+        property_type: formData.type,
+        star_rating: parseInt(formData.starRating) || 1,
+        pets_allowed: formData.petsAllowed,
+        smoking_allowed: formData.smokingAllowed,
+        parties_allowed: formData.partiesAllowed,
+        min_age: parseInt(formData.minAge) || 18,
+        damage_deposit: parseFloat(formData.damageDeposit) || 0,
+        services: formData.services,
+        languages: formData.languages,
+        accepted_payments: formData.payments,
+        custom_rules: formData.rules
       };
 
       if (editingHotel) await api.put(`/hotels/${editingHotel.id}`, payload);
@@ -339,6 +376,16 @@ const DashboardHotels = () => {
           await fetchHotels(); 
       }
   };
+
+  // Inline styling for pill components to match onboarding visuals safely
+  const pillStyle = (isActive) => ({
+      display: 'inline-flex', alignItems: 'center', gap: '6px',
+      padding: '8px 16px', borderRadius: '50px',
+      border: `1px solid ${isActive ? 'var(--color-primary, #3b82f6)' : 'var(--border-subtle, #e2e8f0)'}`,
+      backgroundColor: isActive ? 'rgba(59, 130, 246, 0.05)' : '#fff',
+      color: isActive ? 'var(--color-primary, #3b82f6)' : 'var(--text-secondary, #64748b)',
+      cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.2s'
+  });
 
   return (
     <div className="hotels-dashboard-wrapper">
@@ -421,6 +468,24 @@ const DashboardHotels = () => {
                     {/* CORE INFO */}
                     <div className="form-section">
                         <h4 className="section-heading"><Building size={18}/> Core Info</h4>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                            <div className="form-group">
+                                <label>Property Type <span className="req">*</span></label>
+                                <select className="form-input" value={formData.type} onChange={e=>setFormData({...formData, type:e.target.value})}>
+                                    {['Hotel', 'Villa', 'Resort', 'Apartment', 'Guest House', 'Boutique Hotel'].map(t => (
+                                        <option key={t} value={t}>{t}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Star Rating <span className="req">*</span></label>
+                                <select className="form-input" value={formData.starRating} onChange={e=>setFormData({...formData, starRating:e.target.value})}>
+                                    {[1, 2, 3, 4, 5].map(s => <option key={s} value={s}>{s} Stars</option>)}
+                                </select>
+                            </div>
+                        </div>
+
                         <div className="core-info-grid">
                             <div className="core-inputs">
                                 <div className="form-group"><label>Property Name <span className="req">*</span></label><input className="form-input" value={formData.name} onChange={e=>setFormData({...formData, name:e.target.value})} required/></div>
@@ -429,7 +494,6 @@ const DashboardHotels = () => {
                             <div className="image-preview-wrapper">
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Property Images <span className="req">*</span></label>
                                 
-                                {/* 1. Dropzone for Local Files */}
                                 <div className="upload-dropzone">
                                     <input type="file" multiple accept="image/*" onChange={handleFileSelect} />
                                     <div className="dropzone-content">
@@ -438,7 +502,6 @@ const DashboardHotels = () => {
                                     </div>
                                 </div>
 
-                                {/* 2. Fallback for Manual URLs */}
                                 <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                                     <input 
                                         type="text" 
@@ -451,7 +514,6 @@ const DashboardHotels = () => {
                                     <button type="button" className="btn-ghost" onClick={addManualUrl}>Add</button>
                                 </div>
 
-                                {/* 3. The Visual Management Grid */}
                                 {formData.images.length > 0 && (
                                     <div className="image-grid-manager">
                                         {formData.images.map((img, i) => (
@@ -488,7 +550,6 @@ const DashboardHotels = () => {
                             <div className="form-group"><label>Longitude</label><input className="form-input" type="number" step="any" value={formData.longitude} onChange={e=>setFormData({...formData, longitude:e.target.value})}/></div>
                         </div>
 
-                        {/* SAFE MAP CONTAINER */}
                         <div style={{ marginTop: '20px', height: '300px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-subtle)', position: 'relative', zIndex: 1 }}>
                             <MapContainer 
                                 center={getSafeCoords(formData.latitude, formData.longitude)} 
@@ -505,10 +566,9 @@ const DashboardHotels = () => {
                                 )}
                             </MapContainer>
                         </div>
-                        <p style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px'}}>* Click on the map to set exact property coordinates.</p>
                     </div>
 
-                    {/* CONTACT */}
+                    {/* OPERATIONS & POLICIES */}
                     <div className="form-section">
                         <h4 className="section-heading"><Clock size={18}/> Operations & Contact</h4>
                         <div className="form-grid-3">
@@ -521,9 +581,86 @@ const DashboardHotels = () => {
                         </div>
                     </div>
 
+                    {/* RULES & ALLOWANCES */}
+                    <div className="form-section">
+                        <h4 className="section-heading"><Ban size={18}/> Policies & Rules</h4>
+                        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '20px' }}>
+                            <label style={pillStyle(formData.petsAllowed)}>
+                                <input type="checkbox" hidden checked={formData.petsAllowed} onChange={() => setFormData({...formData, petsAllowed: !formData.petsAllowed})}/>
+                                {formData.petsAllowed ? <CheckCircle2 size={16} /> : <Ban size={16} color={formData.petsAllowed ? "inherit" : "#94a3b8"}/>}
+                                Pets Allowed
+                            </label>
+                            <label style={pillStyle(formData.smokingAllowed)}>
+                                <input type="checkbox" hidden checked={formData.smokingAllowed} onChange={() => setFormData({...formData, smokingAllowed: !formData.smokingAllowed})}/>
+                                {formData.smokingAllowed ? <CheckCircle2 size={16} /> : <Ban size={16} color={formData.smokingAllowed ? "inherit" : "#94a3b8"}/>}
+                                Smoking Allowed
+                            </label>
+                            <label style={pillStyle(formData.partiesAllowed)}>
+                                <input type="checkbox" hidden checked={formData.partiesAllowed} onChange={() => setFormData({...formData, partiesAllowed: !formData.partiesAllowed})}/>
+                                {formData.partiesAllowed ? <CheckCircle2 size={16} /> : <Ban size={16} color={formData.partiesAllowed ? "inherit" : "#94a3b8"}/>}
+                                Parties/Events Allowed
+                            </label>
+                        </div>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                            <div className="form-group"><label>Min Check-in Age</label><input type="number" min="18" className="form-input" value={formData.minAge} onChange={e=>setFormData({...formData, minAge: e.target.value})} /></div>
+                            <div className="form-group"><label>Damage Deposit ($)</label><input type="number" min="0" className="form-input" value={formData.damageDeposit} onChange={e=>setFormData({...formData, damageDeposit: e.target.value})} /></div>
+                        </div>
+                        
+                        <div className="form-group">
+                            <label>Additional Custom Rules</label>
+                            <textarea className="form-input" rows={3} placeholder="e.g., Quiet hours strictly from 10 PM to 6 AM." value={formData.rules} onChange={e=>setFormData({...formData, rules:e.target.value})}></textarea>
+                        </div>
+                    </div>
+
+                    {/* SERVICES & LANGUAGES */}
+                    <div className="form-section">
+                        <h4 className="section-heading"><ShieldCheck size={18}/> Services & Languages</h4>
+                        
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{display: 'block', marginBottom: '10px', fontWeight: '600', color: 'var(--text-secondary)'}}>Premium Services</label>
+                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                                {['Room Service', '24/7 Front Desk', 'Airport Shuttle', 'Daily Housekeeping', 'Laundry', 'Concierge', 'Valet Parking', 'Tour Desk'].map(srv => (
+                                    <label key={srv} style={pillStyle(formData.services.includes(srv))}>
+                                        <input type="checkbox" hidden checked={formData.services.includes(srv)} onChange={() => toggleArrayItem('services', srv)}/>
+                                        {formData.services.includes(srv) && <CheckCircle2 size={16} />}
+                                        {srv}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style={{display: 'block', marginBottom: '10px', fontWeight: '600', color: 'var(--text-secondary)'}}>Staff Languages</label>
+                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                                {['English', 'Spanish', 'French', 'German', 'Mandarin', 'Arabic', 'Hindi', 'Japanese', 'Russian', 'Italian'].map(lang => (
+                                    <label key={lang} style={pillStyle(formData.languages.includes(lang))}>
+                                        <input type="checkbox" hidden checked={formData.languages.includes(lang)} onChange={() => toggleArrayItem('languages', lang)}/>
+                                        {formData.languages.includes(lang) && <CheckCircle2 size={16} />}
+                                        {lang}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* PAYMENTS */}
+                    <div className="form-section">
+                        <h4 className="section-heading"><CreditCard size={18}/> Accepted Payments</h4>
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            {['Credit Card (Visa/Mastercard)', 'Cash on Arrival', 'Bank Transfer', 'PayPal', 'Crypto', 'AliPay'].map(method => (
+                                <label key={method} style={pillStyle(formData.payments.includes(method))}>
+                                    <input type="checkbox" hidden checked={formData.payments.includes(method)} onChange={() => toggleArrayItem('payments', method)}/>
+                                    {formData.payments.includes(method) && <CheckCircle2 size={16} />}
+                                    {method}
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* AMENITIES */}
                     <div className="form-section no-border">
-                        <h4 className="section-heading"><CheckCircle2 size={18}/> Amenities</h4>
+                        <h4 className="section-heading"><CheckCircle2 size={18}/> Facility Amenities</h4>
                         <div style={{display:'flex', gap:'10px', marginBottom:'20px', alignItems: 'center'}}>
                             <input className="form-input" placeholder="Create new amenity..." value={newAmenityText} onChange={e => setNewAmenityText(e.target.value)} style={{maxWidth: '300px'}}/>
                             <button type="button" className="btn-ghost" onClick={addNewAmenity}>Add Custom</button>

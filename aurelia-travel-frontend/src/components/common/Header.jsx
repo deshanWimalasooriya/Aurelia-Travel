@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Search, Heart, User, LogOut, Settings, LayoutDashboard, Building2, Menu, X } from 'lucide-react' 
+// ✅ Imported MessageSquare for the new Reviews Tab
+import { Search, Heart, User, LogOut, Settings, LayoutDashboard, Building2, Menu, X, MessageSquare, Plane, Ticket } from 'lucide-react' 
 import { useUser } from '../../context/userContext'
 import { useAuth } from '../../context/AuthContext'
 import { useNotifications } from '../../context/NotificationContext'
@@ -18,7 +19,7 @@ const Header = () => {
   const { wishlist } = useWishlist();
   
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false) // ✅ Mobile Menu State
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false) 
   const dropdownRef = useRef(null)
 
   // Close profile dropdown if clicked outside
@@ -32,7 +33,7 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // ✅ Auto-close mobile menu when changing pages
+  // Auto-close mobile menu when changing pages
   useEffect(() => {
     setMobileMenuOpen(false)
   }, [location.pathname])
@@ -90,10 +91,12 @@ const Header = () => {
         {/* Right Actions */}
         <div className="header-actions">
           
-          <Link to="/wishlist" className="header-action-btn wishlist-link">
-              <Heart className="header-icon" />
-              {wishlist.length > 0 && (
-                  <span className="wishlist-badge">{wishlist.length}</span>
+          <Link to="/profile" state={{ view: 'saved_lists' }} className="header-icon wishlist-link">
+              <Heart size={24} color="var(--text-secondary)" />
+              {wishlist && wishlist.length > 0 && (
+                <span className="wishlist-badge">
+                  {wishlist.length}
+                </span>
               )}
           </Link>
 
@@ -133,6 +136,25 @@ const Header = () => {
                   </div>
                   
                   <div className="dropdown-divider"></div>
+
+                  {/* ✅ UPDATED: Changed text to "My Account" */}
+                  <Link to="/profile" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                    <User size={16} /> My Account
+                  </Link>
+
+                  {/* ✅ NEW: Reviews Tab */}
+                  <Link to="/my-reviews" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                    <MessageSquare size={16} /> My Reviews
+                  </Link>
+
+                  {/* ✅ NEW: My Bookings Tab */}
+                  <Link to="/my-bookings" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                    <Ticket size={16} /> My Bookings
+                  </Link>
+
+                  <Link to="/wishlist" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                    <Heart size={16} /> Saved Properties
+                  </Link>
                   
                   {(isManager || isAdmin) && (
                     <Link to="/admin" className="dropdown-item highlight-item" onClick={() => setDropdownOpen(false)}>
@@ -145,10 +167,6 @@ const Header = () => {
                       <LayoutDashboard size={16} /> System Admin
                     </Link>
                   )}
-
-                  <Link to="/profile" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
-                    <Settings size={16} /> Profile Settings
-                  </Link>
                   
                   <div className="dropdown-divider"></div>
 
@@ -162,7 +180,7 @@ const Header = () => {
             <Link to="/auth" className="btn-auth-login desktop-auth-btn">Sign In</Link>
           )}
           
-          {/* ✅ Mobile Menu Toggle Button */}
+          {/* Mobile Menu Toggle Button */}
           <button 
              className="mobile-menu-btn" 
              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -174,7 +192,7 @@ const Header = () => {
         </div>
       </div>
 
-      {/* ✅ Mobile Navigation Overlay */}
+      {/* Mobile Navigation Overlay */}
       <div className={`mobile-nav-overlay ${mobileMenuOpen ? 'open' : ''}`}>
         <nav className="mobile-nav-links">
           <Link to="/" className={`mobile-nav-link ${location.pathname === '/' ? 'active' : ''}`}>Home</Link>

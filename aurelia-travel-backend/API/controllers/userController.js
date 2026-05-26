@@ -2,6 +2,7 @@ const userModel = require('../models/userModel');
 const bookingModel = require('../models/bookingModel'); // Needed for Dashboard
 const logService = require('../services/logService');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 // 1. GET USER (Admin or Self)
 exports.getUserById = async (req, res) => {
@@ -114,11 +115,28 @@ exports.getTravelerDashboard = async (req, res) => {
 };
 
 // 4. MANAGER UPGRADE (Preserved)
+// 4. MANAGER UPGRADE (Updated to issue a new token)
 exports.upgradeToManager = async (req, res) => {
     try {
         const userId = req.user.userId;
-        await userModel.update(userId, { role: 'hotel_manager' }); // Fixed enum case 'hotel_manager'
-        res.status(200).json({ success: true, message: 'Upgraded to Hotel Manager' });
+        await userModel.update(userId, { role: 'hotel_manager' }); 
+
+        // 1. Generate a brand new token with the new role
+        const token = jwt.sign(
+            { userId: userId, email: req.user.email, role: 'hotel_manager' },
+            process.env.JWT_SECRET || 'secret',
+            { expiresIn: '24h' }
+        );
+
+        // 2. Set the new token in the user's browser cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: false, // Make sure this is false for localhost development
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000 // 1 Day
+        });
+
+        res.status(200).json({ success: true, message: 'Upgraded to Hotel Manager', role: 'hotel_manager' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

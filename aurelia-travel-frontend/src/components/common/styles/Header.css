@@ -114,23 +114,40 @@
 .wishlist-link {
   position: relative;
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: var(--transition-smooth);
 }
+
+.wishlist-link:hover {
+  background-color: var(--color-background);
+}
+
+.wishlist-link:hover svg {
+  color: #ef4444 !important; /* Turns heart red on hover */
+}
+
 .wishlist-badge {
   position: absolute; 
-  top: 4px; 
-  right: 4px;
+  top: 0px; 
+  right: -2px;
   background: #ef4444; 
   color: white;
   font-size: 10px; 
-  font-weight: 800;
-  height: 16px; 
-  min-width: 16px;
+  font-weight: 700;
+  height: 18px; 
+  min-width: 18px;
   padding: 0 4px;
-  border-radius: 10px; 
+  border-radius: 9px; 
   display: flex; 
   align-items: center; 
   justify-content: center;
   border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 }
 
 /* User Section */
@@ -439,4 +456,58 @@
   /* Show Mobile Elements */
   .mobile-menu-btn { display: flex; }
   .mobile-auth-btn { display: block; }
+}
+
+/* --- COMPACT INCOMPLETE BOOKING TAG --- */
+.floating-pending-tag {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background-color: #f59e0b; /* Premium Amber/Orange */
+    color: white;
+    padding: 10px 16px; /* Reduced padding */
+    border-radius: 8px; /* Sleeker corners */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15); /* Softer shadow */
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Tighter spacing */
+    cursor: pointer;
+    z-index: 9999;
+    max-width: 260px; /* Prevents it from getting too wide */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.floating-pending-tag:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+}
+
+.tag-icon {
+    font-size: 18px; /* Smaller icon */
+    display: flex;
+    align-items: center;
+}
+
+.tag-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden; /* Required for the text ellipsis to work */
+}
+
+.tag-content h4 {
+    margin: 0;
+    font-size: 13px; /* Smaller title */
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.tag-content p {
+    margin: 0;
+    font-size: 11px; /* Smaller subtitle */
+    opacity: 0.9;
+    line-height: 1.2;
+    white-space: nowrap; /* Forces text to stay on one line */
+    overflow: hidden; /* Hides overflowing text */
+    text-overflow: ellipsis; /* Adds '...' if the hotel name is very long */
 }
