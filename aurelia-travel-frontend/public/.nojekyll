@@ -1,0 +1,10 @@
+6. Leave the file completely empty. Do not type anything inside it. Just save it.
+
+### Step 2: Push the Update to GitHub
+Now, we need to send this new file up to the `main` branch so GitHub can see it.
+
+Open your VS Code terminal (make sure you are on the `main` branch) and run:
+```bash
+git add .
+git commit -m "Added .nojekyll to bypass GitHub Pages default builder"
+git push origin main
