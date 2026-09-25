@@ -14,7 +14,7 @@
     align-items: center;
     margin-bottom: 40px;
     padding-bottom: 20px;
-    border-bottom: 1px solid var(--border-subtle, #e2e8f0);
+    border-bottom: 1px solid var(--border-subtle, var(--border-subtle));
 }
 
 .wishlist-title {
@@ -44,7 +44,7 @@
     gap: 8px;
     padding: 12px 24px;
     border: 1px solid #fecaca;
-    background: white;
+    background: var(--color-surface);
     color: #ef4444;
     border-radius: var(--radius-sm);
     font-weight: 700;
@@ -63,7 +63,7 @@
     padding: 80px 20px;
     background: var(--color-surface);
     border-radius: var(--radius-lg);
-    border: 2px dashed #cbd5e1;
+    border: 2px dashed var(--border-subtle);
     box-shadow: var(--shadow-sm);
 }
 

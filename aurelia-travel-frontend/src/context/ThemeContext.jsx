@@ -1,22 +1,33 @@
-// src/context/ThemeContext.jsx
-import React, { useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
-const ThemeProvider = ({ children }) => {
+export const ThemeContext = createContext();
+
+export const ThemeProvider = ({ children }) => {
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+  const location = useLocation();
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+  };
+
   useEffect(() => {
-    const monthNames = [
-      "january", "february", "march", "april", "may", "june",
-      "july", "august", "september", "october", "november", "december"
-    ];
+    const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/superAdmin');
     
-    const currentMonth = monthNames[new Date().getMonth()];
-    
-    // Easily override manually for testing or special events
-    const activeTheme = currentMonth; 
-    
-    document.documentElement.setAttribute('data-theme', activeTheme);
-  }, []);
+    if (isAdminRoute) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+  }, [theme, location.pathname]);
 
-  return <>{children}</>;
+  return (
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 };
 
-export default ThemeProvider;
+export const useTheme = () => useContext(ThemeContext);

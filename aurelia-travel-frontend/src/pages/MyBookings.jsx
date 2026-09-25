@@ -189,7 +189,7 @@ const MyBookings = () => {
                                             <Star 
                                                 key={star} size={32} 
                                                 fill={star <= reviewForm.rating ? "#f59e0b" : "none"} 
-                                                color={star <= reviewForm.rating ? "#f59e0b" : "#cbd5e1"}
+                                                color={star <= reviewForm.rating ? "#f59e0b" : "var(--border-subtle)"}
                                                 style={{cursor:'pointer', transition:'all 0.2s'}}
                                                 onClick={() => setReviewForm({...reviewForm, rating: star})}
                                             />

@@ -2,11 +2,11 @@
 .search-form-container {
     display: flex;
     align-items: center;
-    background: white;
+    background: var(--color-surface);
     padding: 8px;
     border-radius: 50px; /* Fully rounded pill shape */
     box-shadow: 0 10px 40px rgba(0,0,0,0.12); /* Soft shadow */
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--border-subtle);
     max-width: 1000px; /* Wider container */
     margin: 0 auto;
     gap: 5px;
@@ -31,7 +31,7 @@
 }
 
 .search-group:hover {
-    background-color: #f3f4f6; /* Subtle gray hover on sections */
+    background-color: var(--color-background); /* Subtle hover on sections */
 }
 
 .search-group label {
@@ -42,7 +42,7 @@
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: black;
+  color: var(--text-main);
   margin-bottom: 6px;
   /* Removed margin-left since icon is now part of the label flow */
   margin-left: 0; 
@@ -50,7 +50,7 @@
 
 /* Style for the new label icons */
 .label-icon {
-  color: #94a3b8;
+  color: var(--text-muted);
   margin-bottom: 1px; /* Optical alignment */
   transition: color 0.3s ease;
 }
@@ -80,10 +80,11 @@
     border: none;            /* Removes default borders */
     outline: none;   
     padding-left: 0;        /* Removes focus outline */
-}-gor
+    color: var(--text-main);
+}
 
 .input-wrapper input::placeholder {
-    color: #9ca3af;
+    color: var(--text-muted);
     font-weight: 400;
 }
 
@@ -109,7 +110,7 @@
 .divider-vertical {
     width: 1px;
     height: 30px;
-    background-color: #e5e7eb;
+    background-color: var(--border-subtle);
 }
 
 /* Search Button */
@@ -199,7 +200,7 @@
     font-size: 0.85rem; /* Slightly smaller to fit long dates */
     text-transform: uppercase;
     font-weight: 600;
-    color: #374151;
+    color: var(--text-main);
 }
 
 /* Rest of the CSS remains the same from the previous response... */

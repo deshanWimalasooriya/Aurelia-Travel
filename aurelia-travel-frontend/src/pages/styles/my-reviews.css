@@ -40,7 +40,7 @@
 /* Empty State */
 .empty-reviews-state {
     background: var(--color-surface);
-    border: 1px dashed var(--border-subtle, #e2e8f0);
+    border: 1px dashed var(--border-subtle, var(--border-subtle));
     border-radius: var(--radius-lg);
     padding: 60px 20px;
     text-align: center;
@@ -61,7 +61,7 @@
 
 .user-review-card {
     background: var(--color-surface);
-    border: 1px solid var(--border-subtle, #e2e8f0);
+    border: 1px solid var(--border-subtle, var(--border-subtle));
     border-radius: var(--radius-lg);
     padding: 30px;
     box-shadow: var(--shadow-sm);
@@ -78,7 +78,7 @@
     align-items: center;
     gap: 16px;
     padding-bottom: 20px;
-    border-bottom: 1px solid var(--border-subtle, #f1f5f9);
+    border-bottom: 1px solid var(--border-subtle, var(--border-subtle));
     margin-bottom: 20px;
 }
 
@@ -86,7 +86,7 @@
     width: 60px;
     height: 60px;
     border-radius: 12px;
-    background: #f1f5f9;
+    background: var(--border-subtle);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -128,7 +128,7 @@
 
 /* Manager Reply Box */
 .ur-manager-reply {
-    background: #f8fafc;
+    background: var(--color-background);
     border-left: 4px solid var(--color-primary);
     padding: 20px;
     border-radius: 0 12px 12px 0;

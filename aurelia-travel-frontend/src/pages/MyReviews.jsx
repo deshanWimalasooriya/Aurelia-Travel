@@ -31,7 +31,7 @@ const MyReviews = () => {
                         key={star} 
                         size={16} 
                         fill={star <= rating ? "#f59e0b" : "none"} 
-                        color={star <= rating ? "#f59e0b" : "#cbd5e1"} 
+                        color={star <= rating ? "#f59e0b" : "var(--border-subtle)"} 
                     />
                 ))}
             </div>
@@ -52,7 +52,7 @@ const MyReviews = () => {
 
                 {reviews.length === 0 ? (
                     <div className="empty-reviews-state">
-                        <MessageSquare size={48} color="#cbd5e1" />
+                        <MessageSquare size={48} color="var(--border-subtle)" />
                         <h3>No reviews yet</h3>
                         <p>You haven't written any reviews for your past stays.</p>
                         <Link to="/profile" className="btn-primary-compact">View Past Bookings</Link>
@@ -68,7 +68,7 @@ const MyReviews = () => {
                                         {review.hotel_image ? (
                                             <img src={review.hotel_image} alt={review.hotel_name} />
                                         ) : (
-                                            <Building2 size={24} color="#94a3b8" />
+                                            <Building2 size={24} color="var(--text-muted)" />
                                         )}
                                     </div>
                                     <div className="ur-hotel-details">

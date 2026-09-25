@@ -3,7 +3,7 @@
    ========================================= */
 
 .header {
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: color-mix(in srgb, var(--color-surface) 95%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: var(--glass-border);
@@ -29,7 +29,7 @@
   font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: -0.5px;
-  color: var(--color-dark);
+  color: var(--text-main);
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -395,7 +395,7 @@
   top: 76px; /* Exactly below the header */
   left: 0;
   width: 100%;
-  background-color: rgba(255, 255, 255, 0.98);
+  background-color: color-mix(in srgb, var(--color-surface) 98%, transparent);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
   box-shadow: var(--shadow-md);
@@ -510,4 +510,40 @@
     white-space: nowrap; /* Forces text to stay on one line */
     overflow: hidden; /* Hides overflowing text */
     text-overflow: ellipsis; /* Adds '...' if the hotel name is very long */
+}
+
+
+/* Logo Shine Animation */
+.header-logo {
+  position: relative;
+  overflow: hidden;
+}
+
+.header-logo::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0) 100%);
+  transform: skewX(-25deg);
+  z-index: 1;
+}
+
+[data-theme="dark"] .header-logo::after {
+  background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0) 100%);
+}
+
+.shine-animate::after {
+  animation: shine 0.75s ease-in-out forwards;
+}
+
+@keyframes shine {
+  0% {
+    left: -150%;
+  }
+  100% {
+    left: 200%;
+  }
 }

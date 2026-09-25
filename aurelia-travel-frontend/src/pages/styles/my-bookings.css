@@ -3,8 +3,8 @@
 .booking-ticket-card {
     display: flex;
     flex-direction: row;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
+    background: var(--color-surface);
+    border: 1px solid var(--border-subtle);
     border-radius: 8px; /* Sharper, more corporate corners */
     overflow: hidden;
     margin-bottom: 12px; /* Very tight spacing */
@@ -15,7 +15,7 @@
 
 .booking-ticket-card:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-    border-color: #cbd5e1;
+    border-color: var(--border-subtle);
 }
 
 /* 1. Square Thumbnail Image */
@@ -23,8 +23,8 @@
     width: 120px; /* Drastically reduced */
     min-width: 120px;
     position: relative;
-    background: #f8fafc;
-    border-right: 1px solid #f1f5f9;
+    background: var(--color-background);
+    border-right: 1px solid var(--border-subtle);
 }
 
 .btc-image img {
@@ -45,7 +45,7 @@
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(2px);
-    color: #0f172a;
+    color: var(--text-main);
     border: 1px solid rgba(0,0,0,0.05);
 }
 
@@ -71,13 +71,13 @@
     font-size: 0.95rem; /* Professional, smaller size */
     font-weight: 600;
     margin: 0 0 2px 0;
-    color: #0f172a;
+    color: var(--text-main);
     line-height: 1.2;
 }
 
 .btc-location {
     font-size: 0.75rem;
-    color: #64748b;
+    color: var(--text-secondary);
     display: flex;
     align-items: center;
     gap: 4px;
@@ -91,13 +91,13 @@
 .price-value {
     font-size: 1rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text-main);
 }
 
 .price-label {
     display: block;
     font-size: 0.65rem;
-    color: #94a3b8;
+    color: var(--text-muted);
     text-transform: uppercase;
     margin-top: 4px;
 }
@@ -105,7 +105,7 @@
 /* 4. Strip away bulky badges, make room info inline */
 .btc-room-info {
     font-size: 0.8rem;
-    color: #475569;
+    color: var(--text-secondary);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -164,8 +164,8 @@
 
 .nights-pill {
     font-size: 0.7rem;
-    color: #64748b;
-    background: #f1f5f9;
+    color: var(--text-secondary);
+    background: var(--border-subtle);
     padding: 2px 6px;
     border-radius: 4px; /* Sharper pill */
     display: flex;
@@ -180,19 +180,19 @@
     align-items: center;
     margin-top: 4px;
     padding-top: 8px;
-    border-top: 1px solid #f1f5f9; /* Extremely subtle line */
+    border-top: 1px solid var(--border-subtle); /* Extremely subtle line */
 }
 
 .payment-info {
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: var(--text-muted);
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
 .payment-info strong {
-    color: #475569;
+    color: var(--text-secondary);
     font-weight: 500;
 }
 
@@ -216,20 +216,20 @@
 
 .btn-ghost-small {
     background: transparent;
-    border: 1px solid #cbd5e1;
-    color: #475569;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
 }
 
 .btn-ghost-small:hover {
-    background: #f8fafc;
-    border-color: #94a3b8;
-    color: #0f172a;
+    background: var(--color-background);
+    border-color: var(--text-muted);
+    color: var(--text-main);
 }
 
 .btn-primary-small {
-    background: #0f172a; /* Dark premium corporate color */
-    color: #ffffff;
-    border: 1px solid #0f172a;
+    background: var(--text-main); /* Dark premium corporate color */
+    color: var(--color-surface);
+    border: 1px solid var(--text-main);
 }
 
 .btn-primary-small:hover {
@@ -239,6 +239,6 @@
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
     .booking-ticket-card { flex-direction: column; }
-    .btc-image { width: 100%; height: 100px; border-right: none; border-bottom: 1px solid #f1f5f9; }
+    .btc-image { width: 100%; height: 100px; border-right: none; border-bottom: 1px solid var(--border-subtle); }
     .btc-dates-row { flex-wrap: wrap; gap: 8px; }
 }

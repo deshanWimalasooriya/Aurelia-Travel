@@ -30,11 +30,11 @@
 
 .breadcrumb-separator {
   margin: 0 8px;
-  color: #94a3b8; /* Slate 400 */
+  color: var(--text-muted); /* Slate 400 */
 }
 
 .breadcrumb-current {
-  color: #0f172a; /* Slate 900 */
+  color: var(--text-main); /* Slate 900 */
   font-weight: 600;
 }
 
@@ -52,8 +52,8 @@
 }
 
 .sidebar-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0; /* Slate 200 */
+  background: var(--color-surface);
+  border: 1px solid var(--border-subtle); /* Slate 200 */
   border-radius: 12px;
   padding: 20px 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -62,7 +62,7 @@
 .sidebar-card h3 {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-main);
   padding: 0 20px;
   margin-bottom: 15px;
 }
@@ -78,14 +78,14 @@
   justify-content: space-between;
   padding: 12px 20px;
   text-decoration: none;
-  color: #64748b; /* Slate 500 */
+  color: var(--text-secondary); /* Slate 500 */
   font-weight: 500;
   font-size: 0.95rem;
   transition: all 0.2s ease;
 }
 
 .sidebar-item:hover {
-  background: #f8fafc; /* Slate 50 */
+  background: var(--color-background); /* Slate 50 */
 }
 
 .sidebar-item-left {
@@ -96,17 +96,17 @@
 
 /* Active State for Sidebar */
 .sidebar-item.active {
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--color-background);
+  color: var(--text-main);
   font-weight: 600;
 }
 
 .sidebar-item.active .sidebar-icon {
-  color: #0f172a;
+  color: var(--text-main);
 }
 
 .sidebar-arrow {
-  color: #cbd5e1;
+  color: var(--border-subtle);
 }
 
 /* --- RIGHT MAIN CONTENT --- */
@@ -122,12 +122,12 @@
 .safety-header h1 {
   font-size: 1.8rem;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text-main);
   margin-bottom: 8px;
 }
 
 .safety-header p {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 1rem;
 }
 
@@ -178,7 +178,7 @@
 
 .btn-emergency-solid {
   background-color: #ef4444; /* Red 500 */
-  color: white;
+  color: var(--color-surface);
   font-weight: 600;
   padding: 12px 24px;
   border-radius: 6px;
@@ -213,8 +213,8 @@
 
 /* Guidelines Box */
 .guidelines-box {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--color-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 24px;
 }
@@ -229,13 +229,13 @@
 .guidelines-header h2 {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-main);
 }
 
 .guidelines-list {
   list-style-type: disc;
   padding-left: 24px;
-  color: #475569;
+  color: var(--text-secondary);
   font-size: 0.95rem;
   line-height: 1.7;
 }
@@ -249,7 +249,7 @@
 }
 
 .guidelines-list strong {
-  color: #0f172a;
+  color: var(--text-main);
   font-weight: 600;
 }
 

@@ -5,6 +5,7 @@ import { UserProvider, useUser } from './context/userContext'
 import { WishlistProvider } from './context/WishlistContext'; // <--- Import
 import Layout from './components/layout/Layout'
 import ProtectedRoute from './components/ProtectedRoute'; // Your auth guard
+import { ThemeProvider } from './context/ThemeContext'; // <--- Import ThemeProvider
 
 // --- Import Pages ---
 import Home from './pages/Home'
@@ -136,7 +137,9 @@ function App() {
       <AuthProvider>
         <NotificationProvider>
           <WishlistProvider>
-            <AppRoutes />
+            <ThemeProvider>
+              <AppRoutes />
+            </ThemeProvider>
           </WishlistProvider>
         </NotificationProvider>
       </AuthProvider>

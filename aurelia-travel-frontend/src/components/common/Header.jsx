@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 // ✅ Imported MessageSquare for the new Reviews Tab
-import { Search, Heart, User, LogOut, Settings, LayoutDashboard, Building2, Menu, X, MessageSquare, Plane, Ticket } from 'lucide-react' 
+import { Search, Heart, User, LogOut, Settings, LayoutDashboard, Building2, Menu, X, MessageSquare, Plane, Ticket, Sun, Moon } from 'lucide-react' 
 import { useUser } from '../../context/userContext'
 import { useAuth } from '../../context/AuthContext'
 import { useNotifications } from '../../context/NotificationContext'
@@ -9,6 +9,7 @@ import NotificationBell from '../ui/NotificationBell'
 import axios from 'axios'
 import './styles/Header.css'
 import { useWishlist } from '../../context/WishlistContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const Header = () => {
   const location = useLocation()
@@ -17,9 +18,11 @@ const Header = () => {
   const { user, clearUser, isAdmin, isManager } = useUser()
   const { checkAuth } = useAuth();
   const { wishlist } = useWishlist();
+  const { theme, toggleTheme } = useTheme();
   
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false) 
+  const [isAnimating, setIsAnimating] = useState(false)
   const dropdownRef = useRef(null)
 
   // Close profile dropdown if clicked outside
@@ -37,6 +40,13 @@ const Header = () => {
   useEffect(() => {
     setMobileMenuOpen(false)
   }, [location.pathname])
+
+  // Trigger shine animation on theme change
+  useEffect(() => {
+    setIsAnimating(true);
+    const timer = setTimeout(() => setIsAnimating(false), 800);
+    return () => clearTimeout(timer);
+  }, [theme]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -75,7 +85,7 @@ const Header = () => {
     <header className="header">
       <div className="header-container">
         {/* Brand Logo */}
-        <Link to="/" className="header-logo">
+        <Link to="/" className={`header-logo ${isAnimating ? 'shine-animate' : ''}`}>
           Aurelia<span>Travel</span>
         </Link>
 
@@ -99,6 +109,10 @@ const Header = () => {
                 </span>
               )}
           </Link>
+
+          <div className="header-action-btn theme-toggle-btn" onClick={toggleTheme} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Toggle Theme">
+            {theme === 'dark' ? <Sun size={24} color="var(--text-secondary)" /> : <Moon size={24} color="var(--text-secondary)" />}
+          </div>
 
           <div className="header-action-btn">
             <NotificationBell />

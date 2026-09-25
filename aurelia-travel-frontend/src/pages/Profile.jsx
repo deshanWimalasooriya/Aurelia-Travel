@@ -415,7 +415,7 @@ export default function Profile() {
     return (
         <div className="review-stars">
             {[1, 2, 3, 4, 5].map((star) => (
-                <Star key={star} size={16} fill={star <= rating ? "#f59e0b" : "none"} color={star <= rating ? "#f59e0b" : "#cbd5e1"} />
+                <Star key={star} size={16} fill={star <= rating ? "#f59e0b" : "none"} color={star <= rating ? "#f59e0b" : "var(--border-subtle)"} />
             ))}
         </div>
     );
@@ -606,8 +606,8 @@ export default function Profile() {
                     
                     {/* SIDEBAR NAVIGATION */}
                     {activeSection && (
-                        <div className="profile-sidebar" style={{ flex: '0 0 280px', backgroundColor: '#fff', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0', position: 'sticky', top: '20px' }}>
-                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '8px 8px 16px 8px', color: '#0f172a' }}>{activeSection.title}</h3>
+                        <div className="profile-sidebar" style={{ flex: '0 0 280px', backgroundColor: 'var(--color-surface)', borderRadius: '12px', padding: '16px', border: '1px solid var(--border-subtle)', position: 'sticky', top: '20px' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '8px 8px 16px 8px', color: 'var(--text-main)' }}>{activeSection.title}</h3>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 {activeSection.items.map((item, idx) => (
                                     item.view ? (
@@ -617,17 +617,17 @@ export default function Profile() {
                                             style={{ 
                                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', 
                                                 borderRadius: '8px', border: 'none', 
-                                                background: currentView === item.view ? '#f8fafc' : 'transparent',
-                                                color: currentView === item.view ? '#0f172a' : '#64748b', 
+                                                background: currentView === item.view ? 'var(--color-background)' : 'transparent',
+                                                color: currentView === item.view ? 'var(--text-main)' : 'var(--text-secondary)', 
                                                 fontWeight: currentView === item.view ? '600' : '400',
                                                 cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.2s',
                                             }}
                                         >
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                <span style={{ color: currentView === item.view ? '#0f172a' : '#94a3b8', display: 'flex' }}>{item.icon}</span>
+                                                <span style={{ color: currentView === item.view ? 'var(--text-main)' : 'var(--text-muted)', display: 'flex' }}>{item.icon}</span>
                                                 {item.label}
                                             </div>
-                                            <ChevronRight size={16} style={{ color: currentView === item.view ? '#0f172a' : '#cbd5e1' }} />
+                                            <ChevronRight size={16} style={{ color: currentView === item.view ? 'var(--text-main)' : 'var(--border-subtle)' }} />
                                         </button>
                                     ) : null
                                 ))}
@@ -651,7 +651,7 @@ export default function Profile() {
                                     <div className="sub-page-card">
                                         
                                         {/* --- PROFILE PHOTO UPLOAD SECTION --- */}
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '32px', paddingBottom: '32px', borderBottom: '1px solid #e2e8f0' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '32px', paddingBottom: '32px', borderBottom: '1px solid var(--border-subtle)' }}>
                                             <div className="hub-avatar-wrapper" style={{ width: '84px', height: '84px', flexShrink: 0 }}>
                                                 {uploadingImage ? (
                                                     <div className="hub-avatar loading" style={{ width: '100%', height: '100%' }}><Loader2 className="animate-spin" /></div>
@@ -662,8 +662,8 @@ export default function Profile() {
                                                 )}
                                             </div>
                                             <div>
-                                                <h4 style={{ margin: '0 0 6px 0', color: '#0f172a', fontSize: '1.1rem', fontWeight: '700' }}>Profile Photo</h4>
-                                                <p style={{ margin: '0 0 12px 0', color: '#64748b', fontSize: '0.9rem' }}>PNG or JPG no larger than 5MB.</p>
+                                                <h4 style={{ margin: '0 0 6px 0', color: 'var(--text-main)', fontSize: '1.1rem', fontWeight: '700' }}>Profile Photo</h4>
+                                                <p style={{ margin: '0 0 12px 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>PNG or JPG no larger than 5MB.</p>
                                                 <label className="btn-outline" style={{ padding: '8px 16px', fontSize: '0.9rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                                                     <Camera size={16} /> {uploadingImage ? 'Uploading...' : 'Change Photo'}
                                                     {/* This hidden input triggers the file selector */}
@@ -758,16 +758,16 @@ export default function Profile() {
                                         <p>Protect your account with additional security measures and manage your devices.</p>
                                     </div>
                                     
-                                    <div className="sub-page-card" style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '24px', backgroundColor: '#f8fafc', border: 'none' }}>
+                                    <div className="sub-page-card" style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '24px', backgroundColor: 'var(--color-background)', border: 'none' }}>
                                         {/* EMAIL VERIFICATION CARD */}
-                                        <div style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                                        <div style={{ backgroundColor: 'var(--color-surface)', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                                             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                                                 <div style={{ padding: '12px', backgroundColor: '#eff6ff', borderRadius: '50%', color: '#3b82f6', display: 'flex' }}>
                                                     <Mail size={24} strokeWidth={1.5} />
                                                 </div>
                                                 <div>
-                                                    <strong style={{ fontSize: '1.1rem', color: '#1e293b', display: 'block', marginBottom: '4px' }}>Email Verification</strong>
-                                                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
+                                                    <strong style={{ fontSize: '1.1rem', color: 'var(--color-dark-hover)', display: 'block', marginBottom: '4px' }}>Email Verification</strong>
+                                                    <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                                                         Status:{' '}
                                                         {user.is_verified ? (
                                                             <span style={{ color: '#10b981', fontWeight: '600' }}>Verified</span>
@@ -782,14 +782,14 @@ export default function Profile() {
                                         </div>
 
                                         {/* 2FA CARD */}
-                                        <div style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                                        <div style={{ backgroundColor: 'var(--color-surface)', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                                             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                                                 <div style={{ padding: '12px', backgroundColor: '#f0fdf4', borderRadius: '50%', color: '#10b981', display: 'flex' }}>
                                                     <ShieldCheck size={24} strokeWidth={1.5} />
                                                 </div>
                                                 <div>
-                                                    <strong style={{ fontSize: '1.1rem', color: '#1e293b', display: 'block', marginBottom: '4px' }}>Two-Factor Authentication (2FA)</strong>
-                                                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Require a code sent to your email when logging in from unrecognized devices.</p>
+                                                    <strong style={{ fontSize: '1.1rem', color: 'var(--color-dark-hover)', display: 'block', marginBottom: '4px' }}>Two-Factor Authentication (2FA)</strong>
+                                                    <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Require a code sent to your email when logging in from unrecognized devices.</p>
                                                 </div>
                                             </div>
                                             <label className="toggle-switch">
@@ -815,7 +815,7 @@ export default function Profile() {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                             {walletCards.map((card) => (
                                                 <div key={card.id} className="saved-card-premium" style={{ position: 'relative' }}>
-                                                    <button type="button" onClick={() => handleDeleteCard(card.id)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff', transition: 'background 0.2s' }} onMouseOver={(e)=>e.currentTarget.style.background='rgba(239, 68, 68, 0.8)'} onMouseOut={(e)=>e.currentTarget.style.background='rgba(255,255,255,0.2)'} title="Delete Card">
+                                                    <button type="button" onClick={() => handleDeleteCard(card.id)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-surface)', transition: 'background 0.2s' }} onMouseOver={(e)=>e.currentTarget.style.background='rgba(239, 68, 68, 0.8)'} onMouseOut={(e)=>e.currentTarget.style.background='rgba(255,255,255,0.2)'} title="Delete Card">
                                                         <Trash2 size={16} />
                                                     </button>
                                                     <div className="card-chip-row">
@@ -846,21 +846,21 @@ export default function Profile() {
 
                                     {/* Add New Card Form */}
                                     <div className="sub-page-card" style={{ marginTop: '24px' }}>
-                                        <h4 style={{ fontSize: '1.1rem', marginBottom: '16px', color: '#0f172a' }}>Add New Card</h4>
+                                        <h4 style={{ fontSize: '1.1rem', marginBottom: '16px', color: 'var(--text-main)' }}>Add New Card</h4>
                                         <form onSubmit={handleSavePayment} className="hub-page-form">
                                             <div className="form-group" style={{ marginBottom: '16px' }}>
-                                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: '600', color: '#475569', textTransform: 'uppercase' }}>Card Type</label>
-                                                <select value={paymentData.card_type} onChange={e => setPaymentData({...paymentData, card_type: e.target.value})} className="form-input" required style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Card Type</label>
+                                                <select value={paymentData.card_type} onChange={e => setPaymentData({...paymentData, card_type: e.target.value})} className="form-input" required style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
                                                     <option value="">Select Brand</option><option value="Visa">Visa</option><option value="MasterCard">MasterCard</option><option value="Amex">American Express</option>
                                                 </select>
                                             </div>
                                             <div className="form-group" style={{ marginBottom: '16px' }}>
-                                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: '600', color: '#475569', textTransform: 'uppercase' }}>Card Number</label>
-                                                <input value={paymentData.card_number} onChange={e => setPaymentData({...paymentData, card_number: e.target.value})} placeholder="0000 0000 0000 0000" className="form-input" required maxLength={19} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', letterSpacing: '2px' }}/>
+                                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Card Number</label>
+                                                <input value={paymentData.card_number} onChange={e => setPaymentData({...paymentData, card_number: e.target.value})} placeholder="0000 0000 0000 0000" className="form-input" required maxLength={19} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', letterSpacing: '2px' }}/>
                                             </div>
                                             <div className="form-row" style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
-                                                <div className="form-group" style={{ flex: 1 }}><label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: '600', color: '#475569', textTransform: 'uppercase' }}>Expiry Date</label><input value={paymentData.expiry_date} onChange={e => setPaymentData({...paymentData, expiry_date: e.target.value})} placeholder="MM/YY" className="form-input" required maxLength={5} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}/></div>
-                                                <div className="form-group" style={{ flex: 1 }}><label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: '600', color: '#475569', textTransform: 'uppercase' }}>CVV</label><input type="password" value={paymentData.cvv} onChange={e => setPaymentData({...paymentData, cvv: e.target.value})} placeholder="123" className="form-input" required maxLength={4} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}/></div>
+                                                <div className="form-group" style={{ flex: 1 }}><label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Expiry Date</label><input value={paymentData.expiry_date} onChange={e => setPaymentData({...paymentData, expiry_date: e.target.value})} placeholder="MM/YY" className="form-input" required maxLength={5} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}/></div>
+                                                <div className="form-group" style={{ flex: 1 }}><label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>CVV</label><input type="password" value={paymentData.cvv} onChange={e => setPaymentData({...paymentData, cvv: e.target.value})} placeholder="123" className="form-input" required maxLength={4} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}/></div>
                                             </div>
                                             <div className="form-actions-row">
                                                 <button type="submit" className="btn-primary" disabled={loadingPayment} style={{ width: '100%', padding: '12px', borderRadius: '6px', fontWeight: '600' }}>
@@ -883,27 +883,27 @@ export default function Profile() {
                                     <div className="wallet-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '20px' }}>
                                         
                                         {/* Balance Card */}
-                                        <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', borderRadius: '12px', padding: '24px', color: '#fff', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '160px' }}>
+                                        <div style={{ background: 'linear-gradient(135deg, var(--text-main) 0%, #1e293b 100%)', borderRadius: '12px', padding: '24px', color: 'var(--color-surface)', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '160px' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Aurelia Credit</p>
+                                                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Aurelia Credit</p>
                                                 <Wallet size={24} color="#3b82f6" />
                                             </div>
                                             <div>
                                                 <h2 style={{ margin: '0 0 12px 0', fontSize: '2.5rem', fontWeight: '800' }}>$145.00</h2>
-                                                <button style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '6px 16px', borderRadius: '6px', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s' }} onMouseOver={e => e.target.style.background='rgba(255,255,255,0.2)'} onMouseOut={e => e.target.style.background='rgba(255,255,255,0.1)'}>
+                                                <button style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--color-surface)', padding: '6px 16px', borderRadius: '6px', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s' }} onMouseOver={e => e.target.style.background='rgba(255,255,255,0.2)'} onMouseOut={e => e.target.style.background='rgba(255,255,255,0.1)'}>
                                                     + Top Up Balance
                                                 </button>
                                             </div>
                                         </div>
 
                                         {/* Points Card */}
-                                        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '160px' }}>
+                                        <div style={{ background: 'var(--color-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '160px' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '600' }}>Aurelia Points</p>
+                                                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '600' }}>Aurelia Points</p>
                                                 <Star size={24} color="#f59e0b" fill="#f59e0b" />
                                             </div>
                                             <div>
-                                                <h2 style={{ margin: '0 0 4px 0', fontSize: '2.5rem', fontWeight: '800', color: '#0f172a' }}>2,450 <span style={{ fontSize: '1rem', color: '#64748b', fontWeight: '600' }}>pts</span></h2>
+                                                <h2 style={{ margin: '0 0 4px 0', fontSize: '2.5rem', fontWeight: '800', color: 'var(--text-main)' }}>2,450 <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: '600' }}>pts</span></h2>
                                                 <p style={{ margin: 0, color: '#10b981', fontSize: '0.85rem', fontWeight: '600' }}>≈ $24.50 off your next booking</p>
                                             </div>
                                         </div>
@@ -920,32 +920,32 @@ export default function Profile() {
                                         <h2>Transaction History</h2>
                                         <p>Review your past payments, refunds, and wallet top-ups.</p>
                                     </div>
-                                    <div className="sub-page-card" style={{ padding: 0, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                    <div className="sub-page-card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                                             
                                             {/* Transaction 1 */}
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #f1f5f9' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                                    <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569' }}>
+                                                    <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--color-background)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
                                                         <Briefcase size={20} />
                                                     </div>
                                                     <div>
-                                                        <strong style={{ display: 'block', color: '#0f172a', fontSize: '0.95rem', marginBottom: '2px' }}>Ocean View Resort Booking</strong>
-                                                        <span style={{ color: '#64748b', fontSize: '0.8rem' }}>Oct 12, 2025 • Visa ending in 4242</span>
+                                                        <strong style={{ display: 'block', color: 'var(--text-main)', fontSize: '0.95rem', marginBottom: '2px' }}>Ocean View Resort Booking</strong>
+                                                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Oct 12, 2025 • Visa ending in 4242</span>
                                                     </div>
                                                 </div>
-                                                <span style={{ fontWeight: '700', color: '#0f172a' }}>-$340.00</span>
+                                                <span style={{ fontWeight: '700', color: 'var(--text-main)' }}>-$340.00</span>
                                             </div>
 
                                             {/* Transaction 2 */}
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #f1f5f9' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                                                     <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
                                                         <Wallet size={20} />
                                                     </div>
                                                     <div>
-                                                        <strong style={{ display: 'block', color: '#0f172a', fontSize: '0.95rem', marginBottom: '2px' }}>Wallet Top-up</strong>
-                                                        <span style={{ color: '#64748b', fontSize: '0.8rem' }}>Sep 05, 2025 • MasterCard ending in 8853</span>
+                                                        <strong style={{ display: 'block', color: 'var(--text-main)', fontSize: '0.95rem', marginBottom: '2px' }}>Wallet Top-up</strong>
+                                                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Sep 05, 2025 • MasterCard ending in 8853</span>
                                                     </div>
                                                 </div>
                                                 <span style={{ fontWeight: '700', color: '#10b981' }}>+$100.00</span>
@@ -958,8 +958,8 @@ export default function Profile() {
                                                         <Receipt size={20} />
                                                     </div>
                                                     <div>
-                                                        <strong style={{ display: 'block', color: '#0f172a', fontSize: '0.95rem', marginBottom: '2px' }}>City Center Hotel Refund</strong>
-                                                        <span style={{ color: '#64748b', fontSize: '0.8rem' }}>Aug 22, 2025 • Processed to Wallet</span>
+                                                        <strong style={{ display: 'block', color: 'var(--text-main)', fontSize: '0.95rem', marginBottom: '2px' }}>City Center Hotel Refund</strong>
+                                                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Aug 22, 2025 • Processed to Wallet</span>
                                                     </div>
                                                 </div>
                                                 <span style={{ fontWeight: '700', color: '#10b981' }}>+$45.00</span>
@@ -1091,8 +1091,8 @@ export default function Profile() {
                                                 ))}
                                             </div>
                                         ) : (
-                                            <div className="empty-state-card" style={{textAlign: 'center', padding: '40px', backgroundColor: '#fff', borderRadius: '12px'}}>
-                                                <Heart size={48} color="#cbd5e1" style={{ margin: '0 auto', marginBottom: '16px' }} />
+                                            <div className="empty-state-card" style={{textAlign: 'center', padding: '40px', backgroundColor: 'var(--color-surface)', borderRadius: '12px'}}>
+                                                <Heart size={48} color="var(--border-subtle)" style={{ margin: '0 auto', marginBottom: '16px' }} />
                                                 <h3>Your wishlist is empty</h3>
                                                 <p>Save properties you love to view them here.</p>
                                                 <button className="btn-primary" onClick={() => navigate('/hotel-showcase')} style={{marginTop: '20px'}}>Explore Hotels</button>
@@ -1113,12 +1113,12 @@ export default function Profile() {
                                     <div className="sub-page-card">
                                         <form onSubmit={handleSaveCustomization}>
                                             <div className="form-group" style={{ marginBottom: '20px' }}>
-                                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b' }}>Preferred Currency</label>
+                                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: 'var(--color-dark-hover)' }}>Preferred Currency</label>
                                                 <select 
                                                     className="form-input" 
                                                     value={customizationData.currency}
                                                     onChange={(e) => setCustomizationData({...customizationData, currency: e.target.value})}
-                                                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }}
+                                                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--color-surface)' }}
                                                 >
                                                     <option value="USD">USD ($) - US Dollar</option>
                                                     <option value="EUR">EUR (€) - Euro</option>
@@ -1128,12 +1128,12 @@ export default function Profile() {
                                                 </select>
                                             </div>
                                             <div className="form-group" style={{ marginBottom: '24px' }}>
-                                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b' }}>Preferred Language</label>
+                                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: 'var(--color-dark-hover)' }}>Preferred Language</label>
                                                 <select 
                                                     className="form-input" 
                                                     value={customizationData.language}
                                                     onChange={(e) => setCustomizationData({...customizationData, language: e.target.value})}
-                                                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }}
+                                                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--color-surface)' }}
                                                 >
                                                     <option value="EN">English (US)</option>
                                                     <option value="EN-GB">English (UK)</option>
@@ -1160,10 +1160,10 @@ export default function Profile() {
                                     </div>
                                     <div className="sub-page-card" style={{ padding: 0, overflow: 'hidden' }}>
                                         
-                                        <div className="settings-row" style={{ padding: '24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
+                                        <div className="settings-row" style={{ padding: '24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
                                             <div className="settings-info">
-                                                <strong style={{ fontSize: '1.05rem', color: '#0f172a', display: 'block', marginBottom: '4px' }}>Promotions & Deals</strong>
-                                                <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem', lineHeight: '1.5' }}>Get exclusive offers, travel inspiration, and personalized property recommendations.</p>
+                                                <strong style={{ fontSize: '1.05rem', color: 'var(--text-main)', display: 'block', marginBottom: '4px' }}>Promotions & Deals</strong>
+                                                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5' }}>Get exclusive offers, travel inspiration, and personalized property recommendations.</p>
                                             </div>
                                             <label className="toggle-switch">
                                                 <input type="checkbox" checked={emailPrefs.promos} onChange={(e) => handleToggleEmailPref('promos', e.target.checked)} />
@@ -1171,10 +1171,10 @@ export default function Profile() {
                                             </label>
                                         </div>
                                         
-                                        <div className="settings-row" style={{ padding: '24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
+                                        <div className="settings-row" style={{ padding: '24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
                                             <div className="settings-info">
-                                                <strong style={{ fontSize: '1.05rem', color: '#0f172a', display: 'block', marginBottom: '4px' }}>Booking Updates</strong>
-                                                <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem', lineHeight: '1.5' }}>Essential reminders, itinerary changes, and updates about your upcoming trips.</p>
+                                                <strong style={{ fontSize: '1.05rem', color: 'var(--text-main)', display: 'block', marginBottom: '4px' }}>Booking Updates</strong>
+                                                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5' }}>Essential reminders, itinerary changes, and updates about your upcoming trips.</p>
                                             </div>
                                             <label className="toggle-switch">
                                                 <input type="checkbox" checked={emailPrefs.bookings} onChange={(e) => handleToggleEmailPref('bookings', e.target.checked)} />
@@ -1182,13 +1182,13 @@ export default function Profile() {
                                             </label>
                                         </div>
                                         
-                                        <div className="settings-row" style={{ padding: '24px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
+                                        <div className="settings-row" style={{ padding: '24px', backgroundColor: 'var(--color-background)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
                                             <div className="settings-info">
-                                                <strong style={{ fontSize: '1.05rem', color: '#475569', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <strong style={{ fontSize: '1.05rem', color: 'var(--text-secondary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                     Account Security 
-                                                    <span style={{ fontSize: '0.65rem', backgroundColor: '#cbd5e1', color: '#0f172a', padding: '2px 6px', borderRadius: '4px', fontWeight: '800', letterSpacing: '0.5px' }}>REQUIRED</span>
+                                                    <span style={{ fontSize: '0.65rem', backgroundColor: 'var(--border-subtle)', color: 'var(--text-main)', padding: '2px 6px', borderRadius: '4px', fontWeight: '800', letterSpacing: '0.5px' }}>REQUIRED</span>
                                                 </strong>
-                                                <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem', lineHeight: '1.5' }}>Alerts about logins, password changes, and security notices. This cannot be disabled.</p>
+                                                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>Alerts about logins, password changes, and security notices. This cannot be disabled.</p>
                                             </div>
                                             <label className="toggle-switch" style={{ opacity: 0.6, cursor: 'not-allowed' }}>
                                                 <input type="checkbox" checked={true} disabled />
@@ -1235,10 +1235,10 @@ export default function Profile() {
 
                                         {/* Safety Tips Card */}
                                         <div className="sub-page-card">
-                                            <h3 style={{ fontSize: '1.1rem', marginBottom: '16px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <h3 style={{ fontSize: '1.1rem', marginBottom: '16px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <ShieldCheck size={20} color="#3b82f6"/> Travel Safety Guidelines
                                             </h3>
-                                            <ul style={{ paddingLeft: '20px', margin: 0, color: '#475569', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                                            <ul style={{ paddingLeft: '20px', margin: 0, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.95rem', lineHeight: '1.5' }}>
                                                 <li><strong>Verify your communications:</strong> Always communicate and pay directly through the Aurelia platform. Never wire money or pay outside the app.</li>
                                                 <li><strong>Share your itinerary:</strong> Let a trusted friend or family member know your travel plans, accommodation details, and contact numbers.</li>
                                                 <li><strong>Research your destination:</strong> Familiarize yourself with the neighborhood and local emergency numbers before you arrive.</li>
@@ -1275,12 +1275,12 @@ export default function Profile() {
                                         {/* Data Export Card */}
                                         <div className="sub-page-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', flex: 1, minWidth: '250px' }}>
-                                                <div style={{ padding: '12px', backgroundColor: '#f1f5f9', borderRadius: '50%', color: '#475569' }}>
+                                                <div style={{ padding: '12px', backgroundColor: 'var(--border-subtle)', borderRadius: '50%', color: 'var(--text-secondary)' }}>
                                                     <Download size={24} />
                                                 </div>
                                                 <div>
-                                                    <h3 style={{ margin: '0 0 4px 0', color: '#0f172a', fontSize: '1.05rem', fontWeight: '600' }}>Download Your Data</h3>
-                                                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                                                    <h3 style={{ margin: '0 0 4px 0', color: 'var(--text-main)', fontSize: '1.05rem', fontWeight: '600' }}>Download Your Data</h3>
+                                                    <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5' }}>
                                                         Request a copy of your personal data, including your profile information, booking history, and reviews. The file will be emailed to you in JSON format.
                                                     </p>
                                                 </div>
@@ -1291,11 +1291,11 @@ export default function Profile() {
                                         </div>
 
                                         {/* Danger Zone: Account Deletion */}
-                                        <div className="sub-page-card" style={{ border: '1px solid #fca5a5', backgroundColor: '#fff', position: 'relative', overflow: 'hidden' }}>
+                                        <div className="sub-page-card" style={{ border: '1px solid #fca5a5', backgroundColor: 'var(--color-surface)', position: 'relative', overflow: 'hidden' }}>
                                             <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', backgroundColor: '#ef4444' }}></div>
                                             <div style={{ paddingLeft: '8px' }}>
                                                 <h3 style={{ margin: '0 0 4px 0', color: '#b91c1c', fontSize: '1.05rem', fontWeight: '600' }}>Danger Zone</h3>
-                                                <p style={{ margin: '0 0 16px 0', color: '#475569', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                                                <p style={{ margin: '0 0 16px 0', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5' }}>
                                                     Permanently delete your Aurelia Travel account and all associated data. This action cannot be undone, and you will lose access to all your bookings and rewards.
                                                 </p>
                                                 <button className="btn-outline-danger" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px' }}>
@@ -1320,45 +1320,45 @@ export default function Profile() {
                                     
                                     <div className="sub-page-card" style={{ padding: '0', overflow: 'hidden' }}>
                                         
-                                        <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0' }}>
+                                        <div style={{ padding: '24px', borderBottom: '1px solid var(--border-subtle)' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                                                 <div style={{ padding: '8px', backgroundColor: '#f0fdf4', color: '#10b981', borderRadius: '8px' }}>
                                                     <Check size={20} strokeWidth={2.5}/>
                                                 </div>
-                                                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>Be Honest & Accurate</h3>
+                                                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-main)' }}>Be Honest & Accurate</h3>
                                             </div>
-                                            <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem', lineHeight: '1.5', paddingLeft: '44px' }}>
+                                            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.5', paddingLeft: '44px' }}>
                                                 Reviews should represent your genuine experience. Do not post fake reviews, exaggerate claims, or attempt to manipulate a property's rating.
                                             </p>
                                         </div>
 
-                                        <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0' }}>
+                                        <div style={{ padding: '24px', borderBottom: '1px solid var(--border-subtle)' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                                                 <div style={{ padding: '8px', backgroundColor: '#eff6ff', color: '#3b82f6', borderRadius: '8px' }}>
                                                     <Shield size={20} strokeWidth={2}/>
                                                 </div>
-                                                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>Respect Privacy & Safety</h3>
+                                                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-main)' }}>Respect Privacy & Safety</h3>
                                             </div>
-                                            <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem', lineHeight: '1.5', paddingLeft: '44px' }}>
+                                            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.5', paddingLeft: '44px' }}>
                                                 Never share personally identifiable information (PII) such as full names, phone numbers, or exact addresses of other guests or staff members in your public reviews.
                                             </p>
                                         </div>
 
-                                        <div style={{ padding: '24px', backgroundColor: '#f8fafc' }}>
+                                        <div style={{ padding: '24px', backgroundColor: 'var(--color-background)' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                                                 <div style={{ padding: '8px', backgroundColor: '#fef2f2', color: '#ef4444', borderRadius: '8px' }}>
                                                     <AlertTriangle size={20} strokeWidth={2}/>
                                                 </div>
-                                                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>Zero Tolerance Policy</h3>
+                                                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-main)' }}>Zero Tolerance Policy</h3>
                                             </div>
-                                            <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem', lineHeight: '1.5', paddingLeft: '44px' }}>
+                                            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.5', paddingLeft: '44px' }}>
                                                 Hate speech, discriminatory language, threats, and explicit content are strictly prohibited. Violating this policy will result in immediate account termination.
                                             </p>
                                         </div>
                                     </div>
 
                                     <div style={{ marginTop: '24px', textAlign: 'center' }}>
-                                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                                             For a complete legal overview, please read our full <Link to="/terms" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: '500' }}>Terms of Service</Link> and <Link to="/privacy-policy" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: '500' }}>Privacy Policy</Link>.
                                         </p>
                                     </div>
@@ -1379,8 +1379,8 @@ export default function Profile() {
                                         {loadingReviews ? (
                                             <div className="loading-state">Loading your reviews...</div>
                                         ) : reviews.length === 0 ? (
-                                            <div className="empty-state-card" style={{textAlign: 'center', padding: '40px', backgroundColor: '#fff', borderRadius: '12px'}}>
-                                                <MessageSquare size={48} color="#cbd5e1" style={{ margin: '0 auto', marginBottom: '16px' }} />
+                                            <div className="empty-state-card" style={{textAlign: 'center', padding: '40px', backgroundColor: 'var(--color-surface)', borderRadius: '12px'}}>
+                                                <MessageSquare size={48} color="var(--border-subtle)" style={{ margin: '0 auto', marginBottom: '16px' }} />
                                                 <h3>No reviews yet</h3>
                                                 <p>You haven't written any reviews for your past stays.</p>
                                                 <button className="btn-primary" onClick={() => setCurrentView('my_bookings')} style={{marginTop: '20px'}}>View Past Bookings</button>
@@ -1388,18 +1388,18 @@ export default function Profile() {
                                         ) : (
                                             <div className="reviews-list">
                                                 {reviews.map((review) => (
-                                                    <div key={review.id} className="user-review-card" style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '12px', marginBottom: '16px', border: '1px solid #e2e8f0' }}>
+                                                    <div key={review.id} className="user-review-card" style={{ backgroundColor: 'var(--color-surface)', padding: '20px', borderRadius: '12px', marginBottom: '16px', border: '1px solid var(--border-subtle)' }}>
                                                         <div className="ur-hotel-info" style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '16px' }}>
-                                                            <div className="ur-hotel-thumb" style={{ width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                            <div className="ur-hotel-thumb" style={{ width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', backgroundColor: 'var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                                 {review.hotel_image ? (
                                                                     <img src={review.hotel_image} alt={review.hotel_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                                 ) : (
-                                                                    <Building2 size={24} color="#94a3b8" />
+                                                                    <Building2 size={24} color="var(--text-muted)" />
                                                                 )}
                                                             </div>
                                                             <div className="ur-hotel-details">
-                                                                <h4 style={{ margin: '0 0 4px 0', fontSize: '1.1rem' }}><Link to={`/hotel/${review.hotel_id}`} style={{ color: '#0f172a', textDecoration: 'none' }}>{review.hotel_name}</Link></h4>
-                                                                <span className="ur-date" style={{ color: '#64748b', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                <h4 style={{ margin: '0 0 4px 0', fontSize: '1.1rem' }}><Link to={`/hotel/${review.hotel_id}`} style={{ color: 'var(--text-main)', textDecoration: 'none' }}>{review.hotel_name}</Link></h4>
+                                                                <span className="ur-date" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                                     <Calendar size={14} /> 
                                                                     {new Date(review.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
                                                                 </span>
@@ -1409,16 +1409,16 @@ export default function Profile() {
                                                         <div className="ur-content">
                                                             {renderStars(review.rating)}
                                                             <h5 className="ur-title" style={{ margin: '10px 0 6px 0', fontSize: '1.05rem' }}>{review.title}</h5>
-                                                            <p className="ur-comment" style={{ margin: 0, color: '#475569', lineHeight: '1.5' }}>{review.comment}</p>
+                                                            <p className="ur-comment" style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: '1.5' }}>{review.comment}</p>
                                                         </div>
 
                                                         {review.hotel_response && (
-                                                            <div className="ur-manager-reply" style={{ marginTop: '16px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '8px', borderLeft: '4px solid #3b82f6' }}>
-                                                                <div className="reply-header" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#1e293b' }}>
+                                                            <div className="ur-manager-reply" style={{ marginTop: '16px', padding: '16px', backgroundColor: 'var(--color-background)', borderRadius: '8px', borderLeft: '4px solid #3b82f6' }}>
+                                                                <div className="reply-header" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: 'var(--color-dark-hover)' }}>
                                                                     <CornerDownRight size={16} />
                                                                     <strong>Response from Property Manager</strong>
                                                                 </div>
-                                                                <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem' }}>{review.hotel_response}</p>
+                                                                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>{review.hotel_response}</p>
                                                             </div>
                                                         )}
                                                     </div>
@@ -1443,20 +1443,20 @@ export default function Profile() {
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000}}>
                     <div className="bg-white rounded-xl p-8 max-w-md w-full shadow-2xl">
                         <h3 style={{fontSize: '1.4rem', fontWeight: 800, marginBottom: '10px'}}>Protect Your Account</h3>
-                        <p style={{color: '#64748b', marginBottom: '20px'}}>1. Scan this QR code using Google Authenticator or Authy.</p>
+                        <p style={{color: 'var(--text-secondary)', marginBottom: '20px'}}>1. Scan this QR code using Google Authenticator or Authy.</p>
                         
                         <div style={{display: 'flex', justifyContent: 'center', marginBottom: '20px'}}>
-                            <img src={qrCodeData.url} alt="2FA QR Code" style={{border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px'}}/>
+                            <img src={qrCodeData.url} alt="2FA QR Code" style={{border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '10px'}}/>
                         </div>
 
-                        <p style={{color: '#64748b', marginBottom: '10px'}}>2. Enter the 6-digit code from the app to verify.</p>
+                        <p style={{color: 'var(--text-secondary)', marginBottom: '10px'}}>2. Enter the 6-digit code from the app to verify.</p>
                         <input 
                             type="text" 
                             placeholder="000000" 
                             maxLength={6}
                             value={verificationCode}
                             onChange={(e) => setVerificationCode(e.target.value)}
-                            style={{width: '100%', padding: '12px', fontSize: '1.2rem', textAlign: 'center', letterSpacing: '4px', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '20px'}}
+                            style={{width: '100%', padding: '12px', fontSize: '1.2rem', textAlign: 'center', letterSpacing: '4px', borderRadius: '8px', border: '1px solid var(--border-subtle)', marginBottom: '20px'}}
                         />
 
                         <div style={{display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
@@ -1473,7 +1473,7 @@ export default function Profile() {
             <AnimatePresence>
                 {showReviewModal && (
                     <div className="modal-overlay" onClick={() => setShowReviewModal(false)} style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000}}>
-                        <motion.div className="modal-content" onClick={e => e.stopPropagation()} initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} style={{backgroundColor: '#fff', padding: '30px', borderRadius: '16px', maxWidth: '500px', width: '100%'}}>
+                        <motion.div className="modal-content" onClick={e => e.stopPropagation()} initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} style={{backgroundColor: 'var(--color-surface)', padding: '30px', borderRadius: '16px', maxWidth: '500px', width: '100%'}}>
                             <div className="modal-header-row" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
                                 <h3 style={{margin: 0, fontSize: '1.3rem'}}>Review: {reviewTarget?.hotelName}</h3>
                                 <button className="modal-close-icon" onClick={() => setShowReviewModal(false)} style={{background: 'transparent', border: 'none', cursor: 'pointer'}}><X size={20}/></button>
@@ -1486,7 +1486,7 @@ export default function Profile() {
                                             <Star 
                                                 key={star} size={32} 
                                                 fill={star <= reviewForm.rating ? "#f59e0b" : "none"} 
-                                                color={star <= reviewForm.rating ? "#f59e0b" : "#cbd5e1"}
+                                                color={star <= reviewForm.rating ? "#f59e0b" : "var(--border-subtle)"}
                                                 style={{cursor:'pointer', transition:'all 0.2s'}}
                                                 onClick={() => setReviewForm({...reviewForm, rating: star})}
                                             />
@@ -1495,11 +1495,11 @@ export default function Profile() {
                                 </div>
                                 <div className="form-group" style={{marginBottom: '16px'}}>
                                     <label style={{display: 'block', marginBottom: '8px', fontWeight: 'bold'}}>Summary</label>
-                                    <input className="form-input" style={{width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1'}} placeholder="e.g., Amazing stay!" value={reviewForm.title} onChange={e => setReviewForm({...reviewForm, title: e.target.value})} required />
+                                    <input className="form-input" style={{width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)'}} placeholder="e.g., Amazing stay!" value={reviewForm.title} onChange={e => setReviewForm({...reviewForm, title: e.target.value})} required />
                                 </div>
                                 <div className="form-group" style={{marginBottom: '16px'}}>
                                     <label style={{display: 'block', marginBottom: '8px', fontWeight: 'bold'}}>Details</label>
-                                    <textarea className="form-input" style={{width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1'}} placeholder="Tell others about your experience..." rows="4" value={reviewForm.comment} onChange={e => setReviewForm({...reviewForm, comment: e.target.value})} required />
+                                    <textarea className="form-input" style={{width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)'}} placeholder="Tell others about your experience..." rows="4" value={reviewForm.comment} onChange={e => setReviewForm({...reviewForm, comment: e.target.value})} required />
                                 </div>
                                 <button type="submit" className="btn-primary full-width" style={{marginTop:'20px', width: '100%', padding: '12px'}}>Submit Review</button>
                             </form>
