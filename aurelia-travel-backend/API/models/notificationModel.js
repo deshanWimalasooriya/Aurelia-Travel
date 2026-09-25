@@ -7,7 +7,6 @@ exports.create = async (data) => {
         title: data.title,
         message: data.message,
         type: data.type || 'info',
-        link: data.link || null,
         is_read: false
     });
 };

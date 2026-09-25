@@ -75,6 +75,7 @@ export default function Profile() {
   const [paymentData, setPaymentData] = useState({
     card_type: '', card_number: '', cvv: '', expiry_date: ''
   });
+  const [walletCards, setWalletCards] = useState([]);
   
   // Mock States for new sections
   const [twoFactor, setTwoFactor] = useState(false);
@@ -169,6 +170,16 @@ export default function Profile() {
             finally { setLoadingReviews(false); }
         };
         fetchMyReviews();
+    } else if (currentView === 'payment_methods') {
+        const fetchWallet = async () => {
+            setLoadingPayment(true);
+            try {
+                const res = await api.get('/wallet');
+                setWalletCards(res.data.data || []);
+            } catch (err) { console.error("Failed to fetch wallet", err); } 
+            finally { setLoadingPayment(false); }
+        };
+        fetchWallet();
     }
   }, [currentView]);
 
@@ -336,13 +347,32 @@ export default function Profile() {
     setLoadingPayment(true);
     try {
         const cleanNumber = paymentData.card_number.replace(/\s/g, '');
-        await api.put(`/users/${user.id || user._id}`, { 
-            card_type: paymentData.card_type, card_number: cleanNumber, cvv: paymentData.cvv, expiry_date: paymentData.expiry_date 
+        const token_id = 'tok_' + Math.random().toString(36).substring(7);
+        const card_last4 = cleanNumber.slice(-4);
+        
+        await api.post(`/wallet`, { 
+            provider: 'stripe',
+            token_id: token_id,
+            card_last4: card_last4,
+            card_brand: paymentData.card_type 
         });
-        await refreshUser();
+        
+        const res = await api.get('/wallet');
+        setWalletCards(res.data.data || []);
+        setPaymentData({ card_type: '', card_number: '', cvv: '', expiry_date: '' });
         alert("Card saved successfully");
-    } catch (err) { alert("Failed to save card"); } 
+    } catch (err) { alert(err.response?.data?.message || "Failed to save card"); } 
     finally { setLoadingPayment(false); }
+  };
+
+  const handleDeleteCard = async (id) => {
+      if(!window.confirm("Are you sure you want to delete this card?")) return;
+      try {
+          await api.delete(`/wallet/${id}`);
+          setWalletCards(walletCards.filter(c => c.id !== id));
+      } catch (err) {
+          alert("Failed to delete card");
+      }
   };
 
   // --- BOOKINGS & REVIEWS HELPER FUNCTIONS ---
@@ -607,7 +637,7 @@ export default function Profile() {
 
                     {/* MAIN CONTENT AREA */}
                     <div className="profile-main-content" style={{ flex: '1', minWidth: 0 }}>
-                        <AnimatePresence mode="wait">
+                        <AnimatePresence>
                             
                             {/* ... EXISTING SETTINGS VIEWS ... */}
                             {/* VIEW 1: PERSONAL DETAILS */}
@@ -781,25 +811,36 @@ export default function Profile() {
                                     </div>
                                     
                                     {/* Saved Card Display */}
-                                    {user.card_type && (
-                                        <div className="saved-card-premium">
-                                            <div className="card-chip-row">
-                                                <div className="chip"></div>
-                                                <CheckCircle2 size={24} color="#10b981" />
-                                            </div>
-                                            <div className="card-number-row">
-                                                <span>••••</span><span>••••</span><span>••••</span>
-                                                <span className="last-four">{user.card_number?.slice(-4) || "0000"}</span>
-                                            </div>
-                                            <div className="card-footer-row">
-                                                <div className="card-holder">
-                                                    <span className="card-label">Card Holder</span>
-                                                    <span className="card-value">{user.username}</span>
+                                    {walletCards.length > 0 ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                            {walletCards.map((card) => (
+                                                <div key={card.id} className="saved-card-premium" style={{ position: 'relative' }}>
+                                                    <button type="button" onClick={() => handleDeleteCard(card.id)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff', transition: 'background 0.2s' }} onMouseOver={(e)=>e.currentTarget.style.background='rgba(239, 68, 68, 0.8)'} onMouseOut={(e)=>e.currentTarget.style.background='rgba(255,255,255,0.2)'} title="Delete Card">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                    <div className="card-chip-row">
+                                                        <div className="chip"></div>
+                                                        {card.is_default && <CheckCircle2 size={24} color="#10b981" />}
+                                                    </div>
+                                                    <div className="card-number-row">
+                                                        <span>••••</span><span>••••</span><span>••••</span>
+                                                        <span className="last-four">{card.card_last_four}</span>
+                                                    </div>
+                                                    <div className="card-footer-row">
+                                                        <div className="card-holder">
+                                                            <span className="card-label">Card Holder</span>
+                                                            <span className="card-value">{user.username}</span>
+                                                        </div>
+                                                        <div className="card-brand">
+                                                            <strong style={{ fontSize: '1.2rem', fontStyle: 'italic', textTransform: 'uppercase' }}>{card.card_brand}</strong>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="card-brand">
-                                                    <strong style={{ fontSize: '1.2rem', fontStyle: 'italic' }}>{user.card_type}</strong>
-                                                </div>
-                                            </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="info-alert-box" style={{ marginBottom: '20px' }}>
+                                            No cards saved yet. Add one below for faster checkouts.
                                         </div>
                                     )}
 
@@ -1143,7 +1184,7 @@ export default function Profile() {
                                         
                                         <div className="settings-row" style={{ padding: '24px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
                                             <div className="settings-info">
-                                                <strong style={{ fontSize: '1.05rem', color: '#475569', display: 'block', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <strong style={{ fontSize: '1.05rem', color: '#475569', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                     Account Security 
                                                     <span style={{ fontSize: '0.65rem', backgroundColor: '#cbd5e1', color: '#0f172a', padding: '2px 6px', borderRadius: '4px', fontWeight: '800', letterSpacing: '0.5px' }}>REQUIRED</span>
                                                 </strong>

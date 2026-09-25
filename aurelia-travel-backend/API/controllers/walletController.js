@@ -15,17 +15,12 @@ exports.addMethod = async (req, res) => {
 
         // ✅ FIX 2: Prevent Duplicate Cards (Optional but Recommended)
         // Check if this card token already exists for this user to avoid clutter
-        const existing = await paymentModel.findOne({ 
-            user_id: req.user.userId, 
-            payment_method_id: token_id 
-        });
-        
-        if (existing) {
-            return res.status(409).json({ success: false, message: 'Card already added' });
-        }
+        // (Removed findOne because it's not implemented and we generate unique tokens currently)
+
+        const userId = req.user.id || req.user.userId;
 
         const newMethod = await paymentModel.create({
-            user_id: req.user.userId,
+            user_id: userId,
             provider: provider || 'stripe',
             payment_method_id: token_id,
             card_last_four: card_last4, // Store ONLY last 4 (PCI Compliance)
@@ -44,15 +39,15 @@ exports.addMethod = async (req, res) => {
 // 2. GET WALLET (Payment Methods)
 exports.getMyWallet = async (req, res) => {
     try {
-        // ✅ FIX 3: Handle Empty States Gracefully
-        const wallet = await paymentModel.findAllByUserId(req.user.userId);
+        const userId = req.user.id || req.user.userId;
+        const wallet = await paymentModel.findAllByUserId(userId);
         
         // Always return an array, even if empty (easier for Frontend)
         res.json({ success: true, data: wallet || [] });
         
     } catch (err) {
         console.error("Get Wallet Error:", err);
-        res.status(500).json({ success: false, message: "Could not retrieve wallet" });
+        res.status(500).json({ success: false, message: "Could not retrieve wallet", error: err.message, stack: err.stack });
     }
 };
 
@@ -60,7 +55,7 @@ exports.getMyWallet = async (req, res) => {
 exports.removeMethod = async (req, res) => {
     try {
         const methodId = req.params.id;
-        const userId = req.user.userId;
+        const userId = req.user.id || req.user.userId;
 
         if (!methodId) {
             return res.status(400).json({ success: false, message: "Card ID required" });

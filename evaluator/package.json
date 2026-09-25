@@ -1,0 +1,18 @@
+{
+  "name": "evaluator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "docx": "^9.7.1",
+    "playwright": "^1.63.0",
+    "puppeteer": "^25.11.0"
+  }
+}

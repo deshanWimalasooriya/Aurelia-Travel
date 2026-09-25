@@ -75,8 +75,20 @@ const SearchForm = () => {
           <input 
             type="date" 
             name="checkIn"
+            min={new Date().toISOString().split('T')[0]}
             value={searchData.checkIn}
-            onChange={handleInputChange}
+            onChange={(e) => {
+                const newCheckIn = e.target.value;
+                const nextDay = new Date(new Date(newCheckIn).getTime() + 86400000).toISOString().split('T')[0];
+                handleInputChange({
+                    target: { name: 'checkIn', value: newCheckIn }
+                });
+                if (searchData.checkOut <= newCheckIn) {
+                    handleInputChange({
+                        target: { name: 'checkOut', value: nextDay }
+                    });
+                }
+            }}
             className="date-input-field"
           />
         </div>
@@ -94,6 +106,7 @@ const SearchForm = () => {
           <input 
             type="date" 
             name="checkOut"
+            min={searchData.checkIn ? new Date(new Date(searchData.checkIn).getTime() + 86400000).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
             value={searchData.checkOut}
             onChange={handleInputChange}
             className="date-input-field"

@@ -9,6 +9,15 @@ const generateReference = () => {
 exports.createBooking = async (bookingData, paymentData) => {
     return await knex.transaction(async (trx) => {
         
+        // Date Validation
+        const today = new Date().toISOString().split('T')[0];
+        if (bookingData.check_in < today) {
+            throw new Error("Check-in date cannot be in the past.");
+        }
+        if (bookingData.check_out <= bookingData.check_in) {
+            throw new Error("Check-out date must be after check-in date.");
+        }
+
         // Define how many rooms the guest actually wants (default to 1)
         const requestedQty = bookingData.room_count || 1;
         
@@ -143,7 +152,7 @@ exports.getBookingsByHotelId = (hotelId) => knex('bookings').where({ hotel_id: h
 
 exports.confirmBookingPayment = async (bookingId) => {
     // We use a transaction so if the inventory update fails, the status update rolls back safely.
-    return connection.transaction(async (trx) => {
+    return knex.transaction(async (trx) => {
         
         // 1. Fetch the draft booking to get the room_id and check its status
         const booking = await trx('bookings').where('id', bookingId).first();
@@ -163,7 +172,7 @@ exports.confirmBookingPayment = async (bookingId) => {
             .update({
                 status: 'confirmed',
                 payment_status: 'paid',
-                updated_at: connection.fn.now()
+                updated_at: knex.fn.now()
             });
 
         // 3. NOW we decrement the inventory safely, because payment is complete

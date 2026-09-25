@@ -25,7 +25,7 @@ const Footer = () => {
     return (url && url.trim() !== '') ? url : '#';
   };
 
-  console.log("Footer siteInfo:", siteInfo); // Debug log to verify data structure
+
 
   return (
     <footer className="footer">

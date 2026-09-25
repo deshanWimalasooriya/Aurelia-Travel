@@ -37,16 +37,16 @@ module.exports = {
       }
     },
     
-    // ✅ RESOLVED: CONNECTION POOLING
+    // ✅ RESOLVED: CONNECTION POOLING (TiDB Compatibility)
     pool: {
-      min: 2, 
-      max: 40, // Optimized for 50-100 concurrent users
+      min: 0, // MUST be 0 for TiDB Serverless to prevent dead idle connections
+      max: 10, // Reduced max to prevent pool exhaustion 
       
-      // Free up memory if connection is idle for 30s
-      idleTimeoutMillis: 30000, 
+      // Free up memory if connection is idle (TiDB drops after 10-15s, so set to 10s)
+      idleTimeoutMillis: 10000, 
       
-      // Fail fast if DB is overloaded (prevents infinite loading spinners)
-      acquireTimeoutMillis: 5000,
+      // Wait longer to acquire a connection in serverless environments
+      acquireTimeoutMillis: 30000,
 
       // ✅ WEAKNESS RESOLVED: Startup Safety
       // If the DB is down when you start the server, don't crash the app immediately.

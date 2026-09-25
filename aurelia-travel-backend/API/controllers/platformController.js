@@ -280,19 +280,7 @@ exports.getSystemLogs = async (req, res) => {
 // SETTINGS & CONTACT SYSTEM
 // ==========================================
 
-// 🔓 PUBLIC: Safe settings for the frontend (Footer, Contact page)
-exports.getPublicSettings = async (req, res) => {
-    try {
-        const settings = await platformModel.getSettings();
-        if (settings) {
-            delete settings.commission_rate;
-            delete settings.maintenance_mode;
-        }
-        res.json(settings || {}); // Returns directly so res.data works on frontend
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch public settings' });
-    }
-};
+
 
 // 🔒 ADMIN: Returns everything including financial configurations
 exports.getAdminSettings = async (req, res) => {
@@ -362,7 +350,7 @@ exports.getPublicSettings = async (req, res) => {
         
         res.json({
             success: true, 
-            data: settings
+            data: settings || {}
         });
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch public settings' });

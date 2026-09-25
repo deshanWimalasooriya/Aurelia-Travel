@@ -29,6 +29,21 @@ const BookingConfirmation = () => {
     
     const [isProcessing, setIsProcessing] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('card');
+    const [cardDetails, setCardDetails] = useState({
+        cardType: 'Visa',
+        cardNumber: '',
+        cardName: '',
+        expiryDate: '',
+        cvv: ''
+    });
+    const [savedCards, setSavedCards] = useState([]);
+    const [selectedSavedCard, setSelectedSavedCard] = useState('');
+
+    useEffect(() => {
+        if (user) {
+            api.get('/wallet').then(res => setSavedCards(res.data.data || [])).catch(err => console.error(err));
+        }
+    }, [user]);
 
     // 4. Redirect if no data is found
     useEffect(() => {
@@ -73,6 +88,13 @@ const BookingConfirmation = () => {
         if (!guestDetails.firstName || !guestDetails.lastName || !guestDetails.email || !guestDetails.country || !guestDetails.phone) {
             alert("Please fill in all required fields (*).");
             return;
+        }
+
+        if (paymentMethod === 'card') {
+            if (!selectedSavedCard && (!cardDetails.cardNumber || !cardDetails.cardName || !cardDetails.expiryDate || !cardDetails.cvv)) {
+                alert("Please fill in all card details.");
+                return;
+            }
         }
 
         setIsProcessing(true);
@@ -276,7 +298,67 @@ const BookingConfirmation = () => {
                                 </div>
                             </div>
 
-                            <button className="primary-btn" onClick={handleNextStep} disabled={isProcessing}>
+                            {paymentMethod === 'card' && (
+                                <div className="form-section-card fade-in" style={{ marginTop: '20px', borderTop: '2px solid #3b82f6', background: '#f8fafc' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <h3 style={{ margin: 0 }}>Card Details</h3>
+                                        {savedCards.length > 0 && (
+                                            <select 
+                                                value={selectedSavedCard} 
+                                                onChange={e => setSelectedSavedCard(e.target.value)}
+                                                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none', background: '#fff', cursor: 'pointer', fontWeight: '500', color: '#1e293b' }}
+                                            >
+                                                <option value="">+ Use a new card</option>
+                                                {savedCards.map(c => (
+                                                    <option key={c.id} value={c.id}>{c.card_brand.toUpperCase()} ending in {c.card_last_four}</option>
+                                                ))}
+                                            </select>
+                                        )}
+                                    </div>
+                                    
+                                    {!selectedSavedCard ? (
+                                        <>
+                                            <div className="input-group" style={{ marginTop: '15px' }}>
+                                                <label>Card Type</label>
+                                                <select value={cardDetails.cardType} onChange={e => setCardDetails({...cardDetails, cardType: e.target.value})}>
+                                                    <option value="Visa">Visa</option>
+                                                    <option value="MasterCard">MasterCard</option>
+                                                    <option value="American Express">American Express</option>
+                                                    <option value="Discover">Discover</option>
+                                                </select>
+                                            </div>
+                                            <div className="input-group">
+                                                <label>Name on Card <span className="req">*</span></label>
+                                                <input type="text" placeholder="John Doe" value={cardDetails.cardName} onChange={e => setCardDetails({...cardDetails, cardName: e.target.value})} />
+                                            </div>
+                                            <div className="input-group">
+                                                <label>Card Number <span className="req">*</span></label>
+                                                <input type="text" placeholder="0000 0000 0000 0000" maxLength="19" value={cardDetails.cardNumber} onChange={e => setCardDetails({...cardDetails, cardNumber: e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').trim()})} />
+                                            </div>
+                                            <div className="form-row">
+                                                <div className="input-group">
+                                                    <label>Expiry Date <span className="req">*</span></label>
+                                                    <input type="text" placeholder="MM/YY" maxLength="5" value={cardDetails.expiryDate} onChange={e => setCardDetails({...cardDetails, expiryDate: e.target.value.replace(/[^0-9/]/g, '').replace(/^([2-9])$/g, '0$1').replace(/^(1{1})([3-9]{1})$/g, '0$1/$2').replace(/^0{0,1}[0-9]{1}[0-9]{1}/g, val => val.length === 2 && !val.includes('/') ? val + '/' : val)})} />
+                                                </div>
+                                                <div className="input-group">
+                                                    <label>CVV <span className="req">*</span></label>
+                                                    <input type="password" placeholder="123" maxLength="4" value={cardDetails.cvv} onChange={e => setCardDetails({...cardDetails, cvv: e.target.value.replace(/\D/g, '')})} />
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div style={{ padding: '20px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '15px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                            <CheckCircle size={24} color="#10b981" />
+                                            <div>
+                                                <strong style={{ color: '#0f172a' }}>Using Saved Card</strong>
+                                                <p style={{ margin: '4px 0 0 0', fontSize: '0.9rem', color: '#64748b' }}>Your saved {savedCards.find(c => c.id == selectedSavedCard)?.card_brand} ending in {savedCards.find(c => c.id == selectedSavedCard)?.card_last_four} will be securely charged.</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <button className="primary-btn" onClick={handleNextStep} disabled={isProcessing} style={{ marginTop: '25px' }}>
                                 {isProcessing ? 'Saving Details...' : 'Next Step'}
                             </button>
                         </div>
@@ -287,16 +369,50 @@ const BookingConfirmation = () => {
                             <h2>Review & Confirm</h2>
                             <div className="confirmation-box">
                                 <p>Your booking is safely drafted. Please review the final details before officially confirming your stay.</p>
-                                <ul>
-                                    <li><strong>Guest:</strong> {guestDetails.firstName} {guestDetails.lastName}</li>
-                                    <li><strong>Status:</strong> Incomplete (Pending Confirmation)</li>
-                                    <li><strong>Payment Method:</strong> {paymentMethod === 'card' ? 'Online via Stripe' : 'Pay at Property'}</li>
-                                </ul>
+                                
+                                <div className="detailed-review-section" style={{ marginTop: '20px', background: '#f8fafc', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'left' }}>
+                                    <h4 style={{ marginBottom: '15px', color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Reservation Summary</h4>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', fontSize: '0.95rem', color: '#475569' }}>
+                                        <div><strong>Hotel:</strong> {hotel.name}</div>
+                                        <div><strong>Room:</strong> {room.title} (x{roomQty})</div>
+                                        <div><strong>Check-in:</strong> {dates.checkIn}</div>
+                                        <div><strong>Check-out:</strong> {dates.checkOut}</div>
+                                        <div><strong>Guests:</strong> {guests.adults} Adults, {guests.children} Children</div>
+                                        <div><strong>Total Price:</strong> <span style={{ color: '#10b981', fontWeight: 'bold' }}>${totalPrice.toLocaleString()}</span></div>
+                                    </div>
+
+                                    <h4 style={{ margin: '20px 0 15px', color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Guest & Payment</h4>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', fontSize: '0.95rem', color: '#475569' }}>
+                                        <div><strong>Name:</strong> {guestDetails.firstName} {guestDetails.lastName}</div>
+                                        <div><strong>Email:</strong> {guestDetails.email}</div>
+                                        <div><strong>Phone:</strong> {guestDetails.phone}</div>
+                                        <div><strong>Country:</strong> {guestDetails.country}</div>
+                                        <div><strong>Arrival Time:</strong> {guestDetails.arrivalTime || 'Not specified'}</div>
+                                        <div><strong>Payment Method:</strong> {paymentMethod === 'card' ? 'Online via Stripe' : 'Pay at Property'}</div>
+                                    </div>
+                                    {guestDetails.specialRequests && (
+                                        <div style={{ marginTop: '15px', fontSize: '0.95rem', color: '#475569' }}>
+                                            <strong>Special Requests:</strong> {guestDetails.specialRequests}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             
-                            <button className="confirm-btn" onClick={handleConfirmBooking} disabled={isProcessing}>
-                                {isProcessing ? 'Finalizing...' : 'Confirm Booking'}
-                            </button>
+                            <div className="step-three-actions" style={{ display: 'flex', gap: '15px', marginTop: '25px' }}>
+                                <button 
+                                    className="secondary-btn" 
+                                    onClick={() => setCurrentStep(2)} 
+                                    disabled={isProcessing} 
+                                    style={{ flex: 1, padding: '14px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', color: '#475569', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s' }}
+                                    onMouseOver={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                                    onMouseOut={(e) => e.currentTarget.style.background = '#fff'}
+                                >
+                                    Back to Details
+                                </button>
+                                <button className="confirm-btn" onClick={handleConfirmBooking} disabled={isProcessing} style={{ flex: 2 }}>
+                                    {isProcessing ? 'Finalizing...' : 'Confirm Booking'}
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>

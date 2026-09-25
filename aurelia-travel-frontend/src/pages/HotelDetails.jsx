@@ -55,18 +55,8 @@ const HotelDetails = () => {
       return Array.isArray(data) ? data : [];
   };
 
-  // Room Popup & Gallery State
-  const [viewingRoom, setViewingRoom] = useState(null);
-  const [isRoomGalleryOpen, setIsRoomGalleryOpen] = useState(false);
 
-  // Selection State
-  const [selectedRoomId, setSelectedRoomId] = useState(null);
-  const [roomQty, setRoomQty] = useState(1); 
-  const [totalPrice, setTotalPrice] = useState(0);
-  
-  // Booking Data
-  const [dates, setDates] = useState({ checkIn: '', checkOut: '' });
-  const [guests, setGuests] = useState({ adults: 2, children: 0 });
+
 
   // --- 1. FETCH DATA (ORIGINAL LOGIC) ---
   useEffect(() => {
@@ -506,8 +496,32 @@ const handleReserve = () => {
                     </div>
                     
                     <div className="picker-grid">
-                        <div className="input-box"><label>CHECK-IN</label><input type="date" value={dates.checkIn} onChange={(e) => setDates({...dates, checkIn: e.target.value})} /></div>
-                        <div className="input-box"><label>CHECK-OUT</label><input type="date" value={dates.checkOut} onChange={(e) => setDates({...dates, checkOut: e.target.value})} /></div>
+                        <div className="input-box">
+                            <label>CHECK-IN</label>
+                            <input 
+                                type="date" 
+                                min={new Date().toISOString().split('T')[0]} 
+                                value={dates.checkIn} 
+                                onChange={(e) => {
+                                    const newCheckIn = e.target.value;
+                                    const nextDay = new Date(new Date(newCheckIn).getTime() + 86400000).toISOString().split('T')[0];
+                                    setDates(prev => ({
+                                        ...prev, 
+                                        checkIn: newCheckIn, 
+                                        checkOut: prev.checkOut <= newCheckIn ? nextDay : prev.checkOut
+                                    }));
+                                }} 
+                            />
+                        </div>
+                        <div className="input-box">
+                            <label>CHECK-OUT</label>
+                            <input 
+                                type="date" 
+                                min={dates.checkIn ? new Date(new Date(dates.checkIn).getTime() + 86400000).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]} 
+                                value={dates.checkOut} 
+                                onChange={(e) => setDates({...dates, checkOut: e.target.value})} 
+                            />
+                        </div>
                     </div>
                     
                     <div className="input-box mb-24">
