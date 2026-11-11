@@ -1,0 +1,82 @@
+/* ==========================================================================
+   TripMapVisualizer.css - Aurelia Travel Geospatial & Routing Styling
+   ========================================================================== */
+
+.trip-map-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  background: var(--color-background, #f8fafc);
+}
+
+/* Ensure Leaflet Container Fills Parent */
+.trip-map-canvas {
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+}
+
+/* Reset default marker styling for custom L.divIcon */
+.custom-leaflet-marker-hotel,
+.custom-leaflet-marker-place {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Hide default clunky text container from Leaflet Routing Machine */
+.trip-map-wrapper .leaflet-routing-container {
+  display: none !important;
+}
+
+/* Glassmorphic Leaflet Popup Customization */
+.glassmorphic-leaflet-popup .leaflet-popup-content-wrapper {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 1.25rem !important;
+}
+
+.glassmorphic-leaflet-popup .leaflet-popup-content {
+  margin: 0 !important;
+  line-height: inherit !important;
+}
+
+.glassmorphic-leaflet-popup .leaflet-popup-tip {
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme='dark'] .glassmorphic-leaflet-popup .leaflet-popup-tip {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Popup Close Button */
+.glassmorphic-leaflet-popup .leaflet-popup-close-button {
+  top: 12px !important;
+  right: 12px !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  z-index: 20;
+  font-size: 18px !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(0, 0, 0, 0.4) !important;
+  border-radius: 50% !important;
+  backdrop-filter: blur(4px);
+}
+
+.glassmorphic-leaflet-popup .leaflet-popup-close-button:hover {
+  background: rgba(0, 0, 0, 0.7) !important;
+  color: #ffffff !important;
+}

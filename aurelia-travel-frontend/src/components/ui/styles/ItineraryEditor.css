@@ -1,0 +1,70 @@
+/* ==========================================================================
+   ItineraryEditor.css - Aurelia Travel Timeline & Reorder Styling
+   ========================================================================== */
+
+.itinerary-editor-container {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+[data-theme='dark'] .itinerary-editor-container {
+  scrollbar-color: #334155 transparent;
+}
+
+.itinerary-editor-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.itinerary-editor-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+[data-theme='dark'] .itinerary-editor-container::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+/* Reorder Item Dragging State */
+.reorder-item-dragging {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1) !important;
+  border-color: #3b82f6 !important;
+  cursor: grabbing !important;
+  z-index: 50 !important;
+}
+
+/* Vertical Travel Connector Line */
+.travel-connector-line {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px 0;
+  padding-left: 20px;
+}
+
+.travel-connector-line::before {
+  content: '';
+  position: absolute;
+  left: 31px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #94a3b8 0,
+    #94a3b8 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+[data-theme='dark'] .travel-connector-line::before {
+  background: repeating-linear-gradient(
+    to bottom,
+    #475569 0,
+    #475569 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+

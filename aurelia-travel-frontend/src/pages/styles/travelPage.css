@@ -1,18 +1,16 @@
 /* =========================================
-   SMART PLAN PAGE (FULLSCREEN MAP)
+   SMART PLAN PAGE (FULLSCREEN MAP & FLOATING DASHBOARD)
    ========================================= */
 
 .travel-plan-page {
   position: relative;
-  min-height: calc(100vh - 76px); /* Adjust based on your header height */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: calc(100vh - 76px);
   overflow: hidden;
 }
 
-/* 1. The Map Background */
+/* 1. The Full-bleed Map Background */
 .map-background-wrapper {
   position: absolute;
   top: 0;
@@ -25,73 +23,84 @@
 .fullscreen-map {
   width: 100%;
   height: 100%;
-  cursor: crosshair !important; /* Indicates you can click to pick */
+  cursor: crosshair !important;
 }
 
-/* Soft white/blue tint to make the form readable over the map */
+/* Contrast Overlay */
 .map-overlay-tint {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(248, 250, 252, 0.9) 0%, rgba(248, 250, 252, 0.4) 100%);
-  z-index: 2;
-  pointer-events: none; /* Lets clicks pass through to the map */
-}
-
-/* Inside TravelPlan.css */
-.floating-content-layer {
-  position: relative;
-  z-index: 10;
-  width: 100%;
-  
-  /* --- UPDATED: Reduced left/right padding to hug the edge --- */
-  padding: 40px 20px; 
-  
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start; /* Keeps it left-aligned */
-  text-align: left;        /* Keeps text left-aligned */
   pointer-events: none;
+  z-index: 2;
 }
 
-.travel-plan-header {
-  text-align: left; /* Changed from center to left */
-  margin-bottom: 30px;
-  pointer-events: auto;
+/* 2. Custom Styled Range Slider */
+.custom-slider-track {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 9999px;
+  background: #cbd5e1;
+  outline: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
 }
 
-.travel-plan-header h1 {
-  font-size: 3rem;
-  font-weight: 800;
-  color: #0f172a;
-  margin-bottom: 10px;
-  text-shadow: 0 2px 10px rgba(255,255,255,0.8);
+[data-theme='dark'] .custom-slider-track {
+  background: #334155;
 }
 
-.travel-plan-header h1 span {
-  color: var(--color-primary, #2563eb);
+.custom-slider-track::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #2563eb;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.travel-plan-header p {
-  font-size: 1.1rem;
-  color: #334155;
-  font-weight: 600;
-  background: rgba(255, 255, 255, 0.8);
-  padding: 8px 16px;
-  border-radius: 20px;
-  display: inline-block;
-  backdrop-filter: blur(5px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+.custom-slider-track::-webkit-slider-thumb:hover {
+  transform: scale(1.18);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.6);
 }
 
-/* 3. Upgrade the Planner Card to Frosted Glass */
-.planner-card {
-  background: rgba(255, 255, 255, 0.85) !important;
-  backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15) !important;
+.custom-slider-track::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #2563eb;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
 }
 
-.safety-sidebar {
-  background: rgba(255, 255, 255, 0.85) !important;
-  backdrop-filter: blur(16px) !important;
+/* Custom Marker DivIcon */
+.custom-pulsing-marker {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Floating Scrollbar */
+.floating-glass-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+}
+
+.floating-glass-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.floating-glass-scroll::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+
+[data-theme='dark'] .floating-glass-scroll::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.5);
 }

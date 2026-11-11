@@ -72,5 +72,12 @@ export const hotelAPI = {
   searchHotels: (params) => api.get('/hotels/search', { params }),
 };
 
+export const tripAPI = {
+  saveTrip: (data) => api.post('/trips/save', data),
+  getMyTrips: () => api.get('/trips/my-trips'),
+  deleteTrip: (id) => api.delete(`/trips/${id}`),
+  getSharedTrip: (uuid) => api.get(`/trips/shared/${uuid}`),
+};
+
 // Default export for direct usage (like in your Profile.jsx)
 export default api;

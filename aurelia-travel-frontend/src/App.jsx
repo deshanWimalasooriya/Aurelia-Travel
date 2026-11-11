@@ -17,6 +17,7 @@ import Profile from './pages/Profile'
 import TravelPage from './pages/TravelPage'
 import TravelPlanPage from './pages/TravelPlanPage'
 import TripDashboard from './pages/TripDashboard'
+import SharedTripPage from './pages/SharedTripPage'
 import AboutPage from './pages/About'
 import ContactPage from './pages/Contact'
 import HotelPage from './pages/HotelPage'
@@ -105,6 +106,7 @@ const AppRoutes = () => {
             <Route path="/hotels" element={<HotelPage />} />
             <Route path="/hotel-search" element={<HotelSearch />} />
             <Route path="/hotel-showcase" element={<HotelShowcase />} />
+            <Route path="/trip/share/:uuid" element={<SharedTripPage />} />
             <Route path="/notifications" element={user ? <NotificationsPage /> : <Navigate to="/auth" />} />
             <Route path="/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} /> {/* <--- ADD ROUTE */}
             {/* Auth Routes */}

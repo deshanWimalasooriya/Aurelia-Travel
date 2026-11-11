@@ -11,6 +11,8 @@ const Layout = ({ children }) => {
   const fullScreenRoutes = [
     '/trip-dashboard',
     '/travel-itinerary',
+    '/travel-plan',
+    '/trip/share',
     '/adminDashboard'
   ];
   

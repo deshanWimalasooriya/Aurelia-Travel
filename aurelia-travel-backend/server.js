@@ -48,6 +48,8 @@ const amenityRoutes = require('./API/routes/amenityRoutes');
 const financeRoutes = require('./API/routes/financeRoutes');
 const notificationRoutes = require('./API/routes/notificationRoutes');
 const wishlistRoutes = require('./API/routes/wishlistRoutes'); // <--- ADD THIS
+const smartPlanRoutes = require('./API/routes/smartPlanRoutes'); // AI Smart Plan Generator (RAG)
+const tripRoutes = require('./API/routes/tripRoutes'); // Smart Plan Persistence & Sharing (Phase 3)
 // const chatRoutes = require('./API/routes/chatRoutes');
 
 // --- MISSING IMPORTS ADDED HERE ---
@@ -71,6 +73,8 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/chat', require('./API/routes/chatRoutes'));
 app.use('/api/upload', require('./API/routes/uploadRoutes'));
+app.use('/api/smart-plan', smartPlanRoutes);
+app.use('/api/trips', tripRoutes);
 
 // Protected User Routes (Applied verifyToken here globally for safety)
 app.use('/api/users', verifyToken, userRoutes);
