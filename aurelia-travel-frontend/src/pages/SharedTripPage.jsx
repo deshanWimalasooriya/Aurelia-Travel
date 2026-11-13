@@ -151,7 +151,7 @@ export default function SharedTripPage() {
   }
 
   return (
-    <div className="shared-trip-page min-h-[calc(100vh-76px)] flex flex-col bg-slate-50 dark:bg-slate-950 relative">
+    <div className="shared-trip-page tw-preflight min-h-[calc(100vh-76px)] flex flex-col bg-slate-50 dark:bg-slate-950 relative">
       
       {/* Toast Alert */}
       {toastMessage && (
