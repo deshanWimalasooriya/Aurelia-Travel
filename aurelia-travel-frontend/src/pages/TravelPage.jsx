@@ -1,18 +1,15 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useNavigate } from 'react-router-dom';
+// eslint-disable-next-line no-unused-vars -- `motion` is used as <motion.div>
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, MapPin, Compass, Search, Route, 
-  DollarSign, CheckCircle2, AlertCircle, X,
-  Map, Calendar, Users, LocateFixed, Coffee, Mountain, 
-  Landmark, Heart, Crown, Car, Bike, Train, Footprints,
-  Navigation, ArrowRight, ShieldCheck, ChevronDown
-} from 'lucide-react';
+import { Sparkles, MapPin, Search, Route, DollarSign, CheckCircle2, X } from 'lucide-react';
 
 import SkeletonCard from '../components/ui/SkeletonCard';
+import TripWizard from '../components/planner/TripWizard';
+import { tripLength } from '../components/planner/tripUtils';
 import api from '../services/api';
 import './styles/travelPage.css';
 
@@ -36,31 +33,6 @@ const CITY_COORDINATES = {
   'Mirissa': [5.9483, 80.4578],
   'Nuwara Eliya': [6.9497, 80.7891]
 };
-
-const DESTINATIONS = [
-  { city: 'Galle', label: 'Galle', subtitle: 'Southern Coast & Dutch Fort' },
-  { city: 'Kandy', label: 'Kandy', subtitle: 'Hill Capital & Sacred Tooth Temple' },
-  { city: 'Ella', label: 'Ella', subtitle: 'Misty Peaks & Nine Arches Bridge' },
-  { city: 'Colombo', label: 'Colombo', subtitle: 'Commercial Capital & Oceanfront' },
-  { city: 'Sigiriya', label: 'Sigiriya', subtitle: 'Ancient Lion Rock Fortress' },
-  { city: 'Mirissa', label: 'Mirissa', subtitle: 'Palm Bays & Whale Watching' },
-  { city: 'Nuwara Eliya', label: 'Nuwara Eliya', subtitle: 'Tea Country & Colonial Mansions' }
-];
-
-const VIBES = [
-  { id: 'Relaxing', label: 'Relaxing', icon: Coffee },
-  { id: 'Adventure', label: 'Adventure', icon: Mountain },
-  { id: 'Culture', label: 'Culture', icon: Landmark },
-  { id: 'Romantic', label: 'Romantic', icon: Heart },
-  { id: 'Luxury', label: 'Luxury', icon: Crown }
-];
-
-const TRANSPORT_MODES = [
-  { id: 'Private Van', label: 'Private Van', icon: Car },
-  { id: 'Tuk-Tuk', label: 'Tuk-Tuk', icon: Bike },
-  { id: 'Scenic Train', label: 'Scenic Train', icon: Train },
-  { id: 'Walking', label: 'Walking', icon: Footprints }
-];
 
 const LOADING_STEPS = [
   { label: 'Scanning 500+ Sri Lankan stays & verified inventory...', icon: Search },
@@ -192,38 +164,31 @@ const createPulsingPinIcon = (label, color = '#2563eb') => {
   });
 };
 
-// Controller to smoothly animate the map camera when destination city updates
-const MapCameraController = ({ destinationCity, customCoords }) => {
+// Keeps both pins in view: fits the route when both exist, otherwise centres on one
+const MapCameraController = ({ startCoords, endCoords }) => {
   const map = useMap();
 
   useEffect(() => {
-    if (customCoords) {
-      map.flyTo([customCoords.lat, customCoords.lng], 13, {
-        animate: true,
-        duration: 1.4
-      });
-      return;
+    if (startCoords && endCoords) {
+      map.flyToBounds(
+        [[startCoords.lat, startCoords.lng], [endCoords.lat, endCoords.lng]],
+        { padding: [80, 80], paddingTopLeft: [460, 80], duration: 1.4, maxZoom: 11 }
+      );
+    } else if (endCoords || startCoords) {
+      const c = endCoords || startCoords;
+      map.flyTo([c.lat, c.lng], 11, { duration: 1.4 });
     }
-
-    if (destinationCity && CITY_COORDINATES[destinationCity]) {
-      const coords = CITY_COORDINATES[destinationCity];
-      map.flyTo(coords, 12, {
-        animate: true,
-        duration: 1.5
-      });
-    }
-  }, [destinationCity, customCoords, map]);
+  }, [startCoords, endCoords, map]);
 
   return null;
 };
 
-// Location picker via Leaflet map clicks
-const MapLocationPicker = ({ onLocationSelect }) => {
+// Map clicks only do something while the user is explicitly picking a place
+const MapLocationPicker = ({ active, onLocationSelect }) => {
   useMapEvents({
     click(e) {
-      const { lat, lng } = e.latlng;
-      const coordString = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-      onLocationSelect(coordString, { lat, lng });
+      if (!active) return;
+      onLocationSelect({ lat: e.latlng.lat, lng: e.latlng.lng });
     },
   });
   return null;
@@ -232,432 +197,305 @@ const MapLocationPicker = ({ onLocationSelect }) => {
 // ============================================================================
 // 3. MAIN COMPONENT: TRAVELPAGE
 // ============================================================================
+const isoDate = (offsetDays) => new Date(Date.now() + offsetDays * 86400000).toISOString().slice(0, 10);
+const knownCoords = (town) => {
+  const c = CITY_COORDINATES[town?.trim()];
+  return c ? { lat: c[0], lng: c[1] } : null;
+};
+
 export default function TravelPage() {
   const navigate = useNavigate();
 
-  // Primary Generator State
+  // Trip details (mirrors what travel-Agent-2.0 needs)
   const [formData, setFormData] = useState({
-    startLocation: 'Colombo (Airport / City)',
-    destinationCity: 'Galle',
-    durationDays: 2,
-    guests: 2,
-    budgetUSD: 250,
+    startLocation: 'Colombo',
+    destinationCity: '',
+    startDate: isoDate(1),
+    endDate: isoDate(3),
+    budgetUSD: 300,
+    adults: 2,
+    children: 0,
+    guests: 2,            // adults + children (used by the built-in fallback generator)
+    rooms: 1,
+    roomsTouched: false,  // stop auto-suggesting rooms once the user sets them
     vibe: 'Relaxing',
-    transportMode: 'Private Van'
+    ownTransport: false,
+    transportMode: 'Private Van',
+    tripDescription: '',
+    weatherPreference: '',
+    amenities: []
   });
+  const durationDays = Math.max(1, tripLength(formData.startDate, formData.endDate));
 
-  // Map Pins State
-  const [startLoc, setStartLoc] = useState({
-    text: 'Colombo',
-    coords: { lat: 6.9271, lng: 79.8612 }
-  });
+  // Map pins: { text, coords } for start (blue) and destination (green)
+  const [startLoc, setStartLoc] = useState({ text: 'Colombo', coords: knownCoords('Colombo') });
   const [endLoc, setEndLoc] = useState(null);
-  const [pickingMode, setPickingMode] = useState('end'); // 'start' | 'end'
+  const [pickTarget, setPickTarget] = useState(null); // null | 'start' | 'end'
+  const [placeStatus, setPlaceStatus] = useState({ start: '', end: '' });
 
   // AI Pipeline Execution State
   const [loading, setLoading] = useState(false);
   const [loadingStepIndex, setLoadingStepIndex] = useState(0);
   const [error, setError] = useState(null);
+  // Real progress reported by travel-Agent-2.0: { stage, progress, detail }
+  const [agentProgress, setAgentProgress] = useState(null);
+  const pollCancelledRef = useRef(false);
 
-  // Cycling multi-step loading indicators
+  useEffect(() => () => { pollCancelledRef.current = true; }, []);
+
+  // Cycling multi-step loading indicators (only while no real agent progress is available)
   useEffect(() => {
     let interval;
-    if (loading) {
+    if (loading && !agentProgress) {
       setLoadingStepIndex(0);
       interval = setInterval(() => {
         setLoadingStepIndex(prev => (prev + 1) % LOADING_STEPS.length);
       }, 1600);
     }
     return () => clearInterval(interval);
-  }, [loading]);
+  }, [loading, agentProgress]);
 
-  // Handle Map Pinning
-  const handleMapClick = (coordString, latlngObj) => {
-    if (pickingMode === 'start') {
-      setStartLoc({ text: `Custom Pin (${coordString})`, coords: latlngObj });
-      setFormData(prev => ({ ...prev, startLocation: `Custom GPS (${coordString})` }));
-      setPickingMode('end');
-    } else {
-      setEndLoc({ text: `Destination (${coordString})`, coords: latlngObj });
-      setPickingMode('start');
+  // Esc cancels map picking
+  useEffect(() => {
+    if (!pickTarget) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setPickTarget(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [pickTarget]);
+
+  const setStatus = (target, text) => setPlaceStatus(prev => ({ ...prev, [target]: text }));
+  const setPin = (target, pin) => (target === 'start' ? setStartLoc(pin) : setEndLoc(pin));
+  const fieldFor = (target) => (target === 'start' ? 'startLocation' : 'destinationCity');
+
+  // Coordinates -> real town name, so the agent can compute distances & weather
+  const lookupTown = async ({ lat, lng }) => {
+    try {
+      const { data } = await api.get('/smart-plan/reverse-geocode', { params: { lat, lng } });
+      return data?.town || null;
+    } catch {
+      return null;
     }
   };
 
-  // Device Geolocation Handler
+  // A place was chosen on the map or by GPS
+  const placeFromCoords = async (target, coords) => {
+    setPickTarget(null);
+    const fallback = `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
+    setPin(target, { text: fallback, coords });
+    setStatus(target, 'Finding town…');
+    const town = await lookupTown(coords);
+    setPin(target, { text: town || fallback, coords });
+    setFormData(prev => ({ ...prev, [fieldFor(target)]: town || fallback }));
+    setStatus(target, town ? 'Pinned on map' : 'Pinned (town not found)');
+  };
+
+  // A town was typed (or a chip clicked): put it on the map
+  const handlePlaceCommit = async (target, overrideText) => {
+    const text = (overrideText ?? formData[fieldFor(target)]).trim();
+    const current = target === 'start' ? startLoc : endLoc;
+    if (text.length < 2) { setPin(target, null); setStatus(target, ''); return; }
+    if (current?.text === text) return;
+
+    const known = knownCoords(text);
+    if (known) { setPin(target, { text, coords: known }); setStatus(target, 'Pinned on map'); return; }
+
+    setStatus(target, 'Finding on map…');
+    try {
+      const { data } = await api.get('/smart-plan/geocode', { params: { q: text } });
+      setPin(target, { text, coords: { lat: data.lat, lng: data.lng } });
+      setStatus(target, 'Pinned on map');
+    } catch {
+      setPin(target, null);
+      setStatus(target, "Couldn't find this town — check the spelling");
+    }
+  };
+
   const handleDetectGPS = () => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const text = `My GPS (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
-          setStartLoc({ text, coords: { lat, lng } });
-          setFormData(prev => ({ ...prev, startLocation: text }));
-        },
-        () => alert('Could not detect location. Please check browser GPS permissions.')
-      );
+    if (!('geolocation' in navigator)) {
+      setError('Your browser does not support location access.');
+      return;
     }
+    setStatus('start', 'Getting your location…');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => placeFromCoords('start', { lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {
+        setStatus('start', '');
+        setError('Could not get your location. Allow location access or type a town.');
+      }
+    );
   };
 
-  // Submit Handler: Call POST /api/smart-plan/generate
-  const handleGenerateItinerary = async (e) => {
-    e.preventDefault();
+  // Map agent stages onto the 3 existing loading steps
+  const AGENT_STAGE_TO_STEP = { planning: 1, hotels: 0, weather: 2, assembling: 2, done: 2 };
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  // travel-Agent-2.0: start a job, then poll until the itinerary is ready.
+  // Returns { itinerary, routeOptions } or throws so the caller can fall back.
+  const runTripAgent = async () => {
+    const start = await api.post('/smart-plan/agent/start', {
+      startLocation: formData.startLocation,
+      destinationCity: formData.destinationCity,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      durationDays,
+      budgetUSD: formData.budgetUSD,
+      adults: formData.adults,
+      children: formData.children,
+      rooms: formData.rooms,
+      vibe: formData.vibe,
+      ownTransport: formData.ownTransport,
+      transportMode: formData.transportMode,
+      tripDescription: formData.tripDescription,
+      weatherPreference: formData.weatherPreference,
+      amenities: formData.amenities
+    });
+    const { jobId } = start.data;
+    setAgentProgress({ stage: 'planning', progress: 2, detail: 'Starting the AI trip agent...' });
+
+    const MAX_WAIT_MS = 15 * 60 * 1000; // local models can take several minutes
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < MAX_WAIT_MS) {
+      await sleep(3000);
+      if (pollCancelledRef.current) throw new Error('cancelled');
+      const { data } = await api.get(`/smart-plan/agent/status/${jobId}`);
+      if (data.status === 'done') return data;
+      if (data.status === 'error') throw new Error(data.message || 'Agent failed');
+      setAgentProgress({ stage: data.stage, progress: data.progress, detail: data.detail });
+      setLoadingStepIndex(AGENT_STAGE_TO_STEP[data.stage] ?? 0);
+    }
+    throw new Error('Agent timed out');
+  };
+
+  // Submit: try travel-Agent-2.0 first, then POST /api/smart-plan/generate
+  const handleGenerateItinerary = async () => {
     setLoading(true);
     setError(null);
+    setAgentProgress(null);
+    setPickTarget(null);
+    pollCancelledRef.current = false;
+    const plannerData = { ...formData, durationDays, guests: formData.adults + formData.children };
+
+    try {
+      const agentResult = await runTripAgent();
+      if (agentResult?.itinerary) {
+        navigate('/travel-itinerary', {
+          state: { itinerary: agentResult.itinerary, routeOptions: agentResult.routeOptions, formData: plannerData }
+        });
+        return;
+      }
+    } catch (agentErr) {
+      if (agentErr.message === 'cancelled') return;
+      console.warn('Trip agent unavailable, using built-in Smart Plan generator:', agentErr.message);
+      setAgentProgress(null);
+    }
 
     try {
       const response = await api.post('/smart-plan/generate', {
-        startLocation: formData.startLocation,
-        destinationCity: formData.destinationCity,
-        durationDays: formData.durationDays,
-        budgetUSD: formData.budgetUSD,
-        vibe: formData.vibe,
-        transportMode: formData.transportMode,
-        guests: formData.guests
+        startLocation: plannerData.startLocation,
+        destinationCity: plannerData.destinationCity,
+        durationDays: plannerData.durationDays,
+        budgetUSD: plannerData.budgetUSD,
+        vibe: plannerData.vibe,
+        transportMode: plannerData.ownTransport ? 'Own Vehicle' : plannerData.transportMode,
+        guests: plannerData.guests
       });
 
       if (response.data && response.data.success) {
         const generatedItinerary = response.data.data;
-
         setTimeout(() => {
-          navigate('/travel-itinerary', {
-            state: {
-              itinerary: generatedItinerary,
-              formData
-            }
-          });
+          navigate('/travel-itinerary', { state: { itinerary: generatedItinerary, formData: plannerData } });
         }, 600);
       } else {
         throw new Error(response.data?.message || 'Server did not return a valid itinerary.');
       }
     } catch (err) {
       console.warn('Backend Smart Plan API unreachable, utilizing curated Sri Lanka fallback:', err);
-      
+
       // Graceful fallback to guarantee smooth user experience
       setTimeout(() => {
         const simulatedPlan = {
           ...FALLBACK_SMART_PLAN,
-          destinationCity: formData.destinationCity,
-          vibe: formData.vibe,
-          durationDays: formData.durationDays,
-          budgetUSD: formData.budgetUSD,
-          transportMode: formData.transportMode,
-          tripTitle: `${formData.destinationCity} ${formData.vibe} Escapade`
+          destinationCity: plannerData.destinationCity,
+          vibe: plannerData.vibe,
+          durationDays: plannerData.durationDays,
+          budgetUSD: plannerData.budgetUSD,
+          transportMode: plannerData.transportMode,
+          tripTitle: `${plannerData.destinationCity} ${plannerData.vibe} Escapade`
         };
-
-        navigate('/travel-itinerary', {
-          state: {
-            itinerary: simulatedPlan,
-            formData
-          }
-        });
+        navigate('/travel-itinerary', { state: { itinerary: simulatedPlan, formData: plannerData } });
       }, 1200);
     }
   };
 
   return (
-    <div className="travel-plan-page relative w-full h-[calc(100vh-76px)] overflow-hidden">
-      
+    <div className="travel-plan-page tw-preflight relative w-full h-[calc(100vh-76px)] overflow-hidden">
+
       {/* ==================================================================== */}
       {/* 1. FULL-BLEED LEAFLET MAP BACKGROUND (Free OpenStreetMap Tiles)       */}
       {/* ==================================================================== */}
       <MapContainer
-        center={CITY_COORDINATES[formData.destinationCity] || [7.8731, 80.7718]}
-        zoom={11}
+        center={[7.8731, 80.7718]}
+        zoom={8}
         minZoom={6}
         zoomControl={false}
-        className="absolute inset-0 z-0 w-full h-full cursor-crosshair"
-        style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
+        className={`absolute inset-0 z-0 w-full h-full ${pickTarget ? 'cursor-crosshair' : ''}`}
+        style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, cursor: pickTarget ? 'crosshair' : undefined }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
 
-        {/* Camera Controller to smoothly flyTo on city change */}
-        <MapCameraController 
-          destinationCity={formData.destinationCity} 
-          customCoords={endLoc?.coords}
-        />
+        <MapCameraController startCoords={startLoc?.coords} endCoords={endLoc?.coords} />
+        <MapLocationPicker active={Boolean(pickTarget)} onLocationSelect={(coords) => placeFromCoords(pickTarget, coords)} />
 
-        <MapLocationPicker onLocationSelect={handleMapClick} />
-
-        {/* Departure Marker */}
-        {startLoc && (
-          <Marker 
-            position={[startLoc.coords.lat, startLoc.coords.lng]}
-            icon={createPulsingPinIcon('Start: ' + (startLoc.text.split('(')[0] || 'Departure'), '#2563eb')}
-          >
-            <Popup>
-              <div className="p-1 font-sans text-xs">
-                <strong className="text-blue-600 block uppercase">Starting Point</strong>
-                <span>{startLoc.text}</span>
-              </div>
-            </Popup>
+        {startLoc?.coords && (
+          <Marker position={[startLoc.coords.lat, startLoc.coords.lng]} icon={createPulsingPinIcon(`From: ${startLoc.text}`, '#2563eb')}>
+            <Popup><div className="p-1 font-sans text-xs"><strong className="text-blue-600 block uppercase">Starting from</strong>{startLoc.text}</div></Popup>
           </Marker>
         )}
 
-        {/* Destination Hub Marker */}
-        {formData.destinationCity && CITY_COORDINATES[formData.destinationCity] && (
-          <Marker 
-            position={CITY_COORDINATES[formData.destinationCity]}
-            icon={createPulsingPinIcon(`Hub: ${formData.destinationCity}`, '#10b981')}
-          >
-            <Popup>
-              <div className="p-1 font-sans text-xs">
-                <strong className="text-emerald-600 block uppercase">Destination Hub</strong>
-                <span>{formData.destinationCity}, Sri Lanka</span>
-              </div>
-            </Popup>
-          </Marker>
-        )}
-
-        {/* Custom Pinned Stop */}
-        {endLoc && (
-          <Marker 
-            position={[endLoc.coords.lat, endLoc.coords.lng]}
-            icon={createPulsingPinIcon('Custom Stop', '#f59e0b')}
-          >
-            <Popup>
-              <div className="p-1 font-sans text-xs">
-                <strong className="text-amber-600 block uppercase">Selected Pin</strong>
-                <span>{endLoc.text}</span>
-              </div>
-            </Popup>
+        {endLoc?.coords && (
+          <Marker position={[endLoc.coords.lat, endLoc.coords.lng]} icon={createPulsingPinIcon(`To: ${endLoc.text}`, '#10b981')}>
+            <Popup><div className="p-1 font-sans text-xs"><strong className="text-emerald-600 block uppercase">Going to</strong>{endLoc.text}</div></Popup>
           </Marker>
         )}
       </MapContainer>
 
+      {/* Map-picking banner */}
+      {pickTarget && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1100] flex items-center gap-3 px-4 py-2.5 rounded-full bg-amber-500 text-white text-sm font-semibold shadow-xl">
+          <MapPin size={16} />
+          <span>Click the map to set your {pickTarget === 'start' ? 'starting point' : 'destination'}</span>
+          <button type="button" onClick={() => setPickTarget(null)} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/25 hover:bg-white/40 text-xs cursor-pointer">
+            <X size={12} /> Cancel
+          </button>
+        </div>
+      )}
+
       {/* ==================================================================== */}
-      {/* 2. FLOATING GLASSMORPHIC FORM CONTAINER (Z-[1000] Above Leaflet)     */}
+      {/* 2. FLOATING TRIP WIZARD (Z-[1000] Above Leaflet)                     */}
       {/* ==================================================================== */}
-      <div 
-        className="absolute top-24 left-4 lg:left-12 z-[1000] w-[90%] md:w-96 p-6 rounded-2xl shadow-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 flex flex-col gap-5 max-h-[calc(100vh-120px)] overflow-y-auto"
+      <div
+        className="absolute top-6 left-4 lg:left-12 z-[1000] w-[calc(100%-2rem)] md:w-[26rem] p-5 rounded-2xl shadow-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 max-h-[calc(100%-3rem)] overflow-y-auto"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex flex-col gap-1 pb-2 border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-            <Sparkles size={18} className="animate-pulse" />
-            <span className="text-xs font-black tracking-wider uppercase">AI Trip Architect</span>
-          </div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-            Smart Itinerary Planner
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            RAG-powered road routing across Sri Lanka
-          </p>
-        </div>
-
-        {/* Error Alert */}
-        {error && (
-          <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between gap-2 shadow-xs">
-            <div className="flex items-center gap-2">
-              <AlertCircle size={14} className="flex-shrink-0" />
-              <span>{error}</span>
-            </div>
-            <button onClick={() => setError(null)} className="cursor-pointer">
-              <X size={14} />
-            </button>
-          </div>
-        )}
-
-        {/* Trip Form */}
-        <form onSubmit={handleGenerateItinerary} className="flex flex-col gap-4">
-          
-          {/* 1. STARTING LOCATION */}
-          <label className="text-sm font-semibold text-slate-700 dark:text-slate-200 flex flex-col gap-1.5">
-            <span className="flex items-center gap-1.5">
-              <MapPin size={15} className="text-blue-600" />
-              Starting Location
-            </span>
-            <div className="relative flex items-center">
-              <input
-                type="text"
-                value={formData.startLocation}
-                onChange={(e) => setFormData({ ...formData, startLocation: e.target.value })}
-                placeholder="e.g. Colombo International Airport"
-                required
-                className="w-full bg-slate-100 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 pr-14"
-              />
-              <button
-                type="button"
-                onClick={handleDetectGPS}
-                className="absolute right-2 px-2.5 py-1 text-[11px] font-bold bg-blue-600 text-white rounded-md hover:bg-blue-700 transition cursor-pointer"
-              >
-                GPS
-              </button>
-            </div>
-          </label>
-
-          {/* 2. DESTINATION HUB */}
-          <label className="text-sm font-semibold text-slate-700 dark:text-slate-200 flex flex-col gap-1.5">
-            <span className="flex items-center gap-1.5">
-              <Map size={15} className="text-emerald-500" />
-              Destination
-            </span>
-            <div className="relative">
-              <select
-                value={formData.destinationCity}
-                onChange={(e) => setFormData({ ...formData, destinationCity: e.target.value })}
-                className="w-full bg-slate-100 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none pr-8"
-              >
-                {DESTINATIONS.map((d) => (
-                  <option key={d.city} value={d.city} className="dark:bg-slate-800">
-                    {d.label} — {d.subtitle}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
-            </div>
-          </label>
-
-          {/* 3. DURATION */}
-          <label className="text-sm font-semibold text-slate-700 dark:text-slate-200 flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Calendar size={15} className="text-blue-600" />
-                Duration
-              </span>
-              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                {formData.durationDays} {formData.durationDays === 1 ? 'Day' : 'Days'}
-              </span>
-            </div>
-            <div className="grid grid-cols-5 gap-1.5 pt-0.5">
-              {[1, 2, 3, 4, 5].map((d) => {
-                const isSelected = formData.durationDays === d;
-                return (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, durationDays: d }))}
-                    className={`py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
-                      isSelected
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    {d}d
-                  </button>
-                );
-              })}
-            </div>
-          </label>
-
-          {/* 4. BUDGET */}
-          <label className="text-sm font-semibold text-slate-700 dark:text-slate-200 flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <DollarSign size={15} className="text-emerald-500" />
-                Budget (USD)
-              </span>
-              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                ${formData.budgetUSD} USD (~${Math.round(formData.budgetUSD / formData.durationDays)}/day)
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min="50"
-                max="2500"
-                step="25"
-                value={formData.budgetUSD}
-                onChange={(e) => setFormData({ ...formData, budgetUSD: Number(e.target.value) })}
-                className="w-full bg-slate-100 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <input
-              type="range"
-              min="50"
-              max="1500"
-              step="25"
-              value={formData.budgetUSD}
-              onChange={(e) => setFormData({ ...formData, budgetUSD: Number(e.target.value) })}
-              className="w-full accent-blue-600 cursor-pointer mt-1"
-            />
-          </label>
-
-          {/* 5. TRAVELERS & VIBE (GRID) */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Travelers */}
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-200 flex flex-col gap-1.5">
-              <span className="flex items-center gap-1.5">
-                <Users size={15} className="text-indigo-500" />
-                Travelers
-              </span>
-              <select
-                value={formData.guests}
-                onChange={(e) => setFormData({ ...formData, guests: Number(e.target.value) })}
-                className="w-full bg-slate-100 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-              >
-                {[1, 2, 3, 4, 5, 6, 8].map(num => (
-                  <option key={num} value={num}>
-                    {num} {num === 1 ? 'Guest' : 'Guests'}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {/* Vibe */}
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-200 flex flex-col gap-1.5">
-              <span className="flex items-center gap-1.5">
-                <Compass size={15} className="text-amber-500" />
-                Vibe
-              </span>
-              <select
-                value={formData.vibe}
-                onChange={(e) => setFormData({ ...formData, vibe: e.target.value })}
-                className="w-full bg-slate-100 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-              >
-                {VIBES.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          {/* 6. TRANSPORT MODE */}
-          <label className="text-sm font-semibold text-slate-700 dark:text-slate-200 flex flex-col gap-1.5">
-            <span className="flex items-center gap-1.5">
-              <Navigation size={15} className="text-purple-500" />
-              Transport Mode
-            </span>
-            <select
-              value={formData.transportMode}
-              onChange={(e) => setFormData({ ...formData, transportMode: e.target.value })}
-              className="w-full bg-slate-100 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-            >
-              {TRANSPORT_MODES.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {/* 7. GENERATE BUTTON */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50 hover:shadow-xl active:scale-[0.98] mt-2"
-          >
-            <Sparkles size={18} className="animate-spin text-amber-300" style={{ animationDuration: '4s' }} />
-            <span>{loading ? 'Synthesizing Verified Route...' : 'Generate AI Smart Plan'}</span>
-            <ArrowRight size={16} />
-          </button>
-        </form>
-
-        {/* Footer Tag */}
-        <div className="pt-2 border-t border-slate-200 dark:border-slate-800 text-center">
-          <span className="text-xs text-slate-400 flex items-center justify-center gap-1.5">
-            <ShieldCheck size={14} className="text-emerald-500" />
-            <span>500+ verified Sri Lankan stays & attractions</span>
-          </span>
-        </div>
+        <TripWizard
+          form={formData}
+          setForm={setFormData}
+          pickTarget={pickTarget}
+          onPickOnMap={setPickTarget}
+          onGPS={handleDetectGPS}
+          onPlaceCommit={handlePlaceCommit}
+          placeStatus={placeStatus}
+          onSubmit={handleGenerateItinerary}
+          loading={loading}
+          error={error}
+          onClearError={() => setError(null)}
+        />
       </div>
+
 
       {/* ==================================================================== */}
       {/* 3. MULTI-STEP HCI AI PROGRESS OVERLAY (Framer Motion)                 */}
@@ -694,6 +532,25 @@ export default function TravelPage() {
                   Synthesizing verified hotels, road paths, and attraction tickets via RAG.
                 </p>
               </div>
+
+              {/* Real progress from travel-Agent-2.0 */}
+              {agentProgress && (
+                <div className="text-left space-y-1.5">
+                  <div className="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    <span className="truncate pr-2">{agentProgress.detail}</span>
+                    <span>{agentProgress.progress}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-700"
+                      style={{ width: `${agentProgress.progress}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Checking real driving distances, weather and hotel availability — this can take a few minutes.
+                  </p>
+                </div>
+              )}
 
               {/* Multi-Step Cycling Progress */}
               <div className="bg-slate-100/80 dark:bg-slate-800/80 rounded-2xl p-4 border border-slate-200/60 dark:border-slate-700/60 text-left space-y-3">
