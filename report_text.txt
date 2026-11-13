@@ -1,0 +1,784 @@
+EC9540 – ASSIGNMENT 02
+AURELIA TRAVEL
+Intelligent Trip Planning & Hotel Booking Platform
+Project Report – HCI Design, Implementation and Evaluation
+Item
+Details
+Module
+EC9540
+Assignment
+Assignment 02 – Final Evaluation
+Student Name(s)
+[Enter name(s)]
+Registration No(s).
+[Enter registration number(s)]
+Lecturer / Evaluator
+[Enter name]
+Date of Submission
+[Enter date]
+Table of Contents
+(Right-click the table above and choose "Update Field" in Microsoft Word after inserting screenshots so that page numbers are refreshed.)
+1. Introduction
+1.1 Background and Problem
+Busy working professionals frequently get short breaks of one to three days but lack the time to research transport, accommodation, activities and costs. Planning such a short trip across several websites leads to "analysis paralysis", uncertainty about the total cost and, often, a decision not to travel at all.
+Aurelia Travel
+ is a web platform that addresses this problem by combining two capabilities in one interface: a 
+Smart Plan
+ module that turns a start point, time window and budget into a day-by-day itinerary with a live budget, and a full 
+hotel discovery and booking
+ system. The platform also provides dedicated dashboards for 
+hotel partners
+ (property managers) and 
+platform administrators
+, so that every stakeholder in the booking chain uses the same product.
+1.2 Objectives
+Automated itineraries:
+ generate a trip plan from a start location, destination, date, duration, transport preference and budget.
+Financial transparency:
+ show estimated and remaining budget that updates instantly when the user changes choices.
+Frictionless booking:
+ allow travellers to find, compare, save and book hotels in a small number of clear steps.
+Partner self-service:
+ let hotel managers publish properties and rooms, handle bookings and reviews, and settle commission themselves.
+Platform governance:
+ give administrators tools for moderation, user management, finance, configuration, support and audit logging.
+1.3 Scope of this Report
+This report documents the implemented product and evaluates it against the Assignment 02 evaluation criteria. Section 2 identifies the target users; Section 3 describes the architecture; Section 4 walks through every major screen with screenshots of the actual outputs; Section 5 evaluates the design against each HCI criterion (Section A of the rubric); Section 6 covers project completeness (Section B); Section 7 contains the demonstration plan and design justifications (Section C); and Section 8 lists limitations and future work. Appendix A maps each rubric criterion to the report section that provides evidence.
+2. Target Users and User-Centred Design
+The design process started from three clearly different user groups. Each group has its own goals, level of technical skill and context of use, so the interface is split into three role-specific areas that share a common visual language.
+2.1 User Personas
+Persona
+Profile and Context
+Primary Goals
+Pain Points Addressed
+Traveller
+"Nimal, 29, software engineer"
+Busy professional; plans on a laptop in the evening or on a phone during a break; moderate technical skill.
+Plan a 1–3 day trip quickly; know the full cost; book a hotel with confidence.
+Too many sites; hidden costs; long booking forms; fear of losing a half-finished booking.
+Hotel Partner
+"Mrs. Perera, 45, boutique hotel manager"
+Uses a desktop at the front office; limited time; not an IT specialist.
+List property and rooms; see incoming bookings; reply to reviews; track revenue and commission.
+Complex extranets; unclear commission; no single view of performance.
+Platform Administrator
+"Aurelia operations staff"
+Power user on desktop; handles many records each day.
+Moderate hotels, users and reviews; configure commission; answer support; audit activity.
+Needs speed, search, safe destructive actions and traceability.
+2.2 Key User Tasks
+#
+User
+Task
+Supported by
+T1
+Traveller
+Generate a short trip plan within a budget
+Smart Plan page, itinerary timeline, trip dashboard
+T2
+Traveller
+Find and compare hotels
+Hotel showcase, search results, filters, hotel cards
+T3
+Traveller
+Book a room
+Hotel details, rooms table, 3-step booking flow
+T4
+Traveller
+Manage trips, reviews and saved hotels
+My Bookings, My Reviews, Wishlist, notifications
+T5
+Traveller
+Get help
+Live chat widget, Contact page, Safety Center, Dispute Resolution
+T6
+Hotel Partner
+Publish a property and its rooms
+Property Portfolio and Room Inventory (list → form pattern)
+T7
+Hotel Partner
+Monitor bookings, guests and income
+Overview, Bookings, Customers, Analytics, Financial Hub
+T8
+Administrator
+Moderate and govern the platform
+Super Admin: Hotels, Users, Reviews, Finance, Settings, Logs, Inbox, Live Support
+2.3 How User Needs Shaped the Design
+Time is the scarcest resource
+ for the traveller persona, so the landing page leads with one primary call to action ("Generate My Trip"), the planner form has sensible defaults (round trip when no destination is given, a "surprise me" trip when no description is given) and the booking form is pre-filled from the user profile.
+Cost certainty
+ is shown continuously: the itinerary header displays remaining budget and estimated cost, and the value changes colour when the budget becomes low or negative.
+Non-technical hotel partners
+ get a single sidebar with plain labels (Overview, Hotels, Rooms, Bookings, Customers, Analytics, Reviews, Finance) and a repeated list-then-form pattern, so learning one screen teaches all of them.
+Administrators
+ work with large datasets, so every admin table has a search box, status badges and confirmation or OTP protection on destructive actions.
+3. System Overview and Architecture
+3.1 Technology Stack
+Layer
+Technologies
+Purpose
+Frontend
+React 19, Vite, React Router 7, Framer Motion, Lucide icons, Recharts, React-Leaflet (OpenStreetMap/CARTO tiles), Socket.IO client, Google OAuth
+Single-page application with role-based routes, animations, charts, maps and real-time updates
+Backend
+Node.js, Express, Socket.IO, express-rate-limit, cookie-based JWT authentication, email service
+REST API, authentication (incl. 2FA and password reset), real-time notifications and chat
+Data
+MySQL via Knex (migrations and seeders)
+Users, properties, rooms, bookings, reviews, wishlist, notifications, chat, commission and activity logs
+Media
+Cloudinary
+Hotel and room image upload and hosting
+AI Planning
+Python, CrewAI, FastAPI (Aurelia AI Trip Designer service)
+Itinerary generation for the Smart Plan module
+3.2 Role-Based Structure
+The application is divided into three protected areas. Route guards (ProtectedRoute and role checks from the user context) redirect unauthenticated or unauthorised users, which prevents users from reaching screens they cannot use.
+Area
+Base Route
+Who can access
+Main Screens
+Public / Traveller site
+/
+Everyone (some pages require sign-in)
+Home, Smart Plan, Itinerary, Trip Dashboard, Hotels, Hotel Details, Booking, My Bookings, My Reviews, Wishlist, Notifications, Profile, About, Contact, Safety Center, Disputes
+Hotel Management Dashboard
+/admin
+Hotel Partners and Admins
+Overview, Hotels, Rooms, Bookings, Customers, Analytics, Reviews, Finance
+Super Admin Console
+/superAdmin
+Platform Admins only
+Overview, Hotels, Users, Finance, Reviews, Settings, Logs, Messages, Live Chat
+[ Insert Screenshot – Figure 1 ]
+Capture: an architecture diagram (React frontend ↔ Express API ↔ MySQL; Socket.IO; Cloudinary; AI Trip Designer service).
+Figure 1: High-level architecture of Aurelia Travel
+4. System Walkthrough – Actual Outputs
+This section presents screenshots of the actual outputs generated by the running system. Screens are grouped by user role and follow the order of a realistic user journey.
+4.1 Traveller Experience
+4.1.1 Home Page
+A short branded intro animation leads into a full-width hero slider with the headline "Stop Planning. Start Traveling." and two actions: the primary "Generate My Trip" button and a secondary "How it Works" link. Live platform statistics (travellers and properties) are fetched from the API, followed by feature cards and a three-step explanation of the process.
+[ Insert Screenshot – Figure 2 ]
+Capture: Home page top section, including the header navigation and the stats panel.
+Figure 2: Home page – hero section, calls to action and live statistics
+4.1.2 Smart Plan – Trip Input
+The Smart Plan page shows a full-screen interactive map of Sri Lanka behind a floating planner form. Users can type locations or click on the map; the first click sets the start pin and the page automatically switches to setting the destination, with the helper text updating to tell the user what the next click will do. The form captures start and end location, start date and time, transport (own vehicle or arranged), duration (1–3 days), total budget and a free-text description of the ideal trip.
+[ Insert Screenshot – Figure 3 ]
+Capture: Smart Plan page with start and end markers placed and the form partly filled.
+Figure 3: Smart Plan page – map-based location picking and planner form
+4.1.3 Generated Itinerary
+The itinerary page presents the trip as a vertical timeline grouped by day. Each transport leg has a vehicle selector (private van, tuk-tuk, public bus, walking); changing it immediately recalculates the leg cost, the estimated total and the remaining budget in the header widget. "Customize" opens the trip dashboard and "Back to Plans" returns to the previous page.
+[ Insert Screenshot – Figure 4 ]
+Capture: Itinerary page, showing the remaining budget and a changed vehicle option.
+Figure 4: Itinerary timeline with live budget widget and per-leg transport selector
+4.1.4 Trip Dashboard (Customisation)
+The trip dashboard shows each day as a Kanban column of activity cards (transport, sight, food, stay) with time and cost. Clicking a card opens an edit sidebar to change or delete the item; the header pills for total and remaining budget turn red if the plan exceeds the budget. Users can add a free day or extend the trip through the planner pop-up.
+[ Insert Screenshot – Figure 5 ]
+Capture: Trip Dashboard with the edit sidebar open on one activity.
+Figure 5: Trip dashboard – Kanban view of days with editing sidebar
+4.1.5 Hotel Discovery and Search
+The hotel showcase lists properties as cards showing image, rating badge, star row, review count, location, "from" price per night, a wishlist heart and a "Reserve" button. Filters (price range, city/district, province, minimum rating and facilities such as WiFi, Pool, Parking, AC and Restaurant) refine the results; on mobile the filters open in a slide-in panel. Results are paginated (eight per page). When nothing matches, a clear empty state with a "Clear Filters" / "View all hotels" action is shown. Skeleton cards are displayed while data loads.
+[ Insert Screenshot – Figure 6 ]
+Capture: hotel listing with some filters applied.
+Figure 6: Hotel showcase / search results with filter panel
+[ Insert Screenshot – Figure 7 ]
+Capture: the skeleton loading state and the empty state after applying strict filters (two screenshots side by side).
+Figure 7: Loading skeletons and "No matches found" empty state
+4.1.6 Hotel Details and Room Selection
+The hotel details page follows a clear top-down hierarchy: name, wishlist button, address and rating with the starting price; an image gallery beside an embedded location map; the description, premium services, languages spoken and house rules (check-in/out, minimum age, deposit, pets, parties); a rooms table with capacity, details, quantity, price and a select action; and guest reviews. Selecting a room highlights the row and the booking panel updates the total for the chosen dates, rooms and nights. If the user tries to reserve without a room, the page scrolls to the rooms table and explains what is missing.
+[ Insert Screenshot – Figure 8 ]
+Capture: the top half of a hotel details page.
+Figure 8: Hotel details – header, gallery and location map
+[ Insert Screenshot – Figure 9 ]
+Capture: the rooms table with one row selected and the reserve panel showing the total.
+Figure 9: Rooms table with a selected room and calculated total price
+4.1.7 Booking Flow
+Booking uses a three-step progress tracker (Selection → Details & Payment → Confirmation). A fixed summary card on the left keeps the hotel, room, dates, guests and total price visible throughout. Guest details are pre-filled from the signed-in profile and required fields are marked with an asterisk. Guests who are not signed in can still book, with a banner offering to sign in and use saved details. After step 2 the booking is saved as a draft, so if the user leaves the page an "Complete your booking!" tag allows them to resume at step 3.
+[ Insert Screenshot – Figure 10 ]
+Capture: the booking page at "Details & Payment".
+Figure 10: Booking step 2 – progress tracker, summary card and pre-filled guest form
+[ Insert Screenshot – Figure 11 ]
+Capture: the confirmation step and the success message after confirming.
+Figure 11: Booking step 3 – confirmation and success message
+4.1.8 My Bookings, Reviews and Wishlist
+"Your Journeys" lists bookings as ticket-style cards with hotel image, colour-coded status badge (confirmed, completed, cancelled, pending), dates, nights, guests and total price. Completed stays can be reviewed through a modal with a star rating, title and comment. "My Reviews" lists the user's reviews, and the Wishlist page shows saved properties; the heart icon in the header shows a live count of saved hotels. Each list has a helpful empty state (for example "No upcoming trips" with an "Explore Hotels" button).
+[ Insert Screenshot – Figure 12 ]
+Capture: My Bookings page and the "write a review" modal.
+Figure 12: My Bookings with status badges and review modal
+[ Insert Screenshot – Figure 13 ]
+Capture: the Wishlist page with saved hotels and the header heart badge.
+Figure 13: Wishlist page and header wishlist badge
+4.1.9 Notifications and Live Chat
+A notification bell in the header shows an unread count (capped at "9+"); the dropdown highlights unread items with a dot and offers "Mark all read". Notifications arrive in real time through Socket.IO. A floating live chat widget lets travellers message the Aurelia support team, whose replies appear instantly.
+[ Insert Screenshot – Figure 14 ]
+Capture: the open notification dropdown.
+Figure 14: Notification bell dropdown with unread badge
+[ Insert Screenshot – Figure 15 ]
+Capture: the chat widget open with a short conversation.
+Figure 15: Live chat widget (traveller side)
+4.1.10 Authentication and Account Security
+The sign-in page uses a split layout: a branded image with a message that changes by mode, and a form side that switches between Sign In, Create Account and Reset Password without leaving the page. It supports Google sign-in, a password visibility toggle, "Remember me", optional two-step verification (six-digit authenticator code) and a three-step password recovery (email → code → new password) with a resend option if the code fails. Validation messages (for example "Passwords do not match") appear inline above the form.
+[ Insert Screenshot – Figure 16 ]
+Capture: the login page and the registration mode.
+Figure 16: Sign In / Create Account page
+[ Insert Screenshot – Figure 17 ]
+Capture: the 2FA code screen, a reset step, and an example error message.
+Figure 17: Two-step verification and password reset steps; inline validation error
+4.1.11 Support Pages and Responsive Layout
+The Safety Center provides emergency information, a Trust & Safety line and travel safety guidelines. The Dispute Resolution form lets users raise complaints, payment disputes or platform issues with optional hotel and booking IDs. The Contact page offers a simple message form. On small screens the navigation collapses into a hamburger menu that closes automatically after navigation.
+[ Insert Screenshot – Figure 18 ]
+Capture: both pages.
+Figure 18: Safety Center and Dispute Resolution pages
+[ Insert Screenshot – Figure 19 ]
+Capture: the site in a mobile-width browser with the menu open.
+Figure 19: Mobile view – collapsed navigation and responsive hotel cards
+4.2 Hotel Partner Dashboard
+Hotel partners reach their dashboard from the profile dropdown ("Manager Dashboard"). A persistent sidebar provides access to all management functions.
+4.2.1 Performance Overview
+Four KPI cards (monthly revenue, monthly bookings, live occupancy and monthly guests) sit above a revenue area chart for the last seven days.
+[ Insert Screenshot – Figure 20 ]
+Capture: the manager Overview page.
+Figure 20: Manager dashboard – performance overview and revenue chart
+4.2.2 Property Portfolio and Room Inventory
+Both screens use the same pattern: a searchable table with status and edit/delete actions, and an "Add" button that switches to a structured form. The property form collects type, star rating, name, rich-text description, images (upload or URL), address and coordinates, contact details, check-in/out times, cancellation window, minimum age, damage deposit, custom rules, services and staff languages. The room form collects property, title, type, view, occupancy, size, bed type, stock, price, bathroom type, features, images and description.
+[ Insert Screenshot – Figure 21 ]
+Capture: the hotels list and the add/edit form.
+Figure 21: Property Portfolio – list view and property form
+[ Insert Screenshot – Figure 22 ]
+Capture: the rooms list and the add/edit form.
+Figure 22: Room Inventory – list view and room form
+4.2.3 Bookings, Customers and Analytics
+The bookings table (reference, stay information, payment, status, total) can be filtered by property and opens a booking-details modal. The Guest Directory offers search and a guest profile view. Financial Reports show bookings, revenue, commission and net income per property.
+[ Insert Screenshot – Figure 23 ]
+Capture: the Bookings page with the details modal open.
+Figure 23: Booking management table and booking details modal
+[ Insert Screenshot – Figure 24 ]
+Capture: the Customers and Analytics pages.
+Figure 24: Guest Directory and Analytics / Financial Reports
+4.2.4 Financial Hub and Review Management
+The Financial Hub shows total revenue, unpaid commission and overdue status, with a guided payment flow (select method → security verification → processing) and payment history with receipts. The Guest Reviews page lets managers write professional public replies to reviews.
+[ Insert Screenshot – Figure 25 ]
+Capture: the Finance page and the payment modal.
+Figure 25: Financial Hub – commission payment flow
+[ Insert Screenshot – Figure 26 ]
+Capture: the review list with a reply box open.
+Figure 26: Guest Reviews – replying to a review
+4.3 Super Admin Console
+Platform administrators use a separate console with its own sidebar and quick search.
+[ Insert Screenshot – Figure 27 ]
+Capture: the Super Admin Overview page.
+Figure 27: Super Admin – dashboard overview and revenue analytics
+[ Insert Screenshot – Figure 28 ]
+Capture: the hotels table and the "Enter OTP" modal.
+Figure 28: Manage Hotels – publish/hide and OTP-protected deletion
+[ Insert Screenshot – Figure 29 ]
+Capture: the users table and the edit modal with the role selector.
+Figure 29: User Base – user table, view and edit modals, role assignment
+[ Insert Screenshot – Figure 30 ]
+Capture: the Super Finance page.
+Figure 30: Financial Overview – commission payments
+[ Insert Screenshot – Figure 31 ]
+Capture: the Reviews moderation page and the Settings page.
+Figure 31: Content Moderation (reviews) and Platform Configuration (commission %, contact details, social links)
+[ Insert Screenshot – Figure 32 ]
+Capture: the Logs page.
+Figure 32: Activity Logs with action filter and search
+[ Insert Screenshot – Figure 33 ]
+Capture: the Messages page and the Live Chat desk with a conversation selected.
+Figure 33: Support Inbox and Live Support Desk
+[ Insert Screenshot – Figure 34 ]
+Capture: a confirmation prompt (e.g. deleting a room, banning a user or clearing the wishlist).
+Figure 34: Confirmation dialog before a destructive action
+5. Evaluation Against HCI Principles and Guidelines
+This section evaluates the product against each criterion in Section A of the evaluation rubric. For each criterion we explain the design decisions taken, the evidence in the implementation, and the weaknesses we identified during our own review. Figure references point to the screenshots in Section 4.
+5.1 Usability and Ease of Use (10 marks)
+The goal was that a first-time visitor should understand what the product does and complete a core task without instructions. We applied the principles of learnability, recognition rather than recall, and a strong single primary action per screen.
+Design decision / HCI principle
+How it is implemented in Aurelia Travel
+Clear value proposition and primary action
+The home hero states the product purpose in one line and offers one dominant button, "Generate My Trip" (Fig. 2). A "How it Works" section explains the process in three steps.
+Recognition over recall
+Every input is labelled with text plus an icon (map pin, calendar, wallet, car). Placeholders give examples, e.g. "e.g. Colombo", "e.g. 50000" (Fig. 3).
+Direct manipulation
+Locations can be set by clicking the map, and transport choices on the itinerary are changed in place with immediate cost updates (Figs. 3–4).
+Familiar patterns
+Hotel cards, filters, a rooms table and a stepped checkout follow conventions users already know from major booking websites, reducing learning effort (Figs. 6–11).
+Sensible defaults
+Two adults preselected; round trip if the destination is blank; a "surprise me" trip if no description is given; guest details pre-filled from the profile.
+Identified weaknesses and planned improvements:
+Some icon-only controls (e.g. edit/delete in admin tables) rely on tooltips; adding visible text labels on hover/focus would further improve learnability.
+5.2 Consistency and Standards (8 marks)
+Consistency was pursued at three levels: visual (colours, typography, icons), structural (page layouts and patterns) and behavioural (how controls respond).
+Design decision / HCI principle
+How it is implemented in Aurelia Travel
+Shared layout components
+All traveller pages share the same Header and Footer through a common Layout; both dashboards use a persistent left sidebar with the same structure.
+One icon family
+Lucide icons are used across the entire product, so the same concept always has the same icon (heart = save, ticket = bookings, map pin = location).
+Design tokens
+Colours are defined as CSS variables (themes.css) and reused for accents, stars and status colours; super-admin screens share a common "sa-" style set.
+Repeated interaction pattern
+Management screens (hotels, rooms, users) all use "searchable list → Add/Edit form → Cancel/Save", and modals always close with an X button in the top-right corner.
+Consistent status language
+Bookings, hotels and payments use the same colour-coded badges (green = confirmed/active, red = cancelled/inactive, amber = pending).
+Platform conventions
+Standard web conventions are respected: logo returns home, active navigation link is highlighted, underlined blue text for links, dates in native date pickers.
+Identified weaknesses and planned improvements:
+Currencies are mixed: the Smart Plan uses LKR, while hotel prices are in USD (the external hotel data source does not support LKR). A single display currency or a currency switch is planned.
+Feedback style varies: some screens use inline messages while others use browser alert() pop-ups. These will be unified into one toast/inline notification component.
+Hotel cards currently render two overlapping wishlist buttons; one will be removed to keep a single, consistent control.
+5.3 Visibility, Feedback and System Status (8 marks)
+Following Nielsen's first heuristic, the system should always keep users informed about what is happening through appropriate and timely feedback.
+Design decision / HCI principle
+How it is implemented in Aurelia Travel
+Loading states
+Skeleton cards and a hotel-details skeleton mirror the final layout while data loads (Fig. 7); the Search button changes to a spinner and is disabled during a search; "Loading your itineraries…" messages in lists.
+Progress indication
+The booking flow shows a three-step tracker where completed steps turn into check marks (Figs. 10–11). Multi-step modals (forgot password, commission payment) state the current step in the heading.
+Live state
+Remaining budget recalculates instantly and turns to a warning colour when low or negative (Figs. 4–5). The wishlist heart fills red and the header badge count updates immediately.
+Real-time notifications
+Socket.IO pushes notifications and chat messages; the bell shows an unread count and unread items have a dot (Figs. 14–15).
+Location awareness
+The active navigation item is highlighted; page titles and subtitles describe each screen; the header greets the user by name with the time of day and shows their role badge in the profile menu.
+Action results
+Success messages confirm completed actions (booking confirmed, review submitted, password reset); processing buttons are disabled to prevent double submission.
+Identified weaknesses and planned improvements:
+Several success/error messages use blocking alert() dialogs; non-blocking toasts would give the same feedback with less interruption.
+5.4 Error Prevention, Recovery and User Control (10 marks)
+We aimed first to make errors hard to make, then to make them easy to recover from, and to always give users an exit (Nielsen heuristics 3, 5 and 9).
+Design decision / HCI principle
+How it is implemented in Aurelia Travel
+Constraint-based prevention
+Required fields, typed inputs (email, number, date, datetime-local) and minimum values (adults ≥ 1, children ≥ 0) stop invalid input before submission. Only rooms marked active are offered for booking.
+Validation with clear messages
+Password length and confirmation are checked before any request, and server messages are shown in plain language ("Passwords do not match", "Please fill in all required fields (*)") (Fig. 17).
+Guided correction
+Pressing Reserve without selecting a room smoothly scrolls the user to the rooms table and tells them what to do.
+Protection of work
+After step 2 the booking is saved as a draft; if the page is closed the "Complete your booking!" tag lets the user resume at the confirmation step. The Remember-me option stores the email for the next sign-in.
+Safe destructive actions
+Deleting properties/rooms, banning users and clearing the wishlist require confirmation (Fig. 34); deleting a hotel in the admin console additionally requires an OTP.
+Recovery paths
+Password recovery with code resend; "Not you?" and Sign-in options on the booking page; Cancel buttons on every form and modal; "Back" and "Clear Filters" actions; empty states that suggest the next step.
+Access control
+Route guards redirect users away from pages they cannot use instead of showing broken screens; rate limiting returns a readable "please slow down" message.
+Identified weaknesses and planned improvements:
+Check-out date is not yet restricted to be after the check-in date in all date pickers; a min-date constraint and inline date error will be added.
+Deleted itinerary items cannot yet be undone; an "Undo" snackbar is planned for the trip dashboard.
+5.5 Layout, Navigation and Information Organisation (10 marks)
+Information architecture is organised by user role and by task frequency, with a visual hierarchy that leads from the most important information to the details.
+Design decision / HCI principle
+How it is implemented in Aurelia Travel
+Shallow, role-based navigation
+The traveller top bar has only five items (Home, Smart Plan, Hotels, About, Contact). Personal items (My Account, My Reviews, My Bookings, Saved Properties) are grouped in the profile dropdown, and dashboard links appear only for users who have that role.
+Clear page hierarchy
+Hotel details flow from summary (name, rating, price) → visuals (gallery + map) → decision information (services, rules) → action (rooms table and reserve) → social proof (reviews) (Figs. 8–9).
+Grouping and proximity
+Related fields are grouped in rows (locations; date + transport; duration + budget). House rules are listed in a dedicated box, and filters are grouped under headed cards (Price, Rating, Facilities).
+Persistent context
+The booking summary stays fixed on the left in a 25/75 split so users never lose sight of what they are paying for (Fig. 10).
+Dashboard organisation
+Sidebars follow the order of the manager's workflow (Overview → Hotels → Rooms → Bookings → Customers → Analytics → Reviews → Finance), and KPIs are placed above detailed charts and tables.
+Navigation state
+Search parameters are placed in the URL, so results can be bookmarked or refreshed; the mobile menu closes automatically after navigation.
+Identified weaknesses and planned improvements:
+The Hotels entry currently leads to a few similar listing pages (showcase, search, hotels); these will be merged into one listing to avoid duplicate paths.
+5.6 Visual Design, Readability and Accessibility (8 marks)
+The visual design aims for a calm, premium look that keeps text readable and highlights actions, while supporting a range of users and devices.
+Design decision / HCI principle
+How it is implemented in Aurelia Travel
+Visual hierarchy
+Large headings, generous white space, card-based grouping and one accent colour for primary actions guide the eye to the next step.
+Readability
+Sans-serif typography, dark text on light backgrounds, and a semi-transparent tint over the Smart Plan map so the form stays readable over map tiles. The wishlist button uses a white background and shadow to remain visible on bright photos.
+Colour with redundancy
+Status is shown by colour and also by text (e.g. "Confirmed", "Allowed / Not Allowed"), so information is not lost for colour-blind users.
+Accessible markup
+Form labels are linked to inputs (htmlFor/id) on the authentication page; images have alt text; the mobile menu button has an aria-label; native form controls keep keyboard support.
+Responsive design
+Layouts adapt to mobile: collapsed navigation, slide-in filter panel and stacked cards (Fig. 19).
+Seasonal theming
+A theme provider applies a month-based data-theme attribute, allowing the colour palette to change seasonally while using the same tokens.
+Identified weaknesses and planned improvements:
+The hotel gallery uses clickable background-image blocks that are not reachable by keyboard; these will become buttons with alt text.
+Colour contrast of some light grey helper text should be verified against WCAG 2.1 AA (4.5:1).
+Reduced-motion support (prefers-reduced-motion) should be added for the intro animation and scroll effects.
+5.7 Efficiency and Interaction Design (8 marks)
+For frequent and time-pressed users we minimised the number of steps and the amount of typing required to finish each task.
+Design decision / HCI principle
+How it is implemented in Aurelia Travel
+Minimal input
+A full trip needs only a start point, date and budget; everything else has a default. Guest details are auto-filled; Google sign-in avoids creating a password.
+Shortcuts and accelerators
+Map click fills coordinates and automatically moves on to the destination; "Remember me" pre-fills the email; the header heart jumps straight to saved hotels; admin tables have instant search.
+Instant computation
+Nights, room quantity and total price are calculated automatically; budget and cost recalculate on every change without a "calculate" button.
+Fewer page loads
+Login, registration and password reset share one page; room details and gallery open in modals; edit forms open in a sidebar on the trip dashboard.
+Efficient data browsing
+Filters, sorting and pagination (8 hotels per page) keep result lists manageable; "Mark all read" clears notifications in one click.
+Identified weaknesses and planned improvements:
+Dates chosen on the search form could be carried automatically into the hotel details page to avoid entering them twice.
+5.8 User-Centred Design and Target-User Suitability (8 marks)
+The product is built around the three personas in Section 2, and each screen can be traced to a user task.
+Design decision / HCI principle
+How it is implemented in Aurelia Travel
+Busy traveller
+1–3 day durations only, a budget-first planner, a "surprise me" option and a live budget directly target the "short getaway" persona.
+Local context
+The map is centred on Sri Lanka, the budget is entered in LKR, and transport options include tuk-tuk and public bus, reflecting how local users actually travel.
+Trust and safety
+Reviews and ratings, house rules, a Safety Center, dispute resolution, two-step verification and live support address the anxiety of booking with a new platform.
+Hotel partner
+Self-service onboarding, rich property and room forms, review replies and a transparent commission hub match the needs of non-technical managers.
+Administrator
+Search on every table, bulk visibility of status, activity logs and configurable commission support efficient, accountable platform management.
+Identified weaknesses and planned improvements:
+A formal usability test with 5–8 representative users (task success rate, time on task and SUS score) is planned to validate these design decisions with real data.
+5.9 Summary Mapping to Nielsen's 10 Usability Heuristics
+Heuristic
+Main evidence in Aurelia Travel
+1. Visibility of system status
+Skeletons, spinners, booking step tracker, live budget, notification badge
+2. Match with the real world
+Travel language (Check-in, Nights, House Rules), local transport types, LKR budget
+3. User control and freedom
+Cancel/Back everywhere, resumable draft booking, Clear Filters, modal close buttons
+4. Consistency and standards
+Shared layout, one icon set, list→form pattern, consistent status badges
+5. Error prevention
+Required/typed inputs, confirmations, OTP on hotel deletion, route guards
+6. Recognition rather than recall
+Labelled icons, persistent booking summary, visible filters, placeholders with examples
+7. Flexibility and efficiency
+Map picking, Google sign-in, remember-me, auto-fill, admin search
+8. Aesthetic and minimalist design
+Five-item navigation, card layout, white space, one primary action per screen
+9. Help users recover from errors
+Plain-language messages, code resend, guided scroll to missing room selection
+10. Help and documentation
+How it Works section, helper texts, Safety Center, Contact page, live chat
+6. Project Completeness
+6.1 Completeness of Required Features
+The table below lists the proposed core features and their implementation status in the submitted version.
+Module
+Feature
+Status
+Notes
+Accounts
+Register, login, logout, profile
+Implemented
+Cookie-based JWT sessions
+Accounts
+Google sign-in, remember me
+Implemented
+Facebook button is a placeholder
+Accounts
+Two-step verification, password reset by email code
+Implemented
+Includes resend on failure
+Smart Plan
+Trip input form with map-based location picking
+Implemented
+Leaflet map, click to set start/end
+Smart Plan
+Itinerary timeline with live budget and transport choice
+Implemented
+Integration with the AI Trip Designer service in progress
+Smart Plan
+Trip dashboard (edit, delete, add day, extend trip)
+Implemented
+Save & Publish persistence planned
+Hotels
+Listing, search, filters, pagination, empty states
+Implemented
+Hotels
+Hotel details, gallery, map, rules, rooms, reviews
+Implemented
+Booking
+Three-step booking, guest booking, draft/resume
+Implemented
+Pay-on-arrival; online card gateway planned
+Traveller
+My Bookings, reviews, wishlist, notifications
+Implemented
+Real-time via Socket.IO
+Support
+Live chat, contact form, safety center, disputes
+Implemented
+Hotel Partner
+Overview KPIs and revenue chart
+Implemented
+Recharts
+Hotel Partner
+Property and room management with image upload
+Implemented
+Cloudinary
+Hotel Partner
+Bookings, customers, analytics, review replies
+Implemented
+Hotel Partner
+Commission payment hub
+Implemented
+Guided multi-step payment flow
+Super Admin
+Hotels, users, reviews moderation, finance
+Implemented
+Publish/hide, ban, role change
+Super Admin
+Settings, activity logs, support inbox, live support
+Implemented
+6.2 Functional Workflows and Integration
+The main workflows below were tested end-to-end across the frontend, API, database and real-time layer.
+Workflow
+Steps (end-to-end)
+Components integrated
+W1 – Find and book a hotel
+Search/filter → open hotel → select room and dates → enter details (draft saved) → confirm → booking appears in My Bookings with status → notification to manager
+React pages, bookings API, MySQL, Socket.IO notifications
+W2 – Plan a short trip
+Open Smart Plan → pick start/end on map → set date, duration, budget → Generate → adjust transport → Customize in trip dashboard
+Leaflet map, planner, itinerary and dashboard pages, AI planning service
+W3 – Hotel partner onboarding
+Sign in as partner → add property (details, images, rules) → add rooms → property visible to travellers after admin publishes it
+Manager dashboard, Cloudinary upload, hotels/rooms API, Super Admin hotels
+W4 – Post-stay feedback
+Traveller writes review from My Bookings → manager replies in Guest Reviews → admin can moderate
+Reviews API across three roles
+W5 – Commission settlement
+Admin sets commission % → bookings accrue commission → manager pays in Financial Hub → admin sees payment in Financial Overview
+Settings, finance API, both dashboards
+W6 – Support conversation
+Traveller opens chat widget → admin answers in Live Support Desk → messages appear instantly on both sides
+Socket.IO, chat API
+W7 – Account security
+Register → login → 2FA code → forgot password → reset via emailed code
+Auth API, email service, rate limiter
+[ Insert Screenshot – Figure 35 ]
+Capture: the new booking in My Bookings and the same booking in the manager dashboard (two screenshots).
+Figure 35: End-to-end evidence: booking made by a traveller appearing in the manager's Bookings page
+7. Demonstration Plan and Design Justification
+7.1 Demonstration Script
+The live demonstration follows realistic user tasks on the working system and highlights the HCI principle shown at each step.
+Step
+Role
+Demonstrated task
+HCI point highlighted
+Time
+1
+Visitor
+Land on Home, explain value proposition, click "Generate My Trip"
+Single primary action, learnability
+0:45
+2
+Traveller
+Pick start and end on map, fill budget, generate itinerary; change a vehicle and watch the budget update
+Direct manipulation, immediate feedback
+2:00
+3
+Traveller
+Customize the plan in the trip dashboard; show budget turning red when exceeded
+System status, user control
+1:00
+4
+Traveller
+Filter hotels, show empty state and Clear Filters; open a hotel
+Error recovery, recognition
+1:15
+5
+Traveller
+Try Reserve without room (guided scroll), select room, complete 3-step booking; leave and resume draft
+Error prevention, progress tracking, protection of work
+2:00
+6
+Traveller
+View My Bookings, add to wishlist, see notification and chat with support
+Consistency, real-time feedback
+1:00
+7
+Hotel Partner
+Show overview, add a room, view the new booking and reply to a review
+Consistent list→form pattern, efficiency
+1:30
+8
+Admin
+Publish/hide a hotel, OTP deletion prompt, change commission, view logs, answer chat
+Safe destructive actions, accountability
+1:30
+7.2 Anticipated Questions and Answers
+Q: Why did you separate the system into three role-based areas?
+A: Each persona has different goals and skills. Separate areas keep the traveller interface simple (five navigation items) while giving managers and admins dense, tool-like screens. Links to dashboards appear only for users with the right role, so travellers are never exposed to irrelevant complexity.
+Q: How does the system keep users informed?
+A: Through skeleton loaders, disabled/spinning buttons, a three-step booking tracker, a live budget widget with colour warnings, and real-time notification and chat updates via Socket.IO.
+Q: What happens if a user makes a mistake while booking?
+A: Invalid input is blocked by required and typed fields; missing selections are explained and the page scrolls to the right place; the booking is saved as a draft after the details step so it can be resumed; Cancel/Back options are always available.
+Q: Why use a map for location input?
+A: Many travellers know where they want to go visually but not the exact place name. Clicking the map is faster and avoids spelling errors, while typing remains available as an alternative for users who prefer it.
+Q: How did you address accessibility?
+A: Labelled form controls, alt text on images, an aria-label on the menu button, status shown by both colour and text, responsive layouts and native inputs with keyboard support. We also identified remaining gaps (keyboard access to the gallery, contrast checks, reduced motion) and planned fixes.
+Q: Why is the booking summary fixed on the left?
+A: It applies "recognition rather than recall": users can check the hotel, dates and price at any moment without navigating back, which reduces anxiety and errors before payment.
+Q: How do you protect against destructive admin actions?
+A: Confirmation dialogs for deletes and bans, OTP verification for hotel deletion, publish/hide instead of delete where possible, and an activity log that records who did what.
+Q: What would you improve next?
+A: Unify feedback into toasts, use a single currency display, add date-range validation and undo, complete AI itinerary persistence, and run a formal usability study with SUS scoring.
+8. Limitations and Future Work
+An honest self-review identified the following limitations in the current version, with the planned improvement for each.
+Area
+Current limitation
+Planned improvement
+Smart Plan
+AI-generated itineraries are still being integrated; Save & Publish / Confirm Itinerary do not yet persist the trip
+Connect the itinerary and dashboard to the AI Trip Designer API and store trips per user
+Payments
+Pay-on-arrival only; commission payment and admin deletion OTP are demonstration flows
+Integrate a real payment gateway and emailed/SMS OTPs
+Feedback
+Mix of inline messages and browser alert() dialogs
+Single toast/inline notification component
+Consistency
+LKR in planner vs USD in hotel prices
+User-selectable display currency with conversion
+Validation
+Check-out date not always constrained after check-in
+min-date constraints and inline date errors
+Accessibility
+Gallery not keyboard accessible; contrast and reduced-motion not fully verified
+WCAG 2.1 AA audit (Lighthouse/axe) and fixes
+Social login
+Facebook sign-in is a placeholder
+Complete Facebook OAuth or remove the button
+Evaluation
+No formal user testing yet
+Usability test with 5–8 users, SUS questionnaire and task timing
+9. Conclusion
+Aurelia Travel delivers a working, integrated platform for three user groups: travellers who want to plan and book short trips quickly, hotel partners who need simple self-service management, and administrators who govern the platform. The design applies established HCI principles throughout: a clear single primary action, recognisable patterns, continuous feedback, error prevention with recoverable flows, a shallow role-based navigation and a clean, responsive visual design. The self-evaluation in Sections 5 and 8 also identifies concrete improvements, which together form a clear roadmap for the next iteration.
+Appendix A – Evaluation Criteria Traceability
+#
+Criterion
+Marks
+Evidence in this report
+1
+Usability and Ease of Use
+10
+Section 5.1; Figures 2–5, 8–11
+2
+Consistency and Standards
+8
+Section 5.2; Figures 20–34
+3
+Visibility, Feedback and System Status
+8
+Section 5.3; Figures 4–5, 7, 10–11, 14–15
+4
+Error Prevention, Recovery and User Control
+10
+Section 5.4; Figures 7, 11, 17, 34
+5
+Layout, Navigation and Information Organisation
+10
+Sections 3.2, 5.5; Figures 8–10, 20
+6
+Visual Design, Readability and Accessibility
+8
+Section 5.6; Figures 2, 3, 19
+7
+Efficiency and Interaction Design
+8
+Section 5.7; Figures 3–4, 10, 16
+8
+User-Centred Design and Target-User Suitability
+8
+Sections 2, 5.8
+9
+Completeness of Required Features
+10
+Section 6.1; Section 4
+10
+Functional Workflow and Integration
+10
+Section 6.2; Figure 35
+11
+Demonstration of the System
+6
+Section 7.1
+12
+Explanation and Response to Questions
+4
+Section 7.2
+Appendix B – Screenshot Checklist
+Tick each item after inserting the screenshot of the actual output into the corresponding figure placeholder.
+Fig.
+Screen
+✓
+1
+Architecture diagram
+2
+Home page
+3
+Smart Plan input
+4
+Itinerary timeline
+5
+Trip dashboard
+6
+Hotel listing + filters
+7
+Skeleton + empty state
+8
+Hotel details top
+9
+Rooms table + total
+10
+Booking step 2
+11
+Booking step 3 / success
+12
+My Bookings + review modal
+13
+Wishlist + badge
+14
+Notification dropdown
+15
+Live chat widget
+16
+Sign in / Register
+17
+2FA / reset / error
+18
+Safety Center + Disputes
+19
+Mobile view
+20
+Manager overview
+21
+Property portfolio
+22
+Room inventory
+23
+Bookings + details modal
+24
+Customers + analytics
+25
+Financial hub
+26
+Guest reviews reply
+27
+Super admin overview
+28
+Manage hotels + OTP
+29
+User management
+30
+Super finance
+31
+Moderation + settings
+32
+Activity logs
+33
+Inbox + live support
+34
+Confirmation dialog
+35
+End-to-end booking evidence
