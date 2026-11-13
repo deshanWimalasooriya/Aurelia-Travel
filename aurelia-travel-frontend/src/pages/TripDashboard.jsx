@@ -172,7 +172,7 @@ export default function TripDashboard() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-76px)] bg-slate-50 dark:bg-slate-950 p-6 lg:p-10 text-slate-900 dark:text-slate-100 relative">
+    <div className="tw-preflight min-h-[calc(100vh-76px)] bg-slate-50 dark:bg-slate-950 p-6 lg:p-10 text-slate-900 dark:text-slate-100 relative">
       
       {/* Toast Alert */}
       <AnimatePresence>

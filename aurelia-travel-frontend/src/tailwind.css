@@ -1,0 +1,32 @@
+/*
+ * Tailwind CSS v4 — utility classes only.
+ *
+ * We deliberately skip Tailwind's "preflight" reset so the existing Aurelia
+ * design system (index.css and per-page CSS) is not changed. Both imports go
+ * into cascade layers, so any un-layered custom CSS still wins on conflicts.
+ */
+@layer theme, base, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/*
+ * Minimal Tailwind-style reset, ONLY inside elements marked .tw-preflight
+ * (the Smart Plan pages, which are built with Tailwind classes). Without it,
+ * buttons/inputs keep the browser's default borders and backgrounds.
+ */
+@layer base {
+  .tw-preflight :where(*, ::before, ::after) {
+    border: 0 solid;
+  }
+  .tw-preflight :where(button, input, select, textarea) {
+    font: inherit;
+    color: inherit;
+    background-color: transparent;
+  }
+  .tw-preflight :where(button) {
+    cursor: pointer;
+  }
+}
+
+/* Site dark mode is driven by ThemeContext: <html data-theme="dark"> */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));

@@ -47,10 +47,14 @@
   --shadow-float: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* In the "base" layer (declared in tailwind.css) so Tailwind spacing
+   utilities like p-4 / mt-2 can override this reset. */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 }
 
 body {
