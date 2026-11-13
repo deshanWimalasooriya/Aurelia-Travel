@@ -2,6 +2,12 @@ const express = require("express");
 const router = express.Router();
 const hotelController = require("../controllers/hotelController");
 const { verifyToken, checkRole } = require('../middleware/authMiddleware');
+const { verifyAgentKey } = require('../middleware/agentKeyMiddleware');
+const agentController = require('../controllers/agentController');
+
+// Server-to-server: the Python trip agent looks up real, bookable rooms here.
+// Must stay above "/:id" or Express would treat "availability" as an id.
+router.get("/availability", verifyAgentKey, agentController.hotelAvailability);
 
 // Public Routes
 router.get("/", hotelController.getAllHotels);
