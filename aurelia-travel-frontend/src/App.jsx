@@ -6,6 +6,7 @@ import { WishlistProvider } from './context/WishlistContext'; // <--- Import
 import Layout from './components/layout/Layout'
 import ProtectedRoute from './components/ProtectedRoute'; // Your auth guard
 import { ThemeProvider } from './context/ThemeContext'; // <--- Import ThemeProvider
+import { CurrencyProvider } from './context/CurrencyContext'; // USD / LKR display currency
 
 // --- Import Pages ---
 import Home from './pages/Home'
@@ -140,7 +141,9 @@ function App() {
         <NotificationProvider>
           <WishlistProvider>
             <ThemeProvider>
-              <AppRoutes />
+              <CurrencyProvider>
+                <AppRoutes />
+              </CurrencyProvider>
             </ThemeProvider>
           </WishlistProvider>
         </NotificationProvider>

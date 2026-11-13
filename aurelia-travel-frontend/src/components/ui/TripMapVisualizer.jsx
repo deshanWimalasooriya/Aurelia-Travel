@@ -7,6 +7,7 @@ import {
   Trash2, Star, Car, Train, Bike, Footprints, Layers, Sparkles
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useCurrency } from '../../context/currencyCore';
 import './styles/TripMapVisualizer.css';
 
 // Fix Leaflet default marker icons for Vite/React
@@ -29,7 +30,7 @@ if (typeof window !== 'undefined' && !window.L) {
 /**
  * Creates an elevated hotel pill marker with a BedDouble SVG icon and price tag.
  */
-const createHotelDivIcon = (price) => {
+const createHotelDivIcon = (label) => {
   return L.divIcon({
     className: 'custom-leaflet-marker-hotel',
     html: `
@@ -58,13 +59,32 @@ const createHotelDivIcon = (price) => {
           <path d="M12 4v6"></path>
           <path d="M2 18h20"></path>
         </svg>
-        <span>${price ? `$${price}/nt` : 'Stay'}</span>
+        <span>${escapeHtml(label || 'Stay')}</span>
       </div>
     `,
     iconSize: [0, 0],
     popupAnchor: [0, -22]
   });
 };
+
+// Text from the AI goes into raw HTML marker labels: escape it
+const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/** Green "Start" flag for where the trip begins. */
+const createStartDivIcon = (label) => L.divIcon({
+  className: 'custom-leaflet-marker-start',
+  html: `
+    <div style="display:inline-flex;align-items:center;gap:6px;background:#059669;color:#fff;padding:5px 11px;border-radius:9999px;border:2px solid #fff;font:800 12px ui-sans-serif,system-ui,sans-serif;white-space:nowrap;transform:translate(-50%,-50%);box-shadow:0 8px 16px -3px rgba(5,150,105,.45);">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+      <span>${escapeHtml(label)}</span>
+    </div>`,
+  iconSize: [0, 0],
+  popupAnchor: [0, -20]
+});
+
+const hasCoords = (p) =>
+  p && Number.isFinite(Number(p.latitude ?? p.lat)) && Number.isFinite(Number(p.longitude ?? p.lng))
+  && (p.latitude ?? p.lat) !== null && (p.longitude ?? p.lng) !== null;
 
 /**
  * Creates a numbered sequence place marker with a category color ring.
@@ -183,13 +203,19 @@ const RoutingMachineLayer = ({ waypoints, routeColor = '#2563eb', onRouteSummary
   const routingControlRef = useRef(null);
   const isLrmReady = useLeafletRoutingEngine();
 
-  // Validate coordinates
-  const validPoints = useMemo(() => {
-    return (waypoints || []).filter(
-      p => (p.latitude !== undefined || p.lat !== undefined) && 
-           (p.longitude !== undefined || p.lng !== undefined)
-    );
-  }, [waypoints]);
+  // Keep the latest callback in a ref. If it were an effect dependency, every
+  // parent re-render (e.g. storing the route distance) would delete and
+  // re-request the route in a loop, so the line never stays on the map.
+  const onRouteSummaryRef = useRef(onRouteSummary);
+  useEffect(() => { onRouteSummaryRef.current = onRouteSummary; }, [onRouteSummary]);
+
+  // Only rebuild the route when the actual coordinates change
+  const coordsKey = (waypoints || []).filter(hasCoords)
+    .map(p => `${Number(p.latitude ?? p.lat).toFixed(5)},${Number(p.longitude ?? p.lng).toFixed(5)}`).join(';');
+
+  // Validate coordinates (null/undefined/NaN would break routing)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- coordsKey captures what matters in waypoints
+  const validPoints = useMemo(() => (waypoints || []).filter(hasCoords), [coordsKey]);
 
   useEffect(() => {
     if (!map || !isLrmReady) return;
@@ -247,9 +273,7 @@ const RoutingMachineLayer = ({ waypoints, routeColor = '#2563eb', onRouteSummary
           const distanceKm = (summary.totalDistance / 1000).toFixed(1);
           const durationMins = Math.round(summary.totalTime / 60);
 
-          if (onRouteSummary) {
-            onRouteSummary({ distanceKm, durationMins });
-          }
+          onRouteSummaryRef.current?.({ distanceKm, durationMins });
         }
       });
 
@@ -270,7 +294,7 @@ const RoutingMachineLayer = ({ waypoints, routeColor = '#2563eb', onRouteSummary
         routingControlRef.current = null;
       }
     };
-  }, [map, validPoints, routeColor, isLrmReady, onRouteSummary]);
+  }, [map, validPoints, routeColor, isLrmReady]);
 
   // Fallback Polyline when LRM is loading or if network blocks OSRM
   if (!isLrmReady && validPoints.length >= 2) {
@@ -297,10 +321,7 @@ const MapAutoBoundsFitter = ({ points }) => {
     if (!points || points.length === 0) return;
 
     try {
-      const validPoints = points.filter(
-        p => (p.latitude !== undefined || p.lat !== undefined) && 
-             (p.longitude !== undefined || p.lng !== undefined)
-      );
+      const validPoints = points.filter(hasCoords);
 
       if (validPoints.length === 1) {
         const p = validPoints[0];
@@ -380,6 +401,7 @@ export default function TripMapVisualizer({
 }) {
   const { theme } = useTheme();
   const isDarkMode = theme === 'dark';
+  const { format } = useCurrency();
 
   // Standard free OpenStreetMap tile layer (no API key required)
   const tileLayerUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -392,6 +414,12 @@ export default function TripMapVisualizer({
     return itinerary.days.map(d => d.dayNumber);
   }, [itinerary]);
 
+  // AI-agent plans have one hotel per night (instead of one recommended stay)
+  const hasNightlyHotels = useMemo(
+    () => (itinerary?.days || []).some(d => (d.items || []).some(it => it.type === 'hotel')),
+    [itinerary]
+  );
+
   // Extract waypoints filtered by the active day
   const filteredWaypoints = useMemo(() => {
     if (Array.isArray(rawWaypoints) && rawWaypoints.length > 0) {
@@ -399,6 +427,42 @@ export default function TripMapVisualizer({
     }
 
     if (!itinerary) return [];
+    const days = Array.isArray(itinerary.days) ? itinerary.days : [];
+    const hasNightlyHotels = days.some(d => (d.items || []).some(it => it.type === 'hotel'));
+
+    // AI agent itineraries: one ordered path
+    //   Start -> Day 1 stops -> Night 1 hotel -> Day 2 stops -> Night 2 hotel ...
+    // A single day starts from the previous night's hotel (or the trip start).
+    if (hasNightlyHotels) {
+      const path = [];
+      const startPoint = itinerary.startCoords && {
+        type: 'start',
+        name: itinerary.startLocation || 'Start',
+        latitude: itinerary.startCoords.latitude,
+        longitude: itinerary.startCoords.longitude
+      };
+
+      days.forEach((day, dayIdx) => {
+        if (activeDay !== 'all' && day.dayNumber !== activeDay) return;
+
+        if (activeDay !== 'all' || dayIdx === 0) {
+          const prevHotel = dayIdx > 0 && [...(days[dayIdx - 1].items || [])].reverse().find(it => it.type === 'hotel');
+          const anchor = prevHotel && hasCoords(prevHotel)
+            ? { ...prevHotel, type: 'hotel', dayNumber: day.dayNumber - 1, isAnchor: true }
+            : startPoint;
+          if (anchor && hasCoords(anchor)) path.push(anchor);
+        }
+
+        let placeNo = 0;
+        (day.items || []).forEach(item => {
+          if (item.type !== 'hotel') placeNo += 1;
+          if (!hasCoords(item)) return;
+          path.push({ ...item, dayNumber: day.dayNumber, sequenceNumber: placeNo });
+        });
+      });
+      return path;
+    }
+
     const list = [];
 
     // 1. Hotel Stay Base
@@ -534,13 +598,25 @@ export default function TripMapVisualizer({
         {/* Custom React-Leaflet Markers & Glassmorphic Popups */}
         {filteredWaypoints.map((wp, i) => {
           const isHotel = wp.type === 'hotel';
+          if (wp.type === 'start') {
+            return (
+              <Marker key={`start-${i}`} position={[Number(wp.latitude), Number(wp.longitude)]} icon={createStartDivIcon(`Start: ${wp.name}`)} zIndexOffset={900}>
+                <Popup><div className="p-1 text-xs font-semibold">Trip starts in {wp.name}</div></Popup>
+              </Marker>
+            );
+          }
+          const nightPrice = wp.pricePerNightUSD ?? wp.costUSD;
+          const hotelLabel = hasNightlyHotels && wp.dayNumber
+            ? `Night ${wp.dayNumber}${nightPrice ? ` · ${format(nightPrice)}` : ''}`
+            : (nightPrice ? `${format(nightPrice)}/nt` : 'Stay');
           const icon = isHotel
-            ? createHotelDivIcon(wp.pricePerNightUSD)
+            ? createHotelDivIcon(hotelLabel)
             : createPlaceDivIcon(wp.sequenceNumber || i, wp.category);
 
           return (
             <Marker
-              key={`${wp.type}-${wp.reference_id || i}`}
+              key={`${wp.type}-${wp.dayNumber || 0}-${wp.reference_id || wp.name || i}-${i}`}
+              zIndexOffset={isHotel ? 1000 : 0}
               position={[Number(wp.latitude), Number(wp.longitude)]}
               icon={icon}
             >
@@ -577,9 +653,9 @@ export default function TripMapVisualizer({
                     {/* Cost & Rating */}
                     <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100 dark:border-slate-800">
                       <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
-                        {isHotel 
-                          ? `$${wp.pricePerNightUSD}/night` 
-                          : wp.costUSD > 0 ? `$${wp.costUSD} USD` : 'Free Entry'}
+                        {isHotel
+                          ? (nightPrice ? `${format(nightPrice)}/night` : 'Price on request')
+                          : wp.costUSD > 0 ? format(wp.costUSD) : 'Free Entry'}
                       </span>
                       {wp.rating && (
                         <span className="flex items-center gap-1 text-amber-500 font-bold text-xs">

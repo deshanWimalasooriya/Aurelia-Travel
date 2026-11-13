@@ -6,9 +6,31 @@ import {
   GripVertical, MapPin, RefreshCw, Trash2, Clock, 
   DollarSign, Star, Sparkles, PlusCircle, RotateCcw, 
   BedDouble, Camera, Navigation, Car, Bike, Train, Footprints, 
-  Wallet, ArrowLeft, Download, Check, Search, Filter, X, Save, Share2
+  Wallet, ArrowLeft, Download, Check, Search, Filter, X, Save, Share2,
+  CloudSun, BadgeCheck
 } from 'lucide-react';
 import Button from '../common/Button';
+import { useCurrency } from '../../context/currencyCore';
+
+// "2026-12-20" -> "Sat, 20 Dec" (date-only strings are parsed as UTC, so format in UTC)
+const formatDayDate = (iso) => {
+  if (!iso) return '';
+  const d = new Date(`${iso}T00:00:00Z`);
+  return Number.isNaN(d.getTime())
+    ? ''
+    : d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+};
+
+// Straight-line km between two stops (a hint, not a road distance)
+const kmBetween = (a, b) => {
+  const ok = (p) => p && Number.isFinite(Number(p.latitude)) && Number.isFinite(Number(p.longitude)) && p.latitude !== null;
+  if (!ok(a) || !ok(b)) return null;
+  const toRad = (x) => (Number(x) * Math.PI) / 180;
+  const dLat = toRad(b.latitude - a.latitude);
+  const dLng = toRad(b.longitude - a.longitude);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.latitude)) * Math.cos(toRad(b.latitude)) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(h));
+};
 import './styles/ItineraryEditor.css';
 
 // ============================================================================
@@ -174,28 +196,35 @@ export default function ItineraryEditor({
   // ==========================================================================
   // FINANCIAL CALCULATIONS & BUDGET HEALTH
   // ==========================================================================
+  const { format } = useCurrency();
   const targetBudget = Number(itinerary?.budgetUSD || 250);
+
+  // AI-agent plans carry one hotel item per night inside each day
+  const hasNightlyHotels = useMemo(
+    () => (itinerary?.days || []).some(d => (d.items || []).some(it => it.type === 'hotel')),
+    [itinerary]
+  );
 
   // 1. Accommodation total
   const accommodationTotal = useMemo(() => {
+    if (hasNightlyHotels) {
+      return (itinerary.days || []).reduce((sum, d) =>
+        sum + (d.items || []).filter(it => it.type === 'hotel').reduce((s, it) => s + Number(it.costUSD || 0), 0), 0);
+    }
     if (!itinerary?.recommendedHotel) return 0;
     const price = itinerary.recommendedHotel.pricePerNightUSD || itinerary.recommendedHotel.costUSD || 0;
     const nights = Math.max(1, (itinerary.durationDays || 2) - 1);
     return Number(price) * nights;
-  }, [itinerary]);
+  }, [itinerary, hasNightlyHotels]);
 
-  // 2. Activities total
+  // 2. Activities total (hotels are counted under Stays)
   const activitiesTotal = useMemo(() => {
     let sum = 0;
-    if (Array.isArray(itinerary?.days)) {
-      itinerary.days.forEach(day => {
-        if (Array.isArray(day.items)) {
-          day.items.forEach(item => {
-            sum += Number(item.costUSD || 0);
-          });
-        }
+    (itinerary?.days || []).forEach(day => {
+      (day.items || []).forEach(item => {
+        if (item.type !== 'hotel') sum += Number(item.costUSD || 0);
       });
-    }
+    });
     return sum;
   }, [itinerary]);
 
@@ -229,7 +258,7 @@ export default function ItineraryEditor({
     healthTheme = {
       barColor: 'bg-rose-500',
       textColor: 'text-rose-600 dark:text-rose-400',
-      badgeText: `Over by $${Math.abs(remainingBudget)}`
+      badgeText: `Over by ${format(Math.abs(remainingBudget))}`
     };
   } else if (budgetRatio >= 0.8) {
     healthTheme = {
@@ -323,7 +352,7 @@ export default function ItineraryEditor({
                 {healthTheme.badgeText}
               </span>
               <strong className={`text-base font-black ${healthTheme.textColor}`}>
-                ${currentTotalCost} / ${targetBudget}
+                {format(currentTotalCost)} / {format(targetBudget)}
               </strong>
             </div>
           </div>
@@ -342,15 +371,15 @@ export default function ItineraryEditor({
           <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 text-[11px]">
             <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 truncate">
               <BedDouble size={13} className="text-amber-500 flex-shrink-0" />
-              <span className="truncate">Stays: <strong className="text-slate-900 dark:text-slate-200">${accommodationTotal}</strong></span>
+              <span className="truncate">Stays: <strong className="text-slate-900 dark:text-slate-200">{format(accommodationTotal)}</strong></span>
             </div>
             <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 truncate">
               <Camera size={13} className="text-blue-500 flex-shrink-0" />
-              <span className="truncate">Places: <strong className="text-slate-900 dark:text-slate-200">${activitiesTotal}</strong></span>
+              <span className="truncate">Places: <strong className="text-slate-900 dark:text-slate-200">{format(activitiesTotal)}</strong></span>
             </div>
             <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 truncate">
               <TransportIcon size={13} className="text-purple-500 flex-shrink-0" />
-              <span className="truncate">Ride: <strong className="text-slate-900 dark:text-slate-200">~${transportEstimate}</strong></span>
+              <span className="truncate">Ride: <strong className="text-slate-900 dark:text-slate-200">~{format(transportEstimate)}</strong></span>
             </div>
           </div>
         </div>
@@ -412,20 +441,22 @@ export default function ItineraryEditor({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              All Days ({itinerary.days.reduce((acc, d) => acc + (d.items?.length || 0), 0)} stops)
+              All days
             </button>
             {itinerary.days.map(d => (
               <button
                 key={d.dayNumber}
                 type="button"
                 onClick={() => onDayChange && onDayChange(d.dayNumber)}
-                className={`flex-1 py-1 rounded-lg transition cursor-pointer text-center text-xs relative ${
-                  activeDay === d.dayNumber 
-                    ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' 
+                aria-pressed={activeDay === d.dayNumber}
+                className={`flex-1 py-1 rounded-lg transition cursor-pointer text-center text-xs relative leading-tight ${
+                  activeDay === d.dayNumber
+                    ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                 }`}
               >
-                Day {d.dayNumber} ({d.items?.length || 0})
+                Day {d.dayNumber}
+                {d.date && <span className="block text-[10px] font-semibold opacity-70">{formatDayDate(d.date)}</span>}
               </button>
             ))}
           </div>
@@ -439,7 +470,7 @@ export default function ItineraryEditor({
       <div className="p-5 flex-1 space-y-6">
         
         {/* Recommended Hotel Block (Stay Anchor) */}
-        {itinerary.recommendedHotel && (
+        {itinerary.recommendedHotel && !hasNightlyHotels && (
           <div className="border border-amber-200/90 dark:border-amber-900/60 rounded-2xl p-4 bg-gradient-to-br from-amber-50/80 to-amber-100/30 dark:from-amber-950/30 dark:to-slate-900/60 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
@@ -468,7 +499,7 @@ export default function ItineraryEditor({
                     {itinerary.recommendedHotel.name}
                   </h3>
                   <span className="text-xs font-black text-amber-600 dark:text-amber-400 ml-2">
-                    ${itinerary.recommendedHotel.pricePerNightUSD}/night
+                    {format(itinerary.recommendedHotel.pricePerNightUSD)}/night
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-600 dark:text-slate-400 line-clamp-2 mt-0.5">
@@ -510,19 +541,30 @@ export default function ItineraryEditor({
               key={day.dayNumber}
               className="border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 bg-slate-50/70 dark:bg-slate-850/40 space-y-4 shadow-sm"
             >
-              {/* Day Header */}
-              <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-xl bg-blue-600 text-white font-black text-[11px] uppercase tracking-wider">
-                    Day {day.dayNumber}
+              {/* Day Header: date, route, weather */}
+              <div className="border-b border-slate-200/60 dark:border-slate-700/60 pb-3 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="px-2.5 py-0.5 rounded-xl bg-blue-600 text-white font-black text-[11px] uppercase tracking-wider flex-shrink-0">
+                      Day {day.dayNumber}
+                    </span>
+                    {day.date && (
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{formatDayDate(day.date)}</span>
+                    )}
+                  </div>
+                  <span className="text-[11px] text-slate-500 font-bold flex-shrink-0">
+                    {(day.items || []).filter(it => it.type !== 'hotel').length} activities
                   </span>
-                  <h2 className="text-xs font-black text-slate-800 dark:text-slate-200">
-                    {day.theme || `Exploration Day ${day.dayNumber}`}
-                  </h2>
                 </div>
-                <span className="text-[11px] text-slate-500 font-bold">
-                  {day.items?.length || 0} stops
-                </span>
+                <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                  <Navigation size={14} className="text-blue-600 flex-shrink-0" />
+                  {day.theme || `Exploration Day ${day.dayNumber}`}
+                </h2>
+                {day.weather && (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 text-[11px] font-semibold">
+                    <CloudSun size={13} /> {day.weather}
+                  </span>
+                )}
               </div>
 
               {/* Native Framer-Motion Reorder Group */}
@@ -530,11 +572,73 @@ export default function ItineraryEditor({
                 axis="y"
                 values={day.items || []}
                 onReorder={(newOrderedItems) => onReorderItems(day.dayNumber, newOrderedItems)}
-                className="space-y-1"
+                className="space-y-1 list-none"
               >
                 {(day.items || []).map((item, idx) => {
                   const itemKey = item.reference_id || item.id || `day-${day.dayNumber}-item-${idx}`;
                   const catClass = CATEGORY_STYLES[(item.category || '').toLowerCase()] || CATEGORY_STYLES.culture;
+                  const placeNumber = (day.items || []).slice(0, idx + 1).filter(it => it.type !== 'hotel').length;
+                  const nextItem = day.items[idx + 1];
+                  const legKm = nextItem ? kmBetween(item, nextItem) : null;
+
+                  // The night's hotel: highlighted "Tonight's stay" card, not a numbered sight
+                  if (item.type === 'hotel' && hasNightlyHotels) {
+                    return (
+                      <React.Fragment key={itemKey}>
+                        <Reorder.Item
+                          value={item}
+                          dragListener={false}
+                          className="relative mt-2 p-3.5 rounded-2xl border-2 border-amber-300/90 dark:border-amber-700/70 bg-gradient-to-br from-amber-50 to-orange-50/60 dark:from-amber-950/40 dark:to-slate-900/60 shadow-sm"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                              <BedDouble size={17} />
+                            </div>
+                            {item.image_url && (
+                              <img src={item.image_url} alt={item.name} className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-amber-200 dark:border-amber-800" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                                Tonight's stay · Night {day.dayNumber}
+                              </div>
+                              <div className="flex items-start justify-between gap-2">
+                                <h3 className="font-black text-sm text-slate-900 dark:text-white">{item.name}</h3>
+                                <span className="text-xs font-black text-amber-700 dark:text-amber-400 flex-shrink-0">
+                                  {item.costUSD > 0 ? `${format(item.costUSD)}/night` : 'Price on request'}
+                                </span>
+                              </div>
+                              {item.roomConfiguration && (
+                                <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">{item.roomConfiguration}</p>
+                              )}
+                              <div className="flex items-center gap-2 mt-2 text-[10px]">
+                                {item.bookable ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-bold">
+                                    <BadgeCheck size={11} /> Bookable on Aurelia
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold">Found online</span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => onFocusLocation({ latitude: item.latitude, longitude: item.longitude, name: item.name })}
+                                  className="inline-flex items-center gap-0.5 text-blue-600 hover:underline font-bold cursor-pointer"
+                                >
+                                  <MapPin size={10} /> View on map
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => onSwapItem(item, day.dayNumber)}
+                                  className="inline-flex items-center gap-0.5 text-amber-700 dark:text-amber-400 hover:underline font-bold cursor-pointer"
+                                >
+                                  <RefreshCw size={10} /> Change hotel
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </Reorder.Item>
+                      </React.Fragment>
+                    );
+                  }
 
                   return (
                     <React.Fragment key={itemKey}>
@@ -559,7 +663,7 @@ export default function ItineraryEditor({
 
                           {/* Chronological Sequence Badge */}
                           <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
-                            {idx + 1}
+                            {hasNightlyHotels ? placeNumber : idx + 1}
                           </div>
 
                           {/* Thumbnail Image */}
@@ -574,11 +678,11 @@ export default function ItineraryEditor({
                           {/* Card Content */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-1">
-                              <h3 className="font-black text-xs text-slate-900 dark:text-white truncate">
+                              <h3 className="font-black text-xs text-slate-900 dark:text-white">
                                 {item.name}
                               </h3>
                               <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 ml-1 flex-shrink-0">
-                                {item.costUSD > 0 ? `$${item.costUSD} USD` : 'Free'}
+                                {item.costUSD > 0 ? format(item.costUSD) : 'Free'}
                               </span>
                             </div>
 
@@ -640,12 +744,12 @@ export default function ItineraryEditor({
                         </div>
                       </Reorder.Item>
 
-                      {/* Travel Connector Line to Next Stop */}
-                      {idx < day.items.length - 1 && (
+                      {/* Travel Connector to Next Stop (only when both stops have a location) */}
+                      {legKm !== null && (
                         <div className="travel-connector-line">
                           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-[10px] text-slate-500 font-bold shadow-xs select-none">
                             <TransportIcon size={12} className="text-blue-500" />
-                            <span>~15 mins • 4.2 km road leg</span>
+                            <span>{legKm < 1 ? 'Under 1 km' : `≈ ${Math.round(legKm * 1.3)} km by road`}{nextItem?.type === 'hotel' ? ' to your hotel' : ''}</span>
                           </div>
                         </div>
                       )}
@@ -740,7 +844,7 @@ export default function ItineraryEditor({
                                 <span>{place.city}</span>
                                 <span>•</span>
                                 <span className="font-bold text-emerald-600">
-                                  {place.costUSD > 0 ? `$${place.costUSD}` : 'Free'}
+                                  {place.costUSD > 0 ? format(place.costUSD) : 'Free'}
                                 </span>
                               </div>
                             </div>

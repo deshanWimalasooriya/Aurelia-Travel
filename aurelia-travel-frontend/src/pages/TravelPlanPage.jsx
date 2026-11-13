@@ -12,6 +12,7 @@ import SwapItemModal from '../components/ui/SwapItemModal';
 import ShareTripModal from '../components/ui/ShareTripModal';
 import Button from '../components/common/Button';
 import { tripAPI } from '../services/api';
+import { CurrencyToggle } from '../context/CurrencyContext';
 import './styles/travelPlanPage.css';
 
 // ============================================================================
@@ -173,8 +174,20 @@ const TravelPlanPage = () => {
   const initialData = location.state?.itinerary || DEFAULT_SRI_LANKA_ITINERARY;
   const [itinerary, setItinerary] = useState(initialData);
 
+  // travel-Agent-2.0 returns up to 3 alternative routes; let the user switch between them
+  const routeOptions = location.state?.routeOptions || [];
+  const [routeIndex, setRouteIndex] = useState(0);
+  const handleSelectRoute = (idx) => {
+    setRouteIndex(idx);
+    setItinerary(routeOptions[idx]);
+    setActiveDay(firstDayOf(routeOptions[idx]));
+    setHistoryStack([]);
+  };
+
   // 2. Active Day filter ('all' or day number 1, 2, 3...)
-  const [activeDay, setActiveDay] = useState('all');
+  // Multi-day plans open on Day 1 so it's clear what happens on each date
+  const firstDayOf = (plan) => (plan?.days?.length > 1 ? plan.days[0].dayNumber : 'all');
+  const [activeDay, setActiveDay] = useState(() => firstDayOf(initialData));
 
   // 3. Mobile view switcher ('timeline' | 'map')
   const [mobileTab, setMobileTab] = useState('timeline');
@@ -450,7 +463,7 @@ const TravelPlanPage = () => {
   };
 
   return (
-    <div className="travel-plan-page min-h-[calc(100vh-76px)] h-[calc(100vh-76px)] flex flex-col relative overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="travel-plan-page tw-preflight min-h-[calc(100vh-76px)] h-[calc(100vh-76px)] flex flex-col relative overflow-hidden bg-slate-50 dark:bg-slate-950">
       
       {/* Toast Alert */}
       <AnimatePresence>
@@ -493,10 +506,30 @@ const TravelPlanPage = () => {
               <span>•</span>
               <span>{itinerary.durationDays} Days</span>
             </div>
+            {routeOptions.length > 1 && (
+              <div className="flex gap-1 mt-1">
+                {routeOptions.map((opt, idx) => (
+                  <button
+                    key={opt.tripTitle || idx}
+                    type="button"
+                    onClick={() => handleSelectRoute(idx)}
+                    title={opt.whyItFits || opt.tripTitle}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition cursor-pointer ${
+                      idx === routeIndex
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    Route {idx + 1}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
+          <CurrencyToggle />
           <Button
             variant="glass"
             size="sm"
